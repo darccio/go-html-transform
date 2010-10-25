@@ -6,11 +6,11 @@
 package trans
 
 import (
-	b "bytes"
-	h "html"
+	. "html"
 	"os"
 	"log"
-	//s "strings"
+	"strings"
+	v "container/vector"
 )
 
 type NodeType int
@@ -24,20 +24,21 @@ type Node struct {
 	nodeType NodeType
 	nodeValue string
 	nodeAttributes map[string] string
-	children []Node
+	children v.Vector
 }
 
-func lazyTokens(t *h.Tokenizer) <-chan h.Token {
-	tokens := make(chan h.Token, 1)
+func lazyTokens(t *Tokenizer) <-chan Token {
+	tokens := make(chan Token, 1)
 	go func() {
 		for {
 			tt := t.Next()
-			if tt == h.Error {
+			if tt == Error {
 				switch t.Error() {
 				case os.EOF:
 					break
 				default:
-					log.Panicf("Error tokenizing string: %s",
+					log.Panicf(
+						"Error tokenizing string: %s",
 						t.Error())
 				}
 			}
@@ -47,18 +48,54 @@ func lazyTokens(t *h.Tokenizer) <-chan h.Token {
 	return tokens
 }
 
-func transformAttributes(t *h.Tokenizer) {
-	attr := make(map[string] string)
-	for {
-		key, val, rem := t.TagAttr()
-		sKey, sVal := b.NewBuffer(key).String(), b.NewBuffer(val).String()
-		if sKey != "" {
-			attr[sKey] = sVal
-		}
-		if !rem {
-			break
-		}
+type Document struct {
+	top Node
+}
+
+func transformAttributes(attrs []Attribute) map[string] string {
+	attributes := make(map[string] string)
+	for _, attr := range attrs {
+		attributes[attr.Key] = attr.Val
+	}
+	return attributes
+}
+
+func typeFromToken(t Token) NodeType {
+	if t.Type == Text {
+		return TEXT
+	}
+	return TAG
+}
+
+func nodeFromToken(t Token) Node {
+	return Node{
+		nodeType: typeFromToken(t),
+		nodeValue: t.Data,
+		nodeAttributes: transformAttributes(t.Attr),
 	}
 }
 
-// TODO(jwall): reducer that builds a tree out of the tokens
+func NewDoc(s string) *Document {
+	t := NewTokenizer(strings.NewReader(s))
+	tokens := lazyTokens(t)
+	tok1 := <-tokens
+	doc := Document{top: nodeFromToken(tok1)}
+
+	queue := new(v.Vector)
+	queue.Push(doc.top)
+	for tok := range tokens {
+		curr := queue.At(0).(Node)
+		switch tok.Type {
+		case SelfClosingTag, Text:
+			curr.children.Push(nodeFromToken(tok))
+		case StartTag:
+			curr.children.Push(nodeFromToken(tok))
+			queue.Push(nodeFromToken(tok))
+		case EndTag:
+			queue.Pop()
+		}
+	}
+	return &doc
+}
+
+// TODO(jwall): css style addressing of elements
