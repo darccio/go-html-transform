@@ -4,6 +4,7 @@ include $(GOROOT)/src/Make.inc
 TARG=html/trans
 GOFILES=\
 	html/trans/tree.go\
+	html/trans/selector.go\
 	#html/trans/transform.go\
 
 include $(GOROOT)/src/Make.pkg
