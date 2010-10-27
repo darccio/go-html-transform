@@ -91,3 +91,11 @@ func NewSelector(sel ...string) *SelectorQuery {
 	}
 	return &q
 }
+
+func (sel *SelectorQuery) Apply(doc *Document) Node {
+	return Node{} // TODO(jwall): implement
+}
+
+func (sel *SelectorQuery) Replace(doc *Document, ns []Node) {
+	return // TODO(jwall): implement
+}

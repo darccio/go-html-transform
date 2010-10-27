@@ -9,6 +9,17 @@
  transformed.
 
  	doc := Document{}
- 	query := NewSelector("a", ".foo")
+ 	sel := NewSelector("a", ".foo")
+ 	node := sel.Apply(doc)
+
+ 	transformer := func(node Node) Node { ... }
+ 	Transform(doc, sel, transformer)
+ 	doc.ToString()
 */
 package transform
+
+func Transform(doc *Document, sel *SelectorQuery, f func(Node) []Node) {
+	sel.Replace(doc, f(sel.Apply(doc)))
+}
+
+// TODO(jwall): helper transformation functions
