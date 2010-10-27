@@ -43,7 +43,7 @@ func NewSelector(sel ...string) *SelectorQuery {
 		return attrs[0:1]
 	}
 	for _, str := range sel {
-		str = s.Trim(str, " \n\r\t") // trim whitespace
+		str = s.TrimSpace(str) // trim whitespace
 		var selector Selector
 		switch str[0] {
 		case CLASS, ID: // Any tagname with class or id
