@@ -6,11 +6,11 @@
 package transform
 
 import (
-	. "html"
-	"os"
-	"log"
-	"strings"
 	v "container/vector"
+	. "html"
+	"log"
+	"os"
+	"strings"
 )
 
 type NodeType int
