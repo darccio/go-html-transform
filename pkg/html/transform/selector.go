@@ -93,7 +93,7 @@ func NewSelector(sel ...string) *SelectorQuery {
 	return &q
 }
 
-func testNode(node Node, sel Selector) bool {
+func testNode(node *Node, sel Selector) bool {
 	if sel.Tagtype == "*" {
 		attrs := node.nodeAttributes
 		// TODO(jwall): abstract this out
@@ -139,7 +139,16 @@ func testNode(node Node, sel Selector) bool {
 	return false;
 }
 
-func (sel *SelectorQuery) Apply(doc *Document) Node {
+func listToNodeVector(l *l.List) *v.Vector {
+	nv := new(v.Vector)
+	for true {
+		nv.Push(l.Front().Value)
+		l.Remove(l.Front())
+	}
+	return nv
+}
+
+func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	interesting := l.New()
 	interesting.PushBack(doc.top.children[0])
 	for i := 0; i <= sel.Len(); i++ {
@@ -150,7 +159,7 @@ func (sel *SelectorQuery) Apply(doc *Document) Node {
 				break
 			}
 			front := interesting .Front()
-			node := front.Value.(Node)
+			node := front.Value.(*Node)
 			if testNode(node, selector) {
 				q.PushBack(node)
 			}
@@ -158,9 +167,19 @@ func (sel *SelectorQuery) Apply(doc *Document) Node {
 		}
 		interesting = q
 	}
-	return interesting.Front().Value.(Node) // TODO(jwall): implement
+	return listToNodeVector(interesting) // TODO(jwall): implement
 }
 
-func (sel *SelectorQuery) Replace(doc *Document, ns []Node) {
-	return // TODO(jwall): implement
+/*
+ Replace each node the selector matches with the passed in node.
+
+ Applies the selector against the doc and replaces the returned
+ Nodes with the passed in n Node.
+ */
+func (sel *SelectorQuery) Replace(doc *Document, n Node) {
+	nv := sel.Apply(doc);
+	for i := 0; i <= nv.Len(); i++ {
+		nv.At(i).(*Node).Copy(n)
+	}
+	return
 }

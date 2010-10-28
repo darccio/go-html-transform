@@ -27,6 +27,13 @@ type Node struct {
 	children v.Vector
 }
 
+func (n *Node) Copy(node Node) {
+	n.nodeType = node.nodeType
+	n.nodeValue = node.nodeValue
+	n.nodeAttributes = node.nodeAttributes
+	n.children = node.children
+}
+
 func lazyTokens(t *Tokenizer) <-chan Token {
 	tokens := make(chan Token, 1)
 	go func() {
