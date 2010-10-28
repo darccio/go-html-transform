@@ -104,14 +104,3 @@ func NewDoc(s string) *Document {
 	}
 	return &doc
 }
-
-// TODO(jwall): not sure I even need fragments but oh well
-type Fragment struct {
-	*Document
-}
-
-func NewFragment(s string) *Fragment {
-	return &Fragment{NewDoc(s)}
-}
-
-// TODO(jwall): css style addressing of elements
