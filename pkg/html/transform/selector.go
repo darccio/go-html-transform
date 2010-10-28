@@ -6,12 +6,13 @@
 package transform
 
 import (
+	v "container/vector"
 	l "container/list"
 	s "strings"
 )
 
 type SelectorQuery struct {
-	*l.List
+	*v.Vector
 }
 
 type Selector struct {
@@ -32,7 +33,7 @@ const (
 
 // TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
-	q := SelectorQuery{List: l.New()}
+	q := SelectorQuery{}
 	splitAttrs := func(str string) []string { 
 		attrs := s.FieldsFunc(str[1:-1], func(c int) bool {
 			if c == '=' {
@@ -87,13 +88,77 @@ func NewSelector(sel ...string) *SelectorQuery {
 				}
 			}
 		}
-		q.PushBack(selector)
+		q.Insert(0, selector)
 	}
 	return &q
 }
 
+func testNode(node Node, sel Selector) bool {
+	if sel.Tagtype == "*" {
+		attrs := node.nodeAttributes
+		// TODO(jwall): abstract this out
+		switch sel.Type {
+		case ID:
+			if attrs["id"] == sel.Val {
+				return true
+			}
+		case CLASS:
+			if attrs["class"] == sel.Val {
+				return true
+			}
+		case ATTR:
+			if attrs[sel.Key] == sel.Val {
+				return true
+			}
+		//case PSEUDO:
+			//TODO(jwall): implement these
+		}
+	} else {
+		if node.nodeValue == sel.Tagtype {
+			attrs := node.nodeAttributes
+			switch sel.Type {
+			case ID:
+				if attrs["id"] == sel.Val {
+					return true
+				}
+			case CLASS:
+				if attrs["class"] == sel.Val {
+					return true
+				}
+			case ATTR:
+				if attrs[sel.Key] == sel.Val {
+					return true
+				}
+			//case PSEUDO:
+				//TODO(jwall): implement these
+			default:
+				return true
+			}
+		}
+	}
+	return false;
+}
+
 func (sel *SelectorQuery) Apply(doc *Document) Node {
-	return Node{} // TODO(jwall): implement
+	interesting := l.New()
+	interesting.PushBack(doc.top.children[0])
+	for i := 0; i <= sel.Len(); i++ {
+		q := l.New()
+		selector := sel.At(i).(Selector)
+		for true {
+			if interesting.Len() == 0 {
+				break
+			}
+			front := interesting .Front()
+			node := front.Value.(Node)
+			if testNode(node, selector) {
+				q.PushBack(node)
+			}
+			interesting.Remove(front)
+		}
+		interesting = q
+	}
+	return interesting.Front().Value.(Node) // TODO(jwall): implement
 }
 
 func (sel *SelectorQuery) Replace(doc *Document, ns []Node) {
