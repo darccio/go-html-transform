@@ -49,7 +49,7 @@ func lazyTokens(t *Tokenizer) <-chan Token {
 }
 
 type Document struct {
-	top Node
+	top *Node
 }
 
 func transformAttributes(attrs []Attribute) map[string] string {
@@ -67,8 +67,8 @@ func typeFromToken(t Token) NodeType {
 	return TAG
 }
 
-func nodeFromToken(t Token) Node {
-	return Node{
+func nodeFromToken(t Token) *Node {
+	return &Node{
 		nodeType: typeFromToken(t),
 		nodeValue: t.Data,
 		nodeAttributes: transformAttributes(t.Attr),
