@@ -7,7 +7,6 @@ package transform
 
 import (
 	v "container/vector"
-	l "container/list"
 	s "strings"
 )
 
@@ -139,31 +138,28 @@ func testNode(node *Node, sel Selector) bool {
 	return false;
 }
 
-func listToNodeVector(l *l.List) *v.Vector {
+func listToNodeVector(l *v.Vector) *v.Vector {
 	nv := new(v.Vector)
 	for true {
-		nv.Push(l.Front().Value)
-		l.Remove(l.Front())
+		nv.Push(l.Pop())
 	}
 	return nv
 }
 
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
-	interesting := l.New()
-	interesting.PushBack(doc.top.children[0])
+	interesting := new(v.Vector)
+	interesting.Push(doc.top.children[0])
 	for i := 0; i <= sel.Len(); i++ {
-		q := l.New()
+		q := new(v.Vector)
 		selector := sel.At(i).(Selector)
 		for true {
 			if interesting.Len() == 0 {
 				break
 			}
-			front := interesting .Front()
-			node := front.Value.(*Node)
+			node := interesting.Pop().(*Node)
 			if testNode(node, selector) {
-				q.PushBack(node)
+				q.Push(node)
 			}
-			interesting.Remove(front)
 		}
 		interesting = q
 	}
