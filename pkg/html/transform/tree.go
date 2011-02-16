@@ -13,21 +13,21 @@ import (
 	"strings"
 )
 
-type NodeType int
+type HtmlNodeType int
 
 const (
-	TEXT NodeType = iota // 0 value so the default
+	TEXT HtmlNodeType = iota // 0 value so the default
 	TAG
 )
 
-type Node struct {
-	nodeType NodeType
+type HtmlNode struct {
+	nodeType HtmlNodeType
 	nodeValue string
 	nodeAttributes map[string] string
 	children v.Vector
 }
 
-func (n *Node) Copy(node Node) {
+func (n *HtmlNode) Copy(node HtmlNode) {
 	n.nodeType = node.nodeType
 	n.nodeValue = node.nodeValue
 	n.nodeAttributes = node.nodeAttributes
@@ -39,7 +39,7 @@ func lazyTokens(t *Tokenizer) <-chan Token {
 	go func() {
 		for {
 			tt := t.Next()
-			if tt == Error {
+			if tt == ErrorToken {
 				switch t.Error() {
 				case os.EOF:
 					break
@@ -56,7 +56,7 @@ func lazyTokens(t *Tokenizer) <-chan Token {
 }
 
 type Document struct {
-	top *Node
+	top *HtmlNode
 }
 
 func transformAttributes(attrs []Attribute) map[string] string {
@@ -67,15 +67,15 @@ func transformAttributes(attrs []Attribute) map[string] string {
 	return attributes
 }
 
-func typeFromToken(t Token) NodeType {
-	if t.Type == Text {
+func typeFromToken(t Token) HtmlNodeType {
+	if t.Type == TextToken {
 		return TEXT
 	}
 	return TAG
 }
 
-func nodeFromToken(t Token) *Node {
-	return &Node{
+func nodeFromToken(t Token) *HtmlNode {
+	return &HtmlNode{
 		nodeType: typeFromToken(t),
 		nodeValue: t.Data,
 		nodeAttributes: transformAttributes(t.Attr),
@@ -91,14 +91,14 @@ func NewDoc(s string) *Document {
 	queue := new(v.Vector)
 	queue.Push(doc.top)
 	for tok := range tokens {
-		curr := queue.At(0).(Node)
+		curr := queue.At(0).(HtmlNode)
 		switch tok.Type {
-		case SelfClosingTag, Text:
+		case SelfClosingTagToken, TextToken:
 			curr.children.Push(nodeFromToken(tok))
-		case StartTag:
+		case StartTagToken:
 			curr.children.Push(nodeFromToken(tok))
 			queue.Push(nodeFromToken(tok))
-		case EndTag:
+		case EndTagToken:
 			queue.Pop()
 		}
 	}
