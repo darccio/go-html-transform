@@ -16,7 +16,7 @@ type SelectorQuery struct {
 
 type Selector struct {
 	Type byte
-	Tagtype string
+	TagType string
 	Key string
 	Val string
 }
@@ -29,6 +29,14 @@ const (
 	ANY     byte = '*'
 	ATTR    byte = '['
 )
+
+func newAnyTagClassSelector(str string) *Selector {
+	return &Selector{
+	Type:str[0],
+	TagType: "*",
+	Val: str[1:],
+	}
+}
 
 // TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
@@ -49,18 +57,18 @@ func NewSelector(sel ...string) *SelectorQuery {
 		case CLASS, ID: // Any tagname with class or id
 			selector = Selector{
 			Type:str[0],
-			Tagtype: "*",
+			TagType: "*",
 			Val: str[1:],
 			}
 		case ANY: // Any tagname
 			selector = Selector{
 			Type: str[0],
-			Tagtype: "*",
+			TagType: "*",
 			}
 		case ATTR: // any tagname with attribute
 			attrs := splitAttrs(str)
 			selector = Selector{
-			Tagtype: "*",
+			TagType: "*",
 			Type: str[0],
 			Key: attrs[0],
 			Val: attrs[1],
@@ -70,20 +78,20 @@ func NewSelector(sel ...string) *SelectorQuery {
 				switch str[i] {
 				case CLASS, ID, PSEUDO: // with class or id
 					selector = Selector{
-					Tagtype: str[0:i - 1],
+					TagType: str[0:i - 1],
 					Val: str[i:],
 					}
 				case ATTR: // with attribute
 					attrs := splitAttrs(str[i + 1:])
 					selector = Selector{
-					Tagtype: str[0:i - 1],
+					TagType: str[0:i - 1],
 					Key: attrs[0],
 					Val: attrs[1],
 					}
 				}
 			} else { // just a tagname
 				selector = Selector{
-				Tagtype: str,
+				TagType: str,
 				}
 			}
 		}
@@ -92,8 +100,8 @@ func NewSelector(sel ...string) *SelectorQuery {
 	return &q
 }
 
-func testNode(node *Node, sel Selector) bool {
-	if sel.Tagtype == "*" {
+func testNode(node *HtmlNode, sel Selector) bool {
+	if sel.TagType == "*" {
 		attrs := node.nodeAttributes
 		// TODO(jwall): abstract this out
 		switch sel.Type {
@@ -113,7 +121,7 @@ func testNode(node *Node, sel Selector) bool {
 			//TODO(jwall): implement these
 		}
 	} else {
-		if node.nodeValue == sel.Tagtype {
+		if node.nodeValue == sel.TagType {
 			attrs := node.nodeAttributes
 			switch sel.Type {
 			case ID:
@@ -146,23 +154,44 @@ func listToNodeVector(l *v.Vector) *v.Vector {
 	return nv
 }
 
+/*
+ Apply the css selector to a document.
+
+ Returns a Vector of nodes that the selector matched.
+ */
+// TODO(jwall): should this be first match or comprehensive?
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
-	interesting := new(v.Vector)
+        interesting := new(v.Vector)
+/*
+	// the first one is by definition interesting.
 	interesting.Push(doc.top.children[0])
-	for i := 0; i <= sel.Len(); i++ {
-		q := new(v.Vector)
-		selector := sel.At(i).(Selector)
+	for true {
+		if sel.Len() == 0 { // our end condition
+			break
+		}
+		// Start a queu to track interesting for this iteration
+		q := new(v.Vector) 
+		//get our first selector
+		selector := sel.At(0).(Selector)
+		// loop through what is interesting so far
 		for true {
-			if interesting.Len() == 0 {
-				break
+			if interesting.Len() == 0 { // nothing was interesting
+				break 
 			}
-			node := interesting.Pop().(*Node)
+			// get interesting node to test
+			node := interesting.Pop().(*HtmlNode)
 			if testNode(node, selector) {
-				q.Push(node)
+				q.AppendVector(node.children) // ??
 			}
 		}
-		interesting = q
+		if q.Len() != 0 { // we did find a match
+			interesting = q // set interesting
+			sel.Pop() // pop first selector off
+		} else { // we didn't find anything so descend
+			
+		}
 	}
+*/
 	return listToNodeVector(interesting) // TODO(jwall): implement
 }
 
@@ -172,10 +201,12 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Applies the selector against the doc and replaces the returned
  Nodes with the passed in n Node.
  */
-func (sel *SelectorQuery) Replace(doc *Document, n Node) {
+func (sel *SelectorQuery) Replace(doc *Document, n HtmlNode) {
+/*
 	nv := sel.Apply(doc);
 	for i := 0; i <= nv.Len(); i++ {
-		nv.At(i).(*Node).Copy(n)
+		nv.At(i).(*HtmlNode).Copy(n)
 	}
+ */
 	return
 }
