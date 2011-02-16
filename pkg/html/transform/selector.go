@@ -146,14 +146,6 @@ func testNode(node *HtmlNode, sel Selector) bool {
 	return false;
 }
 
-func listToNodeVector(l *v.Vector) *v.Vector {
-	nv := new(v.Vector)
-	for true {
-		nv.Push(l.Pop())
-	}
-	return nv
-}
-
 /*
  Apply the css selector to a document.
 
@@ -192,7 +184,7 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 		}
 	}
 */
-	return listToNodeVector(interesting) // TODO(jwall): implement
+	return interesting
 }
 
 /*
@@ -201,7 +193,7 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Applies the selector against the doc and replaces the returned
  Nodes with the passed in n Node.
  */
-func (sel *SelectorQuery) Replace(doc *Document, n HtmlNode) {
+func (sel *SelectorQuery) Replace(doc *Document, n *v.Vector) {
 /*
 	nv := sel.Apply(doc);
 	for i := 0; i <= nv.Len(); i++ {
