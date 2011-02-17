@@ -47,7 +47,7 @@ func newAnyTagSelector(str string) *Selector {
 }
 
 func splitAttrs(str string) []string {
-	attrs := s.FieldsFunc(str[1:len(str) -1], func(c int) bool {
+	attrs := s.FieldsFunc(str[1:len(str)-1], func(c int) bool {
 		if c == '=' {
 			return true
 		}
@@ -66,6 +66,29 @@ func newAnyTagAttrSelector(str string) *Selector {
 	}
 }
 
+func newTagNameSelector(str string) *Selector {
+	return &Selector{
+		Type:    TAGNAME,
+		TagType: str,
+	}
+}
+
+func newTagNameWithConstraints(str string, i int) *Selector {
+	// TODO(jwall): indexAny use [CLASS,...]
+	var selector = new(Selector)
+	switch str[i] {
+	case CLASS, ID, PSEUDO: // with class or id
+		selector = newAnyTagClassOrIdSelector(str[i:])
+	case ATTR: // with attribute
+		selector = newAnyTagAttrSelector(str[i:])
+	default:
+		    panic("Invalid constraint type for the tagname selector")
+	}
+	selector.TagType = str[0:i]
+	//selector.Type = TAGNAME
+	return selector
+}
+
 // TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
@@ -79,14 +102,8 @@ func NewSelector(sel ...string) *SelectorQuery {
 			selector = *newAnyTagSelector(str)
 		case ATTR: // any tagname with attribute
 			selector = *newAnyTagAttrSelector(str)
-			attrs := splitAttrs(str)
-			selector = Selector{
-				TagType: "*",
-				Type:    str[0],
-				Key:     attrs[0],
-				Val:     attrs[1],
-			}
 		default: // TAGNAME
+			// TODO(jwall): indexAny use [CLASS,...]
 			if i := s.IndexAny(str, ".:#["); i != -1 {
 				switch str[i] {
 				case CLASS, ID, PSEUDO: // with class or id
@@ -103,9 +120,7 @@ func NewSelector(sel ...string) *SelectorQuery {
 					}
 				}
 			} else { // just a tagname
-				selector = Selector{
-					TagType: str,
-				}
+				selector = *newTagNameSelector(str)
 			}
 		}
 		q.Insert(0, selector)

@@ -9,27 +9,35 @@ import (
 	"testing"
 )
 
-func assertTagTypeAny(t *testing.T, sel *Selector) {
-	if sel.TagType != "*" {
-		t.Errorf("selector tagType not ANY")
+func assertTagType(t *testing.T, sel *Selector, typ string, msg string) {
+	if sel.TagType != typ {
+		t.Errorf(msg)
+		t.Logf("TagType: [%s]", sel.TagType)
 	}
+}
+
+func assertTagTypeAny(t *testing.T, sel *Selector) {
+	assertTagType(t, sel, "*", "selector tagType not ANY")
 }
 
 func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
 	if sel.Type != typ {
 		t.Errorf(msg)
+		t.Logf("Type: [%s]", sel.Type)
 	}
 }
 
 func assertKey(t *testing.T, sel *Selector, val string, msg string) {
 	if sel.Key != val {
 		t.Errorf(msg)
+		t.Logf("Key: [%s]", sel.Val)
 	}
 }
 
 func assertVal(t *testing.T, sel *Selector, val string, msg string) {
 	if sel.Val != val {
 		t.Errorf(msg)
+		t.Logf("Val: [%s]", sel.Val)
 	}
 }
 
@@ -55,4 +63,28 @@ func TestNewAnyTagAttrSelector(t *testing.T) {
 	assertTagTypeAny(t, sel)
 	assertKey(t, sel, "foo", "selector key not foo")
 	assertVal(t, sel, "bar", "selector val not bar")
+}
+
+func TestTagNameSelector(t *testing.T) {
+	selString := "a"
+	sel := newTagNameSelector(selString)
+	assertType(t, sel, TAGNAME, "selector type not TAGNAME")
+	assertTagType(t, sel, "a", "selector TagType not a")
+}
+
+func TestTagNameWithAttr(t *testing.T) {
+	selString := "a[foo=bar]"
+        sel := newTagNameWithConstraints(selString, 1)
+	assertType(t, sel, ATTR, "selector type not ATTR")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertKey(t, sel, "foo", "selector key not foo")
+	assertVal(t, sel, "bar", "selector val not bar")
+}
+
+func TestTagNameWithClass(t *testing.T) {
+	selString := "a.foo"
+        sel := newTagNameWithConstraints(selString, 1)
+	assertType(t, sel, CLASS, "selector type not CLASS")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
 }
