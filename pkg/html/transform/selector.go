@@ -6,6 +6,7 @@
 package transform
 
 import (
+	//seq "github.com/zot/seq" create our own sequence node sequence
 	v "container/vector"
 	s "strings"
 )
@@ -15,10 +16,10 @@ type SelectorQuery struct {
 }
 
 type Selector struct {
-	Type byte
+	Type    byte
 	TagType string
-	Key string
-	Val string
+	Key     string
+	Val     string
 }
 
 const (
@@ -30,18 +31,25 @@ const (
 	ATTR    byte = '['
 )
 
-func newAnyTagClassSelector(str string) *Selector {
+func newAnyTagClassOrIdSelector(str string) *Selector {
 	return &Selector{
-	Type:str[0],
-	TagType: "*",
-	Val: str[1:],
+		Type:    str[0],
+		TagType: "*",
+		Val:     str[1:],
+	}
+}
+
+func newAnyTagSelector(str string) *Selector {
+	return &Selector{
+		Type:    str[0],
+		TagType: "*",
 	}
 }
 
 // TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
-	splitAttrs := func(str string) []string { 
+	splitAttrs := func(str string) []string {
 		attrs := s.FieldsFunc(str[1:-1], func(c int) bool {
 			if c == '=' {
 				return true
@@ -55,43 +63,36 @@ func NewSelector(sel ...string) *SelectorQuery {
 		var selector Selector
 		switch str[0] {
 		case CLASS, ID: // Any tagname with class or id
-			selector = Selector{
-			Type:str[0],
-			TagType: "*",
-			Val: str[1:],
-			}
+			selector = *newAnyTagClassOrIdSelector(str)
 		case ANY: // Any tagname
-			selector = Selector{
-			Type: str[0],
-			TagType: "*",
-			}
+			selector = *newAnyTagSelector(str)
 		case ATTR: // any tagname with attribute
 			attrs := splitAttrs(str)
 			selector = Selector{
-			TagType: "*",
-			Type: str[0],
-			Key: attrs[0],
-			Val: attrs[1],
+				TagType: "*",
+				Type:    str[0],
+				Key:     attrs[0],
+				Val:     attrs[1],
 			}
 		default: // TAGNAME
 			if i := s.IndexAny(str, ".:#["); i != -1 {
 				switch str[i] {
 				case CLASS, ID, PSEUDO: // with class or id
 					selector = Selector{
-					TagType: str[0:i - 1],
-					Val: str[i:],
+						TagType: str[0 : i-1],
+						Val:     str[i:],
 					}
 				case ATTR: // with attribute
-					attrs := splitAttrs(str[i + 1:])
+					attrs := splitAttrs(str[i+1:])
 					selector = Selector{
-					TagType: str[0:i - 1],
-					Key: attrs[0],
-					Val: attrs[1],
+						TagType: str[0 : i-1],
+						Key:     attrs[0],
+						Val:     attrs[1],
 					}
 				}
 			} else { // just a tagname
 				selector = Selector{
-				TagType: str,
+					TagType: str,
 				}
 			}
 		}
@@ -117,7 +118,7 @@ func testNode(node *HtmlNode, sel Selector) bool {
 			if attrs[sel.Key] == sel.Val {
 				return true
 			}
-		//case PSEUDO:
+			//case PSEUDO:
 			//TODO(jwall): implement these
 		}
 	} else {
@@ -137,53 +138,53 @@ func testNode(node *HtmlNode, sel Selector) bool {
 					return true
 				}
 			//case PSEUDO:
-				//TODO(jwall): implement these
+			//TODO(jwall): implement these
 			default:
 				return true
 			}
 		}
 	}
-	return false;
+	return false
 }
 
 /*
  Apply the css selector to a document.
 
  Returns a Vector of nodes that the selector matched.
- */
+*/
 // TODO(jwall): should this be first match or comprehensive?
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
-        interesting := new(v.Vector)
-/*
-	// the first one is by definition interesting.
-	interesting.Push(doc.top.children[0])
-	for true {
-		if sel.Len() == 0 { // our end condition
-			break
-		}
-		// Start a queu to track interesting for this iteration
-		q := new(v.Vector) 
-		//get our first selector
-		selector := sel.At(0).(Selector)
-		// loop through what is interesting so far
+	interesting := new(v.Vector)
+	/*
+		// the first one is by definition interesting.
+		interesting.Push(doc.top.children[0])
 		for true {
-			if interesting.Len() == 0 { // nothing was interesting
-				break 
+			if sel.Len() == 0 { // our end condition
+				break
 			}
-			// get interesting node to test
-			node := interesting.Pop().(*HtmlNode)
-			if testNode(node, selector) {
-				q.AppendVector(node.children) // ??
+			// Start a queu to track interesting for this iteration
+			q := new(v.Vector) 
+			//get our first selector
+			selector := sel.At(0).(Selector)
+			// loop through what is interesting so far
+			for true {
+				if interesting.Len() == 0 { // nothing was interesting
+					break 
+				}
+				// get interesting node to test
+				node := interesting.Pop().(*HtmlNode)
+				if testNode(node, selector) {
+					q.AppendVector(node.children) // ??
+				}
+			}
+			if q.Len() != 0 { // we did find a match
+				interesting = q // set interesting
+				sel.Pop() // pop first selector off
+			} else { // we didn't find anything so descend
+
 			}
 		}
-		if q.Len() != 0 { // we did find a match
-			interesting = q // set interesting
-			sel.Pop() // pop first selector off
-		} else { // we didn't find anything so descend
-			
-		}
-	}
-*/
+	*/
 	return interesting
 }
 
@@ -192,13 +193,13 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 
  Applies the selector against the doc and replaces the returned
  Nodes with the passed in n Node.
- */
+*/
 func (sel *SelectorQuery) Replace(doc *Document, n *v.Vector) {
-/*
-	nv := sel.Apply(doc);
-	for i := 0; i <= nv.Len(); i++ {
-		nv.At(i).(*HtmlNode).Copy(n)
-	}
- */
+	/*
+		nv := sel.Apply(doc);
+		for i := 0; i <= nv.Len(); i++ {
+			nv.At(i).(*HtmlNode).Copy(n)
+		}
+	*/
 	return
 }

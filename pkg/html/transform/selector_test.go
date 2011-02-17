@@ -9,16 +9,35 @@ import (
 	"testing"
 )
 
+func assertTagTypeAny(t *testing.T, sel *Selector) {
+	if sel.TagType != "*" {
+		t.Errorf("selector tagType not ANY")
+	}
+}
+
+func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
+	if sel.Type != typ {
+		t.Errorf(msg)
+	}
+}
+
+func assertVal(t *testing.T, sel *Selector, val string, msg string) {
+	if sel.Val != val {
+		t.Errorf(msg)
+	}
+}
+
 func TestNewAnyTagClassSelector(t *testing.T) {
 	selString := ".foo"
-	sel := newAnyTagClassSelector(selString)
-        if sel.Type != '.' {
-		t.Errorf("selector type not class")
-	}
-        if sel.TagType != "*" {
-		t.Errorf("selector tagType not *")
-	}
-        if sel.Val != "foo" {
-		t.Errorf("selector tagType not foo")
-	}
+	sel := newAnyTagClassOrIdSelector(selString)
+	assertType(t, sel, CLASS,"selector type not CLASS")
+	assertTagTypeAny(t, sel)
+	assertVal(t, sel, "foo", "selector tagType not foo")
+}
+
+func TestNewAnyTagSelector(t *testing.T) {
+	selString := "*"
+	sel := newAnyTagSelector(selString)
+	assertType(t, sel, ANY,"selector type not ANY")
+	assertTagTypeAny(t, sel)
 }
