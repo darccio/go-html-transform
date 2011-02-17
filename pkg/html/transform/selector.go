@@ -46,18 +46,29 @@ func newAnyTagSelector(str string) *Selector {
 	}
 }
 
+func splitAttrs(str string) []string {
+	attrs := s.FieldsFunc(str[1:len(str) -1], func(c int) bool {
+		if c == '=' {
+			return true
+		}
+		return false
+	})
+	return attrs
+}
+
+func newAnyTagAttrSelector(str string) *Selector {
+	attrs := splitAttrs(str)
+	return &Selector{
+		TagType: "*",
+		Type:    str[0],
+		Key:     attrs[0],
+		Val:     attrs[1],
+	}
+}
+
 // TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
-	splitAttrs := func(str string) []string {
-		attrs := s.FieldsFunc(str[1:-1], func(c int) bool {
-			if c == '=' {
-				return true
-			}
-			return false
-		})
-		return attrs[0:1]
-	}
 	for _, str := range sel {
 		str = s.TrimSpace(str) // trim whitespace
 		var selector Selector
@@ -67,6 +78,7 @@ func NewSelector(sel ...string) *SelectorQuery {
 		case ANY: // Any tagname
 			selector = *newAnyTagSelector(str)
 		case ATTR: // any tagname with attribute
+			selector = *newAnyTagAttrSelector(str)
 			attrs := splitAttrs(str)
 			selector = Selector{
 				TagType: "*",
