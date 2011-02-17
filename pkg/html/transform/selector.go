@@ -82,7 +82,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	case ATTR: // with attribute
 		selector = newAnyTagAttrSelector(str[i:])
 	default:
-		    panic("Invalid constraint type for the tagname selector")
+		panic("Invalid constraint type for the tagname selector")
 	}
 	selector.TagType = str[0:i]
 	//selector.Type = TAGNAME
@@ -169,39 +169,36 @@ func testNode(node *HtmlNode, sel Selector) bool {
 
  Returns a Vector of nodes that the selector matched.
 */
-// TODO(jwall): should this be first match or comprehensive?
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	interesting := new(v.Vector)
-	/*
-		// the first one is by definition interesting.
-		interesting.Push(doc.top.children[0])
+	// the first one is by definition interesting.
+	interesting.Push(doc.top.children[0])
+	for true {
+		if sel.Len() == 0 { // our end condition
+			break
+		}
+		// Start a queu to track interesting for this iteration
+		q := new(v.Vector)
+		//get our first selector
+		selector := sel.At(0).(Selector)
+		// loop through what is interesting so far
 		for true {
-			if sel.Len() == 0 { // our end condition
+			if interesting.Len() == 0 { // nothing was interesting
 				break
 			}
-			// Start a queu to track interesting for this iteration
-			q := new(v.Vector) 
-			//get our first selector
-			selector := sel.At(0).(Selector)
-			// loop through what is interesting so far
-			for true {
-				if interesting.Len() == 0 { // nothing was interesting
-					break 
-				}
-				// get interesting node to test
-				node := interesting.Pop().(*HtmlNode)
-				if testNode(node, selector) {
-					q.AppendVector(node.children) // ??
-				}
-			}
-			if q.Len() != 0 { // we did find a match
-				interesting = q // set interesting
-				sel.Pop() // pop first selector off
-			} else { // we didn't find anything so descend
-
+			// get interesting node to test
+			node := interesting.Pop().(*HtmlNode)
+			if testNode(node, selector) {
+				q.AppendVector(&node.children) // ??
 			}
 		}
-	*/
+		if q.Len() != 0 { // we did find a match
+			interesting = q // set interesting
+			sel.Pop()       // pop first selector off
+		} else { // we didn't find anything so descend
+
+		}
+	}
 	return interesting
 }
 
@@ -212,7 +209,7 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Nodes with the passed in n HtmlNode.
 */
 func (sel *SelectorQuery) Replace(doc *Document, n *HtmlNode) {
-	nv := sel.Apply(doc);
+	nv := sel.Apply(doc)
 	for i := 0; i <= nv.Len(); i++ {
 		nv.At(i).(*HtmlNode).Copy(n)
 	}

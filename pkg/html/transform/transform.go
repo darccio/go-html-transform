@@ -22,7 +22,6 @@ import (
 	v "container/vector"
 )
 
-// TODO(jwall): ok this really needs to use nodes not vectors
 func Transform(doc *Document, sel *SelectorQuery, f func(*v.Vector) *HtmlNode) {
 	sel.Replace(doc, f(sel.Apply(doc)))
 }
