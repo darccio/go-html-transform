@@ -89,7 +89,28 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	return selector
 }
 
-func NewSelector(sel ...string) *SelectorQuery {
+func NewSelector(str string) *Selector {
+	str = s.TrimSpace(str) // trim whitespace
+	var selector *Selector
+	switch str[0] {
+	case CLASS, ID: // Any tagname with class or id
+		selector = newAnyTagClassOrIdSelector(str)
+	case ANY: // Any tagname
+		selector = newAnyTagSelector(str)
+	case ATTR: // any tagname with attribute
+		selector = newAnyTagAttrSelector(str)
+	default: // TAGNAME
+		// TODO(jwall): indexAny use [CLASS,...]
+		if i := s.IndexAny(str, ".:#["); i != -1 {
+			selector = newTagNameWithConstraints(str, i)
+		} else { // just a tagname
+			selector = newTagNameSelector(str)
+		}
+	}
+	return selector
+}
+
+func NewSelectorQuery(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
 	for _, str := range sel {
 		str = s.TrimSpace(str) // trim whitespace

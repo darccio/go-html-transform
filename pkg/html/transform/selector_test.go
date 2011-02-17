@@ -104,3 +104,54 @@ func TestTagNameWithPseudo(t *testing.T) {
 	assertTagType(t, sel, "a", "selector TagType not a")
 	assertVal(t, sel, "foo", "selector val not foo")
 }
+
+func TestNewSelector(t *testing.T) {
+	selString := ".foo"
+	sel := NewSelector(selString)
+	assertType(t, sel, CLASS, "selector type not CLASS")
+	assertTagTypeAny(t, sel)
+	assertVal(t, sel, "foo", "selector val not foo")
+
+	selString = "*"
+	sel = NewSelector(selString)
+	assertType(t, sel, ANY,"selector type not ANY")
+	assertTagTypeAny(t, sel)
+
+	selString = "[foo=bar]"
+	sel = NewSelector(selString)
+	assertType(t, sel, ATTR, "selector type not ATTR")
+	assertTagTypeAny(t, sel)
+	assertKey(t, sel, "foo", "selector key not foo")
+	assertVal(t, sel, "bar", "selector val not bar")
+
+	selString = "a"
+	sel = NewSelector(selString)
+	assertType(t, sel, TAGNAME, "selector type not TAGNAME")
+	assertTagType(t, sel, "a", "selector TagType not a")
+
+	selString = "a[foo=bar]"
+	sel = NewSelector(selString)
+	assertType(t, sel, ATTR, "selector type not ATTR")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertKey(t, sel, "foo", "selector key not foo")
+	assertVal(t, sel, "bar", "selector val not bar")
+
+	selString = "a.foo"
+	sel = NewSelector(selString)
+	assertType(t, sel, CLASS, "selector type not CLASS")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+
+	selString = "a#foo"
+	sel = NewSelector(selString)
+	assertType(t, sel, ID, "selector type not ID")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+
+	selString = "a:foo"
+	sel = NewSelector(selString)
+	assertType(t, sel, PSEUDO, "selector type not PSEUDO")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+}
+
