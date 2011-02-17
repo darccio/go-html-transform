@@ -209,14 +209,12 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Replace each node the selector matches with the passed in node.
 
  Applies the selector against the doc and replaces the returned
- Nodes with the passed in n Node.
+ Nodes with the passed in n HtmlNode.
 */
-func (sel *SelectorQuery) Replace(doc *Document, n *v.Vector) {
-	/*
-		nv := sel.Apply(doc);
-		for i := 0; i <= nv.Len(); i++ {
-			nv.At(i).(*HtmlNode).Copy(n)
-		}
-	*/
+func (sel *SelectorQuery) Replace(doc *Document, n *HtmlNode) {
+	nv := sel.Apply(doc);
+	for i := 0; i <= nv.Len(); i++ {
+		nv.At(i).(*HtmlNode).Copy(n)
+	}
 	return
 }

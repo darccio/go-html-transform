@@ -27,7 +27,7 @@ type HtmlNode struct {
 	children v.Vector
 }
 
-func (n *HtmlNode) Copy(node HtmlNode) {
+func (n *HtmlNode) Copy(node *HtmlNode) {
 	n.nodeType = node.nodeType
 	n.nodeValue = node.nodeValue
 	n.nodeAttributes = node.nodeAttributes
