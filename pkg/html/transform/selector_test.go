@@ -88,3 +88,19 @@ func TestTagNameWithClass(t *testing.T) {
 	assertTagType(t, sel, "a", "selector TagType not a")
 	assertVal(t, sel, "foo", "selector val not foo")
 }
+
+func TestTagNameWithId(t *testing.T) {
+	selString := "a#foo"
+        sel := newTagNameWithConstraints(selString, 1)
+	assertType(t, sel, ID, "selector type not ID")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+}
+
+func TestTagNameWithPseudo(t *testing.T) {
+	selString := "a:foo"
+        sel := newTagNameWithConstraints(selString, 1)
+	assertType(t, sel, PSEUDO, "selector type not PSEUDO")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+}

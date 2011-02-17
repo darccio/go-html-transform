@@ -89,7 +89,6 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	return selector
 }
 
-// TODO(jwall): feels too big can I break it up?
 func NewSelector(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
 	for _, str := range sel {
@@ -105,20 +104,7 @@ func NewSelector(sel ...string) *SelectorQuery {
 		default: // TAGNAME
 			// TODO(jwall): indexAny use [CLASS,...]
 			if i := s.IndexAny(str, ".:#["); i != -1 {
-				switch str[i] {
-				case CLASS, ID, PSEUDO: // with class or id
-					selector = Selector{
-						TagType: str[0 : i-1],
-						Val:     str[i:],
-					}
-				case ATTR: // with attribute
-					attrs := splitAttrs(str[i+1:])
-					selector = Selector{
-						TagType: str[0 : i-1],
-						Key:     attrs[0],
-						Val:     attrs[1],
-					}
-				}
+				selector = *newTagNameWithConstraints(str, i)
 			} else { // just a tagname
 				selector = *newTagNameSelector(str)
 			}
