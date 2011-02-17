@@ -113,24 +113,7 @@ func NewSelector(str string) *Selector {
 func NewSelectorQuery(sel ...string) *SelectorQuery {
 	q := SelectorQuery{}
 	for _, str := range sel {
-		str = s.TrimSpace(str) // trim whitespace
-		var selector Selector
-		switch str[0] {
-		case CLASS, ID: // Any tagname with class or id
-			selector = *newAnyTagClassOrIdSelector(str)
-		case ANY: // Any tagname
-			selector = *newAnyTagSelector(str)
-		case ATTR: // any tagname with attribute
-			selector = *newAnyTagAttrSelector(str)
-		default: // TAGNAME
-			// TODO(jwall): indexAny use [CLASS,...]
-			if i := s.IndexAny(str, ".:#["); i != -1 {
-				selector = *newTagNameWithConstraints(str, i)
-			} else { // just a tagname
-				selector = *newTagNameSelector(str)
-			}
-		}
-		q.Insert(0, selector)
+		q.Insert(0, *NewSelector(str))
 	}
 	return &q
 }

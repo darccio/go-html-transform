@@ -155,3 +155,4 @@ func TestNewSelector(t *testing.T) {
 	assertVal(t, sel, "foo", "selector val not foo")
 }
 
+// TODO(jwall): tests for NewSelectorQuery
