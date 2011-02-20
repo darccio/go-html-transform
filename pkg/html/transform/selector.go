@@ -8,6 +8,7 @@ package transform
 import (
 	. "html"
 	v "container/vector"
+	"log"
 	s "strings"
 )
 
@@ -111,9 +112,13 @@ func NewSelector(str string) *Selector {
 }
 
 func NewSelectorQuery(sel ...string) *SelectorQuery {
-	q := SelectorQuery{}
+	q := SelectorQuery{Vector: new(v.Vector)}
 	for _, str := range sel {
-		q.Insert(0, *NewSelector(str))
+		selPart := NewSelector(str)
+		if selPart == nil {
+			log.Panic("Invalid Selector in query")
+		}
+		q.Push(selPart)
 	}
 	return &q
 }

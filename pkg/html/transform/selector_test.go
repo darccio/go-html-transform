@@ -156,3 +156,23 @@ func TestNewSelector(t *testing.T) {
 }
 
 // TODO(jwall): tests for NewSelectorQuery
+
+func TestNewSelectorQuery(t *testing.T) {
+	 NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
+	q := NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
+	sel := q.At(0).(*Selector)
+	assertType(t, sel, CLASS, "selector type not CLASS")
+	assertTagType(t, sel, "a", "selector TagType not a")
+	assertVal(t, sel, "foo", "selector val not foo")
+
+	sel = q.At(1).(*Selector)
+	assertType(t, sel, CLASS, "selector type not CLASS")
+	assertTagTypeAny(t, sel)
+	assertVal(t, sel, "bar", "selector val not foo")
+
+	sel = q.At(2).(*Selector)
+	assertType(t, sel, ATTR, "selector type not ATTR")
+	assertTagTypeAny(t, sel)
+	assertKey(t, sel, "id", "selector key not foo")
+	assertVal(t, sel, "foobar", "selector val not bar")
+}
