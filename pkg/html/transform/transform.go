@@ -20,9 +20,10 @@ package transform
 
 import (
 	v "container/vector"
+	. "html"
 )
 
-func Transform(doc *Document, sel *SelectorQuery, f func(*v.Vector) *HtmlNode) {
+func Transform(doc *Document, sel *SelectorQuery, f func(*v.Vector) *Node) {
 	sel.Replace(doc, f(sel.Apply(doc)))
 }
 

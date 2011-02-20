@@ -6,7 +6,7 @@
 package transform
 
 import (
-	//seq "github.com/zot/seq" create our own sequence node sequence
+	. "html"
 	v "container/vector"
 	s "strings"
 )
@@ -118,9 +118,10 @@ func NewSelectorQuery(sel ...string) *SelectorQuery {
 	return &q
 }
 
-func testNode(node *HtmlNode, sel Selector) bool {
+func testNode(node *Node, sel Selector) bool {
+	/*
 	if sel.TagType == "*" {
-		attrs := node.nodeAttributes
+		attrs := node.Attr
 		// TODO(jwall): abstract this out
 		switch sel.Type {
 		case ID:
@@ -161,6 +162,7 @@ func testNode(node *HtmlNode, sel Selector) bool {
 			}
 		}
 	}
+	*/
 	return false
 }
 
@@ -180,10 +182,11 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Applies the selector against the doc and replaces the returned
  Nodes with the passed in n HtmlNode.
 */
-func (sel *SelectorQuery) Replace(doc *Document, n *HtmlNode) {
+func (sel *SelectorQuery) Replace(doc *Document, n *Node) {
 	nv := sel.Apply(doc)
 	for i := 0; i <= nv.Len(); i++ {
-		nv.At(i).(*HtmlNode).Copy(n)
+		// Change to take into account new usage of *Node
+		//nv.At(i).(*Node).Copy(n)
 	}
 	return
 }
