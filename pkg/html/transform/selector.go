@@ -171,34 +171,6 @@ func testNode(node *HtmlNode, sel Selector) bool {
 */
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	interesting := new(v.Vector)
-	// the first one is by definition interesting.
-	interesting.Push(doc.top.children[0])
-	for true {
-		if sel.Len() == 0 { // our end condition
-			break
-		}
-		// Start a queu to track interesting for this iteration
-		q := new(v.Vector)
-		//get our first selector
-		selector := sel.At(0).(Selector)
-		// loop through what is interesting so far
-		for true {
-			if interesting.Len() == 0 { // nothing was interesting
-				break
-			}
-			// get interesting node to test
-			node := interesting.Pop().(*HtmlNode)
-			if testNode(node, selector) {
-				q.AppendVector(&node.children) // ??
-			}
-		}
-		if q.Len() != 0 { // we did find a match
-			interesting = q // set interesting
-			sel.Pop()       // pop first selector off
-		} else { // we didn't find anything so descend
-
-		}
-	}
 	return interesting
 }
 

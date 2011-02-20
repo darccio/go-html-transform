@@ -24,14 +24,41 @@ type HtmlNode struct {
 	nodeType HtmlNodeType
 	nodeValue string
 	nodeAttributes map[string] string
-	children v.Vector
+	children *v.Vector
 }
 
 func (n *HtmlNode) Copy(node *HtmlNode) {
 	n.nodeType = node.nodeType
 	n.nodeValue = node.nodeValue
 	n.nodeAttributes = node.nodeAttributes
-	n.children = node.children
+	n.children = new(v.Vector)
+	for i := 0; i <= node.children.Len(); i++ {
+		child := new(HtmlNode)
+		child.Copy(node.children.At(i).(*HtmlNode))
+		n.children.Push(child)
+	}
+}
+
+func Walk(n *HtmlNode, f func(*HtmlNode)) {
+	f(n)
+	c := n.children
+	if c != nil {
+		for i := 0; i < c.Len(); i++ {
+			c_node := c.At(i).(*HtmlNode)
+			Walk(c_node, f);
+		}
+	}
+}
+
+func (n *HtmlNode) FindAll(f func(*HtmlNode) bool) *v.Vector {
+	results := new(v.Vector)
+	fun := func(node *HtmlNode) {
+		if f(node) {
+			results.Push(node)
+		}
+	}
+	Walk(n, fun)
+	return results
 }
 
 func lazyTokens(t *Tokenizer) <-chan Token {
