@@ -118,41 +118,49 @@ func NewSelectorQuery(sel ...string) *SelectorQuery {
 	return &q
 }
 
+func testAttr(attrs []Attribute, key string, val string) bool {
+	for _, attr := range attrs {
+		if attr.Key == key && attr.Val == val {
+			return true
+		}
+	}
+	return false
+}
+
 func testNode(node *Node, sel Selector) bool {
-	/*
 	if sel.TagType == "*" {
 		attrs := node.Attr
 		// TODO(jwall): abstract this out
 		switch sel.Type {
 		case ID:
-			if attrs["id"] == sel.Val {
+			if testAttr(attrs, "id",  sel.Val) {
 				return true
 			}
 		case CLASS:
-			if attrs["class"] == sel.Val {
+			if testAttr(attrs, "class", sel.Val) {
 				return true
 			}
 		case ATTR:
-			if attrs[sel.Key] == sel.Val {
+			if testAttr(attrs, sel.Key, sel.Val) {
 				return true
 			}
 			//case PSEUDO:
 			//TODO(jwall): implement these
 		}
 	} else {
-		if node.nodeValue == sel.TagType {
-			attrs := node.nodeAttributes
+		if node.Data == sel.TagType {
+			attrs := node.Attr
 			switch sel.Type {
 			case ID:
-				if attrs["id"] == sel.Val {
+				if testAttr(attrs, "id", sel.Val) {
 					return true
 				}
 			case CLASS:
-				if attrs["class"] == sel.Val {
+				if testAttr(attrs, "class", sel.Val) {
 					return true
 				}
 			case ATTR:
-				if attrs[sel.Key] == sel.Val {
+				if testAttr(attrs, sel.Key, sel.Val) {
 					return true
 				}
 			//case PSEUDO:
@@ -162,7 +170,6 @@ func testNode(node *Node, sel Selector) bool {
 			}
 		}
 	}
-	*/
 	return false
 }
 
