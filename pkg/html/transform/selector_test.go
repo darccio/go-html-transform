@@ -21,9 +21,11 @@ func assertTagTypeAny(t *testing.T, sel *Selector) {
 }
 
 func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
-	if sel.Type != typ {
+	if (sel.Type | typ) != typ {
+		result := sel.Type | typ != typ
 		t.Errorf(msg)
-		t.Logf("Type: [%s]", sel.Type)
+		t.Logf("%s MaskResult: [%s], Type: [%s]", result,
+			sel.Type & typ, typ)
 	}
 }
 
