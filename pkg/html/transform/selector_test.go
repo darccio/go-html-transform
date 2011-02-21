@@ -29,8 +29,8 @@ func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
 	}
 }
 
-func assertKey(t *testing.T, sel *Selector, val string, msg string) {
-	if sel.Key != val {
+func assertAttr(t *testing.T, sel *Selector, key string, val string, msg string) {
+	if sel.Attr[key] != val {
 		t.Errorf(msg)
 		t.Logf("Key: [%s]", sel.Val)
 	}
@@ -63,8 +63,7 @@ func TestNewAnyTagAttrSelector(t *testing.T) {
 	sel := newAnyTagAttrSelector(selString)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagTypeAny(t, sel)
-	assertKey(t, sel, "foo", "selector key not foo")
-	assertVal(t, sel, "bar", "selector val not bar")
+	assertAttr(t, sel, "foo", "bar", "selector key not foo")
 }
 
 func TestTagNameSelector(t *testing.T) {
@@ -79,8 +78,7 @@ func TestTagNameWithAttr(t *testing.T) {
         sel := newTagNameWithConstraints(selString, 1)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagType(t, sel, "a", "selector TagType not a")
-	assertKey(t, sel, "foo", "selector key not foo")
-	assertVal(t, sel, "bar", "selector val not bar")
+	assertAttr(t, sel, "foo", "bar", "selector key not foo")
 }
 
 func TestTagNameWithClass(t *testing.T) {
@@ -123,8 +121,7 @@ func TestNewSelector(t *testing.T) {
 	sel = NewSelector(selString)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagTypeAny(t, sel)
-	assertKey(t, sel, "foo", "selector key not foo")
-	assertVal(t, sel, "bar", "selector val not bar")
+	assertAttr(t, sel, "foo", "bar", "selector key not foo")
 
 	selString = "a"
 	sel = NewSelector(selString)
@@ -135,8 +132,7 @@ func TestNewSelector(t *testing.T) {
 	sel = NewSelector(selString)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagType(t, sel, "a", "selector TagType not a")
-	assertKey(t, sel, "foo", "selector key not foo")
-	assertVal(t, sel, "bar", "selector val not bar")
+	assertAttr(t, sel, "foo", "bar", "selector key not foo")
 
 	selString = "a.foo"
 	sel = NewSelector(selString)
@@ -159,8 +155,6 @@ func TestNewSelector(t *testing.T) {
 	// TODO(jwall): support combinators > + \S
 }
 
-// TODO(jwall): tests for NewSelectorQuery
-
 func TestNewSelectorQuery(t *testing.T) {
 	 NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
 	q := NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
@@ -177,6 +171,5 @@ func TestNewSelectorQuery(t *testing.T) {
 	sel = q.At(2).(*Selector)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagTypeAny(t, sel)
-	assertKey(t, sel, "id", "selector key not foo")
-	assertVal(t, sel, "foobar", "selector val not bar")
+	assertAttr(t, sel, "id", "foobar", "selector key not foo")
 }

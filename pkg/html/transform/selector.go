@@ -19,8 +19,8 @@ type SelectorQuery struct {
 type Selector struct {
 	Type    byte // a bitmask of the selector types 
 	TagType string // "*" for any tag otherwise the name of the tag
-	Key     string // TODO(jwall): handle multiple attributes
-	Val     string
+	Val string // the value we are matching against if id class or pseudo
+	Attr map[string]string
 }
 
 const (
@@ -30,6 +30,10 @@ const (
 	PSEUDO  byte = ':'
 	ANY     byte = '*'
 	ATTR    byte = '['
+)
+
+const (
+	SELECTOR_CHARS string = ".:#["
 )
 
 func newAnyTagClassOrIdSelector(str string) *Selector {
@@ -62,8 +66,7 @@ func newAnyTagAttrSelector(str string) *Selector {
 	return &Selector{
 		TagType: "*",
 		Type:    str[0],
-		Key:     attrs[0],
-		Val:     attrs[1],
+		Attr:    map[string]string{attrs[0]: attrs[1]},
 	}
 }
 
@@ -104,7 +107,7 @@ func NewSelector(str string) *Selector {
 		selector = newAnyTagAttrSelector(str)
 	default: // TAGNAME
 		// TODO(jwall): indexAny use [CLASS,...]
-		if i := s.IndexAny(str, ".:#["); i != -1 {
+		if i := s.IndexAny(str, SELECTOR_CHARS); i != -1 {
 			selector = newTagNameWithConstraints(str, i)
 		} else { // just a tagname
 			selector = newTagNameSelector(str)
@@ -123,6 +126,14 @@ func NewSelectorQuery(sel ...string) *SelectorQuery {
 		q.Push(selPart)
 	}
 	return &q
+}
+
+func testSelectorAttrs(attrs []Attribute, sel *Selector) bool {
+	result := false
+	for key, val := range sel.Attr {
+		result = result || testAttr(attrs, key, val)
+	}
+	return result
 }
 
 func testAttr(attrs []Attribute, key string, val string) bool {
@@ -148,7 +159,7 @@ func testNode(node *Node, sel Selector) bool {
 				return true
 			}
 		case ATTR:
-			if testAttr(attrs, sel.Key, sel.Val) {
+			if testSelectorAttrs(attrs, &sel) {
 				return true
 			}
 			//case PSEUDO:
@@ -167,7 +178,7 @@ func testNode(node *Node, sel Selector) bool {
 					return true
 				}
 			case ATTR:
-				if testAttr(attrs, sel.Key, sel.Val) {
+				if testSelectorAttrs(attrs, &sel) {
 					return true
 				}
 			//case PSEUDO:
