@@ -22,7 +22,7 @@ type SelectorPart struct {
 }
 
 type Selector struct {
-	TagType string // "*" for any tag otherwise the name of the tag
+	TagName string // "*" for any tag otherwise the name of the tag
 	Parts []SelectorPart
 	Attr map[string]string
 }
@@ -47,13 +47,13 @@ func newAnyTagClassOrIdSelector(str string) *Selector {
 			Type: str[0],
 			Val:     str[1:],
 		}},
-	TagType: "*",
+	TagName: "*",
 	}
 }
 
 func newAnyTagSelector(str string) *Selector {
 	return &Selector{
-		TagType: "*",
+		TagName: "*",
 	}
 }
 
@@ -70,14 +70,14 @@ func splitAttrs(str string) []string {
 func newAnyTagAttrSelector(str string) *Selector {
 	attrs := splitAttrs(str)
 	return &Selector{
-		TagType: "*",
+		TagName: "*",
 		Attr:    map[string]string{attrs[0]: attrs[1]},
 	}
 }
 
 func newTagNameSelector(str string) *Selector {
 	return &Selector{
-		TagType: str,
+		TagName: str,
 	}
 }
 
@@ -92,7 +92,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	default:
 		panic("Invalid constraint type for the tagname selector")
 	}
-	selector.TagType = str[0:i]
+	selector.TagName = str[0:i]
 	//selector.Type = TAGNAME
 	return selector
 }
@@ -153,7 +153,7 @@ func testAttr(attrs []Attribute, key string, val string) bool {
 
 func testNode(node *Node, sel Selector) bool {
 	/*
-	if sel.TagType == "*" {
+	if sel.TagName == "*" {
 		attrs := node.Attr
 		// TODO(jwall): abstract this out
 		switch sel.Type {
@@ -173,7 +173,7 @@ func testNode(node *Node, sel Selector) bool {
 			//TODO(jwall): implement these
 		}
 	} else {
-		if node.Data == sel.TagType {
+		if node.Data == sel.TagName {
 			attrs := node.Attr
 			switch sel.Type {
 			case ID:
