@@ -20,6 +20,18 @@ func assertTagNameAny(t *testing.T, sel *Selector) {
 	assertTagName(t, sel, "*", "selector tagType not ANY")
 }
 
+func assertClass(t *testing.T, sel *Selector, class string) {
+	ok := false
+	for _, part := range sel.Parts {
+		if part.Type == CLASS && part.Val == class {
+			ok = true
+		}
+	}
+	if !ok {
+		t.Errorf("Selector has no class constraint %s", class)
+	}
+}
+
 func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
 	var mask byte = 0
 	for _, part := range sel.Parts {
@@ -166,6 +178,13 @@ func TestNewSelector(t *testing.T) {
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
 
+}
+
+func TestNewSelectorMultipleConstraints(t *testing.T) {
+	selStr := "a.foo.bar"
+	sel := NewSelector(selStr)
+	assertClass(t, sel, "foo")
+	assertClass(t, sel, "bar")
 }
 
 func TestNewSelectorQuery(t *testing.T) {
