@@ -99,6 +99,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
+	// TODO(jwall): support combinators > + \S
 	// TODO(jwall): split on one of ".:#["
 	var selector *Selector
 	switch str[0] {
@@ -155,7 +156,6 @@ func testNode(node *Node, sel Selector) bool {
 	/*
 	if sel.TagName == "*" {
 		attrs := node.Attr
-		// TODO(jwall): abstract this out
 		switch sel.Type {
 		case ID:
 			if testAttr(attrs, "id",  sel.Val) {
