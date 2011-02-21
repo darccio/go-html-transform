@@ -17,9 +17,9 @@ type SelectorQuery struct {
 }
 
 type Selector struct {
-	Type    byte
-	TagType string
-	Key     string
+	Type    byte // a bitmask of the selector types 
+	TagType string // "*" for any tag otherwise the name of the tag
+	Key     string // TODO(jwall): handle multiple attributes
 	Val     string
 }
 
@@ -92,6 +92,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
+	// TODO(jwall): split on one of ".:#["
 	var selector *Selector
 	switch str[0] {
 	case CLASS, ID: // Any tagname with class or id
@@ -99,6 +100,7 @@ func NewSelector(str string) *Selector {
 	case ANY: // Any tagname
 		selector = newAnyTagSelector(str)
 	case ATTR: // any tagname with attribute
+		// TODO(jwall): expanded attribute selectors
 		selector = newAnyTagAttrSelector(str)
 	default: // TAGNAME
 		// TODO(jwall): indexAny use [CLASS,...]

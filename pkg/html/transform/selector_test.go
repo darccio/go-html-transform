@@ -153,6 +153,8 @@ func TestNewSelector(t *testing.T) {
 	assertType(t, sel, PSEUDO, "selector type not PSEUDO")
 	assertTagType(t, sel, "a", "selector TagType not a")
 	assertVal(t, sel, "foo", "selector val not foo")
+
+	// TODO(jwall): support combinators > + \S
 }
 
 // TODO(jwall): tests for NewSelectorQuery
