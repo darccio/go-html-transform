@@ -210,3 +210,21 @@ func TestPartition(t *testing.T) {
 		}
 	}
 }
+
+func TestPartitionInitialChar(t *testing.T) {
+	testStr := ".foo"
+	parted := Partition(testStr, func(c int) bool {
+		if c == '.' {
+			return true
+		}
+		return false
+	})
+	if len(parted) != 1 {
+		t.Errorf("Partition count is not 1 but %d", len(parted))
+		t.Logf("Parted: %s", parted)
+	} else {
+		if parted[0] != ".foo" {
+			t.Errorf("First partion is not foo")
+		}
+	}
+}
