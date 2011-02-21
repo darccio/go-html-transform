@@ -21,25 +21,30 @@ func assertTagTypeAny(t *testing.T, sel *Selector) {
 }
 
 func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
-	if (sel.Type | typ) != typ {
-		result := sel.Type | typ != typ
+	var mask byte = 0
+	for _, part := range sel.Parts {
+		mask = mask & part.Type
+	}
+	if (mask | typ) != typ {
 		t.Errorf(msg)
-		t.Logf("%s MaskResult: [%s], Type: [%s]", result,
-			sel.Type & typ, typ)
+		t.Logf("MaskResult: [%s], Type: [%s]",
+			mask & typ, typ)
 	}
 }
 
 func assertAttr(t *testing.T, sel *Selector, key string, val string, msg string) {
 	if sel.Attr[key] != val {
 		t.Errorf(msg)
-		t.Logf("Key: [%s]", sel.Val)
+		t.Logf("Key: [%s]", sel.Attr[key])
 	}
 }
 
 func assertVal(t *testing.T, sel *Selector, val string, msg string) {
-	if sel.Val != val {
-		t.Errorf(msg)
-		t.Logf("Val: [%s]", sel.Val)
+	for _, part := range sel.Parts {
+		if part.Val != val {
+			t.Errorf(msg)
+			t.Logf("Val: [%s]", part.Val)
+		}
 	}
 }
 

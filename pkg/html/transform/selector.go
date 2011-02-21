@@ -16,10 +16,14 @@ type SelectorQuery struct {
 	*v.Vector
 }
 
-type Selector struct {
+type SelectorPart struct {
 	Type    byte // a bitmask of the selector types 
+	Val     string // the value we are matching against
+}
+
+type Selector struct {
 	TagType string // "*" for any tag otherwise the name of the tag
-	Val string // the value we are matching against if id class or pseudo
+	Parts []SelectorPart
 	Attr map[string]string
 }
 
@@ -38,15 +42,17 @@ const (
 
 func newAnyTagClassOrIdSelector(str string) *Selector {
 	return &Selector{
-		Type:    str[0],
-		TagType: "*",
-		Val:     str[1:],
+	Parts:    []SelectorPart{
+			SelectorPart{
+			Type: str[0],
+			Val:     str[1:],
+		}},
+	TagType: "*",
 	}
 }
 
 func newAnyTagSelector(str string) *Selector {
 	return &Selector{
-		Type:    str[0],
 		TagType: "*",
 	}
 }
@@ -65,14 +71,12 @@ func newAnyTagAttrSelector(str string) *Selector {
 	attrs := splitAttrs(str)
 	return &Selector{
 		TagType: "*",
-		Type:    str[0],
 		Attr:    map[string]string{attrs[0]: attrs[1]},
 	}
 }
 
 func newTagNameSelector(str string) *Selector {
 	return &Selector{
-		Type:    TAGNAME,
 		TagType: str,
 	}
 }
@@ -148,6 +152,7 @@ func testAttr(attrs []Attribute, key string, val string) bool {
 }
 
 func testNode(node *Node, sel Selector) bool {
+	/*
 	if sel.TagType == "*" {
 		attrs := node.Attr
 		// TODO(jwall): abstract this out
@@ -190,6 +195,7 @@ func testNode(node *Node, sel Selector) bool {
 			}
 		}
 	}
+	*/
 	return false
 }
 
