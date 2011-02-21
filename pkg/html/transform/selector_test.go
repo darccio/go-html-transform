@@ -71,6 +71,15 @@ func TestNewAnyTagAttrSelector(t *testing.T) {
 	assertAttr(t, sel, "foo", "bar", "selector key not foo")
 }
 
+func TestNewAnyTagMultipleAttrSelector(t *testing.T) {
+	selString := "[foo=bar][baz=boo]"
+	sel := newAnyTagAttrSelector(selString)
+	assertType(t, sel, ATTR, "selector type not ATTR")
+	assertTagNameAny(t, sel)
+	assertAttr(t, sel, "foo", "bar", "selector attr foo not bar")
+	assertAttr(t, sel, "baz", "boo", "selector baz not boo")
+}
+
 func TestTagNameSelector(t *testing.T) {
 	selString := "a"
 	sel := newTagNameSelector(selString)
@@ -157,7 +166,6 @@ func TestNewSelector(t *testing.T) {
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
 
-	// TODO(jwall): support combinators > + \S
 }
 
 func TestNewSelectorQuery(t *testing.T) {
