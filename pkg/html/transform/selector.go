@@ -138,6 +138,8 @@ func testSelectorAttrs(attrs []Attribute, sel *Selector) bool {
 
 func testAttr(attrs []Attribute, key string, val string) bool {
 	for _, attr := range attrs {
+		// TODO(jwall): we need to handle the multiple match types
+		// [att] [att=val] [att~=val] [att|=val]?
 		if attr.Key == key && attr.Val == val {
 			return true
 		}
