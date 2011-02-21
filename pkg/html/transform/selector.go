@@ -119,11 +119,35 @@ func Partition(s string, f func(c int) bool) []string {
 	return parts
 }
 
+func MergeSelectors(sel1 *Selector, sel2 *Selector) {
+	if sel2.TagName != "" && sel2.TagName != "*" {
+		if sel1.TagName == "" || sel1.TagName == "*" {
+			sel1.TagName = sel2.TagName
+		} else {
+			log.Panicf("Can't merge multiple tagnames in" +
+				" selectors: First [%s] Second [%s]",
+				sel1.TagName, sel2.TagName)
+		}
+	}
+	if sel1.Parts == nil {
+		sel1.Parts = make([]SelectorPart, 0)
+	}
+	newParts := make([]SelectorPart, len(sel1.Parts) + len(sel2.Parts))
+	copy(newParts, sel1.Parts)
+	copy(newParts[len(sel1.Parts):], sel2.Parts)
+	sel1.Parts = newParts
+	if sel1.Attr == nil {
+		sel1.Attr = make(map[string]string)
+	}
+	for key, val := range sel2.Attr {
+		sel1.Attr[key] = val
+	}
+}
+
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
 	// TODO(jwall): support combinators > + \S
 	// TODO(jwall): splitAfter one of ".:#["
-	/*
 	parts := Partition(str, func(c int) bool {
 		for _, c2 := range SELECTOR_CHARS {
 			if c == c2 {
@@ -132,25 +156,29 @@ func NewSelector(str string) *Selector {
 		}
 		return false
 	})
-	*/
-	var selector *Selector
-	switch str[0] {
-	case CLASS, ID: // Any tagname with class or id
-		selector = newAnyTagClassOrIdSelector(str)
-	case ANY: // Any tagname
-		selector = newAnyTagSelector(str)
-	case ATTR: // any tagname with attribute
-		// TODO(jwall): expanded attribute selectors
-		selector = newAnyTagAttrSelector(str)
-	default: // TAGNAME
-		// TODO(jwall): indexAny use [CLASS,...]
-		if i := s.IndexAny(str, SELECTOR_CHARS); i != -1 {
-			selector = newTagNameWithConstraints(str, i)
-		} else { // just a tagname
-			selector = newTagNameSelector(str)
+	result := new(Selector)
+	result.TagName = "*"
+	for _, p := range parts {
+		selector := new(Selector)
+		switch p[0] {
+		case CLASS, ID: // Any tagname with class or id
+			selector = newAnyTagClassOrIdSelector(p)
+		case ANY: // Any tagname
+			selector = newAnyTagSelector(p)
+		case ATTR: // any tagname with attribute
+			// TODO(jwall): expanded attribute selectors
+			selector = newAnyTagAttrSelector(p)
+		default: // TAGNAME
+			// TODO(jwall): indexAny use [CLASS,...]
+			if i := s.IndexAny(p, SELECTOR_CHARS); i != -1 {
+				selector = newTagNameWithConstraints(p, i)
+			} else { // just a tagname
+				selector = newTagNameSelector(p)
+			}
 		}
+		MergeSelectors(result, selector)
 	}
-	return selector
+	return result
 }
 
 func NewSelectorQuery(sel ...string) *SelectorQuery {

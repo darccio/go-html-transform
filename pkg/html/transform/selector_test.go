@@ -177,7 +177,56 @@ func TestNewSelector(t *testing.T) {
 	assertType(t, sel, PSEUDO, "selector type not PSEUDO")
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
+}
 
+func TestMergeSelectorsBaseCase(t *testing.T) {
+	sel1 := NewSelector(".foo")
+	sel2 := NewSelector("a")
+	sel3 := NewSelector("[foo=bar]")
+
+	MergeSelectors(sel1, sel2)
+	MergeSelectors(sel1, sel3)
+
+	assertType(t, sel1, TAGNAME, "selector type not TAGNAME")
+	assertTagName(t, sel1, "a", "selector TagName not a")
+	assertClass(t, sel1, "foo")
+	assertAttr(t, sel1, "foo", "bar", "selector key not foo")
+}
+
+func TestMergeSelectorsMultipleParts(t *testing.T) {
+	sel1 := NewSelector(".foo")
+	sel2 := NewSelector(".bar")
+	sel3 := NewSelector("[foo=bar]")
+
+	MergeSelectors(sel1, sel2)
+	MergeSelectors(sel1, sel3)
+
+	assertClass(t, sel1, "foo")
+	assertClass(t, sel1, "bar")
+}
+
+func TestMergeSelectorsEmptySelectors(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil{
+			t.Error("Merging two Empty Selectors failed %s", err)
+		}
+	}()
+	sel1 := new(Selector)
+	sel2 := new(Selector)
+
+	MergeSelectors(sel1, sel2)
+}
+
+func TestMergeSelectorsTwoTagNames(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil{
+			t.Error("Merging two Selectors with tagnames did not fail")
+		}
+	}()
+	sel1 := NewSelector("hr")
+	sel2 := NewSelector("a")
+
+	MergeSelectors(sel1, sel2)
 }
 
 func TestNewSelectorMultipleConstraints(t *testing.T) {
