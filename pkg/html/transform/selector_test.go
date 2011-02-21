@@ -257,14 +257,14 @@ func TestNewSelectorQuery(t *testing.T) {
 
 func TestPartition(t *testing.T) {
 	testStr := "foo.bar,baz.blah"
-	parted := Partition(testStr, func(c int) bool {
+	parted := partition(testStr, func(c int) bool {
 		if c == '.' {
 			return true
 		}
 		return false
 	})
 	if len(parted) != 3 {
-		t.Errorf("Partition count is not 3 but %d", len(parted))
+		t.Errorf("partition count is not 3 but %d", len(parted))
 		t.Logf("Parted: %s", parted)
 	} else {
 		if parted[0] != "foo" {
@@ -281,14 +281,14 @@ func TestPartition(t *testing.T) {
 
 func TestPartitionInitialChar(t *testing.T) {
 	testStr := ".foo"
-	parted := Partition(testStr, func(c int) bool {
+	parted := partition(testStr, func(c int) bool {
 		if c == '.' {
 			return true
 		}
 		return false
 	})
 	if len(parted) != 1 {
-		t.Errorf("Partition count is not 1 but %d", len(parted))
+		t.Errorf("partition count is not 1 but %d", len(parted))
 		t.Logf("Parted: %s", parted)
 	} else {
 		if parted[0] != ".foo" {

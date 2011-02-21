@@ -102,7 +102,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	return selector
 }
 
-func Partition(s string, f func(c int) bool) []string {
+func partition(s string, f func(c int) bool) []string {
 	// TODO(jwall): make this more efficient
 	parts := []string{}
 	start := 0
@@ -148,7 +148,7 @@ func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
 	// TODO(jwall): support combinators > + \S
 	// TODO(jwall): splitAfter one of ".:#["
-	parts := Partition(str, func(c int) bool {
+	parts := partition(str, func(c int) bool {
 		for _, c2 := range SELECTOR_CHARS {
 			if c == c2 {
 				return true
