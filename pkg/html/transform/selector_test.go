@@ -186,3 +186,27 @@ func TestNewSelectorQuery(t *testing.T) {
 	assertTagNameAny(t, sel)
 	assertAttr(t, sel, "id", "foobar", "selector key not foo")
 }
+
+func TestPartition(t *testing.T) {
+	testStr := "foo.bar,baz.blah"
+	parted := Partition(testStr, func(c int) bool {
+		if c == '.' {
+			return true
+		}
+		return false
+	})
+	if len(parted) != 3 {
+		t.Errorf("Partition count is not 3 but %d", len(parted))
+		t.Logf("Parted: %s", parted)
+	} else {
+		if parted[0] != "foo" {
+			t.Errorf("First partion is not foo")
+		}
+		if parted[1] != ".bar,baz" {
+			t.Errorf("second partion is not bar,baz")
+		}
+		if parted[2] != ".blah" {
+			t.Errorf("third partion is not blah")
+		}
+	}
+}
