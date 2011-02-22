@@ -9,11 +9,57 @@ import (
 	v "container/vector"
 	. "html"
 	l "log"
+	"os"
 	"strings"
 )
 
 type Document struct {
 	top *Node
+}
+
+func tokenToNode(tok *Token) *Node {
+	node := new(Node)
+	node.Data = tok.Data
+	switch tok.Type {
+		case TextToken:
+			node.Type = TextNode
+		case SelfClosingTagToken, StartTagToken:
+			node.Type = ElementNode
+	}
+	return node
+}
+
+func parseHtml(s string) (top *Node, err os.Error) {
+	r := strings.NewReader(s)
+	z := NewTokenizer(r)
+	top = new(Node)
+	q := new(v.Vector)
+	q.Push(top)
+	for {
+		tt := z.Next()
+		if tt == ErrorToken {
+			if z.Error() != os.EOF { // some sort of error
+				err = z.Error()
+			} else {
+				break // done parsing since end of file
+			}
+		} else {
+			tok := z.Token()
+			p := q.Last().(*Node)
+			switch tok.Type {
+				case TextToken, SelfClosingTagToken, StartTagToken:
+					newChild := make([]*Node, len(p.Child)+1)
+					copy(newChild[0:len(p.Child)], p.Child)
+					p.Child = newChild
+					node := tokenToNode(&tok)
+				  newChild[len(newChild)-1] = node
+					q.Push(node)
+				case EndTagToken:
+					q.Pop()
+			}
+		}
+	}
+	return top, err
 }
 
 func NewDoc(s string) *Document {
