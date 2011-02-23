@@ -65,6 +65,7 @@ func TestParseHtml(t *testing.T) {
 	if node == nil {
 		t.Error("Node was nil")
 	}
+	assertEqual(t, node.Type, DocumentNode)
 	assertEqual(t, node.Child[0].Data, "a")
 	assertEqual(t, len(node.Child), 1)
 	assertEqual(t, node.Child[0].Type, ElementNode)
@@ -74,15 +75,13 @@ func TestParseHtml(t *testing.T) {
 }
 
 func TestNewDoc(t *testing.T) {
-	/*
 	docStr := "<a>foo</a>"
 	doc := NewDoc(docStr)
-	assertNotNil(t, doc)
-	assertNotNil(t, doc.top)
-	assertEqual(t, len(doc.top.Child), 1)
-	t.Logf("Doc[0]: %s", doc.top.Child[0])
-	assertEqual(t, len(doc.top.Child[0].Data), "html")
-	assertEqual(t, len(doc.top.Child[0].Child), 2)
-	assertNotNil(t, doc.top.Child[0].Child[0].Child[0])
-	*/
+	node := doc.top
+	assertEqual(t, node.Child[0].Data, "a")
+	assertEqual(t, len(node.Child), 1)
+	assertEqual(t, node.Child[0].Type, ElementNode)
+	assertEqual(t, node.Child[0].Child[0].Data, "foo")
+	assertEqual(t, len(node.Child[0].Child), 1)
+	assertEqual(t, node.Child[0].Child[0].Type, TextNode)
 }

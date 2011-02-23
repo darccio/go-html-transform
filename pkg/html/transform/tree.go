@@ -33,6 +33,7 @@ func parseHtml(s string) (top *Node, err os.Error) {
 	r := strings.NewReader(s)
 	z := NewTokenizer(r)
 	top = new(Node)
+	top.Type = DocumentNode
 	q := new(v.Vector)
 	q.Push(top)
 	for {
@@ -63,7 +64,7 @@ func parseHtml(s string) (top *Node, err os.Error) {
 }
 
 func NewDoc(s string) *Document {
-	n, err := Parse(strings.NewReader(s))
+	n, err := parseHtml(s)
 	if err != nil {
 		l.Panicf("Failure parsing html \n %s", s)
 	}
