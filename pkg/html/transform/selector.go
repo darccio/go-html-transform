@@ -40,7 +40,7 @@ const (
 	SELECTOR_CHARS string = ".:#["
 )
 
-func (part SelectorPart) Match(node *Node) bool {
+func (part SelectorPart) match(node *Node) bool {
 	return false
 }
 
@@ -63,6 +63,7 @@ func (sel *Selector) Match(node *Node) bool {
 			attribResult = attribResult && exists && matched
 		}
 	}
+	// TODO(jwall): hook in the whole part matching
 	return tagNameResult && attribResult
 }
 
