@@ -60,7 +60,7 @@ func TestParseHtml(t *testing.T) {
 			t.Errorf("TestParseHtml paniced: %s", err)
 		}
 	}()
-	docStr := "<a>foo</a>"
+	docStr := "<a href=\"bar\">foo</a>"
 	node, _ := parseHtml(docStr)
 	if node == nil {
 		t.Error("Node was nil")
@@ -68,6 +68,9 @@ func TestParseHtml(t *testing.T) {
 	assertEqual(t, node.Type, DocumentNode)
 	assertEqual(t, node.Child[0].Data, "a")
 	assertEqual(t, len(node.Child), 1)
+	assertEqual(t, len(node.Child[0].Attr), 1)
+	assertEqual(t, node.Child[0].Attr[0].Key, "href")
+	assertEqual(t, node.Child[0].Attr[0].Val, "bar")
 	assertEqual(t, node.Child[0].Type, ElementNode)
 	assertEqual(t, node.Child[0].Child[0].Data, "foo")
 	assertEqual(t, len(node.Child[0].Child), 1)

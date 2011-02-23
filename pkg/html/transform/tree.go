@@ -26,6 +26,7 @@ func tokenToNode(tok *Token) *Node {
 		case SelfClosingTagToken, StartTagToken:
 			node.Type = ElementNode
 	}
+	node.Attr = tok.Attr
 	return node
 }
 
