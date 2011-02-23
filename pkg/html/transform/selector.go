@@ -45,10 +45,25 @@ func (part SelectorPart) Match(node *Node) bool {
 }
 
 func (sel *Selector) Match(node *Node) bool {
-	if sel.TagName == node.Data {
-		return true
+	tagNameResult := true
+	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data {
+		tagNameResult = tagNameResult && false
 	}
-	return false
+	attribResult := true
+	for key, val := range sel.Attr {
+		exists := false
+		matched := false
+		for _, attr := range node.Attr {
+			if key == attr.Key {
+				exists = true
+				if val == attr.Val {
+					matched = true	
+				}
+			}
+			attribResult = attribResult && exists && matched
+		}
+	}
+	return tagNameResult && attribResult
 }
 
 func newAnyTagClassOrIdSelector(str string) *Selector {

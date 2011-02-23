@@ -71,13 +71,23 @@ func TestSelectorTagNameMatch(t *testing.T) {
 	}
 }
 
-func TestSelectorAttribMatch(t *testing.T) {
+func TestSelectorSingleAttribMatch(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\"></a>")
 	node := doc.top.Child[0]
 	sel := NewSelector("[href=foo/bar]")
 	if !sel.Match(node) {
-		t.Errorf("Node did not match. node: %s",
-			node)
+		t.Errorf("Node did not match. node: %s sel: %s",
+			node, sel)
+	}
+}
+
+func TestSelectorMultiAttribMatch(t *testing.T) {
+	doc := NewDoc("<a href=\"foo/bar\"></a>")
+	node := doc.top.Child[0]
+	sel := NewSelector("[href=foo/bar][size=1]")
+	if sel.Match(node) {
+		t.Errorf("Node matched incorrectly. node: %s sel: %s",
+			node, sel)
 	}
 }
 
