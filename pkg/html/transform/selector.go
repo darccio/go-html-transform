@@ -40,6 +40,17 @@ const (
 	SELECTOR_CHARS string = ".:#["
 )
 
+func (part SelectorPart) Match(node *Node) bool {
+	return false
+}
+
+func (sel *Selector) Match(node *Node) bool {
+	if sel.TagName == node.Data {
+		return true
+	}
+	return false
+}
+
 func newAnyTagClassOrIdSelector(str string) *Selector {
 	return &Selector{
 	Parts:    []SelectorPart{

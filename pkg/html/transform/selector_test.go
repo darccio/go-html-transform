@@ -60,6 +60,27 @@ func assertVal(t *testing.T, sel *Selector, val string, msg string) {
 	}
 }
 
+func TestSelectorTagNameMatch(t *testing.T) {
+	doc := NewDoc("<a></a>")
+	node := doc.top.Child[0]
+	sel := NewSelector("a")
+	if !sel.Match(node) {
+		t.Logf("node tree: %s", node)
+		t.Errorf("Node did not match. nodes name: %s",
+			node.Data)
+	}
+}
+
+func TestSelectorAttribMatch(t *testing.T) {
+	doc := NewDoc("<a href=\"foo/bar\"></a>")
+	node := doc.top.Child[0]
+	sel := NewSelector("[href=foo/bar]")
+	if !sel.Match(node) {
+		t.Errorf("Node did not match. node: %s",
+			node)
+	}
+}
+
 func TestNewAnyTagClassSelector(t *testing.T) {
 	selString := ".foo"
 	sel := newAnyTagClassOrIdSelector(selString)
