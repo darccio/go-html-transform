@@ -53,15 +53,18 @@ func (sel *Selector) Match(node *Node) bool {
 	for key, val := range sel.Attr {
 		exists := false
 		matched := false
+		//log.Printf("node attributes: %s", node.Attr)
 		for _, attr := range node.Attr {
 			if key == attr.Key {
 				exists = true
 				if val == attr.Val {
 					matched = true	
 				}
+				log.Printf("Key: %s exists: %s matched %s", key, exists, matched)
+				attribResult = attribResult && exists && matched
 			}
-			attribResult = attribResult && exists && matched
 		}
+		attribResult = attribResult && exists
 	}
 	// TODO(jwall): hook in the whole part matching
 	return tagNameResult && attribResult
