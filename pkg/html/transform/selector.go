@@ -81,7 +81,11 @@ func (sel *Selector) Match(node *Node) bool {
 	}
 	attribResult := matchAttrib(node.Attr, sel.Attr)
 	// TODO(jwall): hook in the whole part matching
-	return tagNameResult && attribResult
+	partsResult := true
+	for _, part := range sel.Parts {
+		partsResult = partsResult && part.match(node)
+	}
+	return partsResult && tagNameResult && attribResult
 }
 
 func newAnyTagClassOrIdSelector(str string) *Selector {
