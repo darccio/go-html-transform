@@ -122,12 +122,12 @@ func TestSelectorMultiAttribWithTagNameMatchSucceed(t *testing.T) {
 	}
 }
 
-func TestSelectorPartMatchClass(t *testing.T) {
+func TestSelectorPartMatchClassSucceed(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	node := doc.top.Child[0]
   sel := NewSelector(".foo")
 	if !sel.Parts[0].match(node) {
-		
+		t.Error("Class selector did not match")
 	}
 }
 

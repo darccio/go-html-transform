@@ -40,20 +40,12 @@ const (
 	SELECTOR_CHARS string = ".:#["
 )
 
-func (part SelectorPart) match(node *Node) bool {
-	return false
-}
-
-func (sel *Selector) Match(node *Node) bool {
-	tagNameResult := true
-	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data {
-		tagNameResult = tagNameResult && false
-	}
+func matchAttrib(nodeAttr []Attribute, matchAttr map[string]string) bool {
 	attribResult := true
-	for key, val := range sel.Attr {
+	for key, val := range matchAttr {
 		exists := false
 		matched := false
-		for _, attr := range node.Attr {
+		for _, attr := range nodeAttr {
 			if key == attr.Key {
 				exists = true
 				if val == attr.Val {
@@ -64,6 +56,27 @@ func (sel *Selector) Match(node *Node) bool {
 		}
 		attribResult = attribResult && exists
 	}
+	return attribResult
+}
+
+func (part SelectorPart) match(node *Node) bool {
+	switch part.Type {
+		case CLASS:
+			classAttr := make(map[string]string)
+			classAttr["class"] = part.Val
+			return matchAttrib(node.Attr, classAttr) 
+		case ID:
+		case PSEUDO:
+	}
+	return false
+}
+
+func (sel *Selector) Match(node *Node) bool {
+	tagNameResult := true
+	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data {
+		tagNameResult = tagNameResult && false
+	}
+	attribResult := matchAttrib(node.Attr, sel.Attr)
 	// TODO(jwall): hook in the whole part matching
 	return tagNameResult && attribResult
 }
