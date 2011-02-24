@@ -60,7 +60,7 @@ func assertVal(t *testing.T, sel *Selector, val string, msg string) {
 	}
 }
 
-func TestSelectorTagNameMatch(t *testing.T) {
+func TestSelectorTagNameMatchSucceed(t *testing.T) {
 	doc := NewDoc("<a></a>")
 	node := doc.top.Child[0]
 	sel := NewSelector("a")
@@ -71,7 +71,18 @@ func TestSelectorTagNameMatch(t *testing.T) {
 	}
 }
 
-func TestSelectorSingleAttribMatch(t *testing.T) {
+func TestSelectorTagNameFail(t *testing.T) {
+	doc := NewDoc("<a></a>")
+	node := doc.top.Child[0]
+	sel := NewSelector("hr")
+	if sel.Match(node) {
+		t.Logf("node tree: %s", node)
+		t.Errorf("Node did not match. nodes name: %s",
+			node.Data)
+	}
+}
+
+func TestSelectorSingleAttribMatchSucceed(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\"></a>")
 	node := doc.top.Child[0]
 	sel := NewSelector("[href=foo/bar]")
@@ -92,13 +103,25 @@ func TestSelectorMultiAttribMatchFail(t *testing.T) {
 }
 
 func TestSelectorMultiAttribMatchSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" size=1></a>")
+	doc := NewDoc("<a href=\"foo/bar\" size=\"1\"></a>")
 	node := doc.top.Child[0]
 	sel := NewSelector("[href=foo/bar][size=1]")
-	if sel.Match(node) {
-		t.Errorf("Node matched incorrectly. node: %s sel: %s",
+	if !sel.Match(node) {
+		t.Errorf("Node did not match. node: %s sel: %s",
 			node, sel)
 	}
+}
+
+func TestSelectorPartMatchClass(t *testing.T) {
+	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
+	node := doc.top.Child[0]
+  sel := NewSelector(".foo")
+	if !sel.Parts[0].match(node) {
+		
+	}
+}
+
+func TestSelectorMatchClass(t *testing.T) {
 }
 
 func TestNewAnyTagClassSelector(t *testing.T) {
