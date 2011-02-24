@@ -112,6 +112,16 @@ func TestSelectorMultiAttribMatchSucceed(t *testing.T) {
 	}
 }
 
+func TestSelectorMultiAttribWithTagNameMatchSucceed(t *testing.T) {
+	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
+	node := doc.top.Child[0]
+	sel := NewSelector("a[href=foo/bar][class=foo]")
+	if !sel.Match(node) {
+		t.Errorf("Node did not match. node: %s sel: %s",
+			node, sel)
+	}
+}
+
 func TestSelectorPartMatchClass(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	node := doc.top.Child[0]
