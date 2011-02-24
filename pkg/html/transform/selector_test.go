@@ -131,6 +131,15 @@ func TestSelectorPartMatchClassSucceed(t *testing.T) {
 	}
 }
 
+func TestSelectorPartMatchIdSucceed(t *testing.T) {
+	doc := NewDoc("<a href=\"foo/bar\" id=\"foo\"></a>")
+	node := doc.top.Child[0]
+  sel := NewSelector("#foo")
+	if !sel.Parts[0].match(node) {
+		t.Error("id selector did not match")
+	}
+}
+
 func TestSelectorMatchClass(t *testing.T) {
 }
 

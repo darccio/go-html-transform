@@ -66,6 +66,9 @@ func (part SelectorPart) match(node *Node) bool {
 			classAttr["class"] = part.Val
 			return matchAttrib(node.Attr, classAttr) 
 		case ID:
+			idAttr := make(map[string]string)
+			idAttr["id"] = part.Val
+			return matchAttrib(node.Attr, idAttr)
 		case PSEUDO:
 	}
 	return false
