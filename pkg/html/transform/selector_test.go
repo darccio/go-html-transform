@@ -409,9 +409,27 @@ func TestSelectorQueryApply(t *testing.T) {
 	doc := NewDoc(docStr)
 	//                      html     body     div
 	expectedNode := doc.top.Child[0].Child[1].Child[0]
-	assertNotNil(t, expectedNode)
 	selQuery := NewSelectorQuery("div#content")
 	nodes := selQuery.Apply(doc)
 	assertEqual(t, nodes.Len(), 1)
 	assertEqual(t, nodes.At(0).(*Node), expectedNode)
+}
+
+func TestSelectorQueryApplyMulti(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil{
+			t.Error("Selector Query application failed %s", err)
+		}
+	}()
+	docStr := "<html><head /><body><div class=\"content\">foo</div>" +
+		"<div class=\"content\">bar</div></body></html>"
+	doc := NewDoc(docStr)
+	//                       html     body     div
+	expectedNode1 := doc.top.Child[0].Child[1].Child[0]
+	expectedNode2 := doc.top.Child[0].Child[1].Child[1]
+	selQuery := NewSelectorQuery("div.content")
+	nodes := selQuery.Apply(doc)
+	assertEqual(t, nodes.Len(), 2)
+	assertEqual(t, nodes.At(0).(*Node), expectedNode1)
+	assertEqual(t, nodes.At(1).(*Node), expectedNode2)
 }
