@@ -83,6 +83,7 @@ func TestNewDoc(t *testing.T) {
 	docStr := "<a>foo</a>"
 	doc := NewDoc(docStr)
 	node := doc.top
+	assertEqual(t, node.Child[0].Parent, node)
 	assertEqual(t, node.Child[0].Data, "a")
 	assertEqual(t, len(node.Child), 1)
 	assertEqual(t, node.Child[0].Type, ElementNode)

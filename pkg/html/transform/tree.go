@@ -54,6 +54,7 @@ func parseHtml(s string) (top *Node, err os.Error) {
 					copy(newChild[0:len(p.Child)], p.Child)
 					p.Child = newChild
 					node := tokenToNode(&tok)
+					node.Parent = p
 				  newChild[len(newChild)-1] = node
 					q.Push(node)
 				case EndTagToken:
