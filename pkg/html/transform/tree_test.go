@@ -79,6 +79,20 @@ func TestParseHtml(t *testing.T) {
 	assertEqual(t, node.Child[0].Child[0].Type, TextNode)
 }
 
+func TestParseHtmlSelfClosingTag(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Errorf("TestParseHtml paniced: %s", err)
+		}
+	}()
+	docStr := "<html><head /><body><div id=\"content\">foo</div></body></html>"
+	node, _ := parseHtml(docStr)
+	if node == nil {
+		t.Error("Node was nil")
+	}
+	assertEqual(t, len(node.Child[0].Child), 2)
+}
+
 func TestNewDoc(t *testing.T) {
 	docStr := "<a>foo</a>"
 	doc := NewDoc(docStr)

@@ -56,7 +56,9 @@ func parseHtml(s string) (top *Node, err os.Error) {
 					node := tokenToNode(&tok)
 					node.Parent = p
 				  newChild[len(newChild)-1] = node
-					q.Push(node)
+					if tok.Type != SelfClosingTagToken {
+						q.Push(node)
+					}
 				case EndTagToken:
 					q.Pop()
 			}

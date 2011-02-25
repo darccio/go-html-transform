@@ -314,6 +314,12 @@ func testNode(node *Node, sel Selector) bool {
 */
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	interesting := new(v.Vector)
+	f := func(n *Node) {
+		if sel.At(0).(*Selector).Match(n) {
+			interesting.Push(n)
+		}
+	}
+	doc.Walk(f)
 	return interesting
 }
 
@@ -321,7 +327,7 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
  Replace each node the selector matches with the passed in node.
 
  Applies the selector against the doc and replaces the returned
- Nodes with the passed in n HtmlNode.
+ Nodes with the passed in HtmlNode.
 */
 func (sel *SelectorQuery) Replace(doc *Document, n *Node) {
 	nv := sel.Apply(doc)

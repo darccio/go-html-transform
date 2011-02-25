@@ -7,6 +7,7 @@ package transform
 
 import (
 	"testing"
+	. "html"
 )
 
 func assertTagName(t *testing.T, sel *Selector, typ string, msg string) {
@@ -396,4 +397,21 @@ func TestPartitionInitialChar(t *testing.T) {
 			t.Errorf("First partion is not foo")
 		}
 	}
+}
+
+func TestSelectorQueryApply(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil{
+			t.Error("Selector Query application failed %s", err)
+		}
+	}()
+	docStr := "<html><head /><body><div id=\"content\">foo</div></body></html>"
+	doc := NewDoc(docStr)
+	//                      html     body     div
+	expectedNode := doc.top.Child[0].Child[1].Child[0]
+	assertNotNil(t, expectedNode)
+	selQuery := NewSelectorQuery("div#content")
+	nodes := selQuery.Apply(doc)
+	assertEqual(t, nodes.Len(), 1)
+	assertEqual(t, nodes.At(0).(*Node), expectedNode)
 }
