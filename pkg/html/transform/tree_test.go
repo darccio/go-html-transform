@@ -35,7 +35,7 @@ func TestWalk(t *testing.T) {
 	walkFun := func(n *Node) {
 		vec.Push(n.Data)
 	}
-	Walk(tree.top, walkFun)
+	tree.Walk(walkFun)
 	assertEqual(t, vec.At(0), "") // first we have the root node
 	assertEqual(t, vec.At(1), "html")
 	assertEqual(t, vec.At(2), "head")
@@ -50,7 +50,7 @@ func TestFindAll(t *testing.T) {
 			vec.Push(n.Data)
 		}
 	}
-	Walk(tree.top, walkFun)
+	tree.Walk(walkFun)
 	assertEqual(t, vec.At(0), "head")
 }
 

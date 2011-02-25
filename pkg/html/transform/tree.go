@@ -73,24 +73,28 @@ func NewDoc(s string) *Document {
 	return &Document{top: n}
 }
 
-func Walk(n *Node, f func(*Node)) {
+func walk(n *Node, f func(*Node)) {
 	f(n)
 	c := n.Child
 	if c != nil {
 		for i := 0; i < len(c); i++ {
 			c_node := c[i]
-			Walk(c_node, f);
+			walk(c_node, f);
 		}
 	}
 }
 
-func (n *Document) FindAll(f func(*Node) bool) *v.Vector {
+func (d *Document) Walk(f func(*Node)) {
+	walk(d.top, f)
+}
+
+func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 	results := new(v.Vector)
 	fun := func(node *Node) {
 		if f(node) {
 			results.Push(node)
 		}
 	}
-	Walk(n.top, fun)
+	d.Walk(fun)
 	return results
 }
