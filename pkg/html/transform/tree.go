@@ -91,6 +91,33 @@ func (d *Document) Walk(f func(*Node)) {
 	walk(d.top, f)
 }
 
+func copyNode(n *Node, p *Node) *Node {
+	node := new(Node)
+	node.Parent = p
+	node.Data = n.Data
+
+	if n.Type != 0 {
+		node.Type = n.Type
+	}
+
+	newChild := make([]*Node, len(n.Child))
+	for i, c := range n.Child {
+		newChild[i] = copyNode(c, node)	
+	}
+	node.Child = newChild
+
+	newAttr := make([]Attribute, len(n.Attr))
+	copy(newAttr, n.Attr)
+	node.Attr = newAttr
+	return node
+}
+
+func (d *Document) Copy() *Document {
+	doc := new(Document)
+	doc.top = copyNode(d.top, nil)
+	return doc
+}
+
 func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 	results := new(v.Vector)
 	fun := func(node *Node) {

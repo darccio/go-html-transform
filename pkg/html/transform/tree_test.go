@@ -107,3 +107,14 @@ func TestNewDoc(t *testing.T) {
 	assertEqual(t, len(node.Child[0].Child), 1)
 	assertEqual(t, node.Child[0].Child[0].Type, TextNode)
 }
+
+func TestCopySingleNodeNoChildren(t *testing.T) {
+	docStr := "<a href=\"foo/bar\"></a>"
+	doc1 := NewDoc(docStr)
+	doc2 := doc1.Copy()
+	assertEqual(t, doc2.top.Type, doc1.top.Type)
+	assertEqual(t, doc2.top.Child[0].Type, doc1.top.Child[0].Type)
+	assertEqual(t, doc2.top.Child[0].Data, doc1.top.Child[0].Data)
+	assertEqual(t, len(doc1.top.Child[0].Attr), len(doc1.top.Child[0].Attr))
+	assertEqual(t, doc2.top.Child[0].Parent.Type, doc1.top.Child[0].Parent.Type)
+}
