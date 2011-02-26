@@ -91,7 +91,7 @@ func (d *Document) Walk(f func(*Node)) {
 	walk(d.top, f)
 }
 
-func copyNode(n *Node, p *Node) *Node {
+func cloneNode(n *Node, p *Node) *Node {
 	node := new(Node)
 	node.Parent = p
 	node.Data = n.Data
@@ -102,7 +102,7 @@ func copyNode(n *Node, p *Node) *Node {
 
 	newChild := make([]*Node, len(n.Child))
 	for i, c := range n.Child {
-		newChild[i] = copyNode(c, node)	
+		newChild[i] = cloneNode(c, node)	
 	}
 	node.Child = newChild
 
@@ -112,9 +112,9 @@ func copyNode(n *Node, p *Node) *Node {
 	return node
 }
 
-func (d *Document) Copy() *Document {
+func (d *Document) Clone() *Document {
 	doc := new(Document)
-	doc.top = copyNode(d.top, nil)
+	doc.top = cloneNode(d.top, nil)
 	return doc
 }
 
