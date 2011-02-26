@@ -256,18 +256,3 @@ func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	doc.Walk(f)
 	return interesting
 }
-
-/*
- Replace each node the selector matches with the passed in node.
-
- Applies the selector against the doc and replaces the returned
- Nodes with the passed in HtmlNode.
-*/
-func (sel *SelectorQuery) Replace(doc *Document, n *Node) {
-	nv := sel.Apply(doc)
-	for i := 0; i <= nv.Len(); i++ {
-		// Change to take into account new usage of *Node
-		//nv.At(i).(*Node).Copy(n)
-	}
-	return
-}
