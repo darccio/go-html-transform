@@ -38,31 +38,43 @@ func (t *Transformer) Apply(f TransformFunc, sel *SelectorQuery) *Transformer {
 	return t
 }
 
-func AppendChild(c *Node) TransformFunc {
+func AppendChildren(cs ...*Node) TransformFunc {
 	return func(n *Node) {
 		sz := len(n.Child)
-		newChild := make([]*Node, sz+1)
+		newChild := make([]*Node, sz+len(cs))
 		copy(newChild, n.Child)
-		newChild[sz] = c
+		copy(newChild[sz:], cs)
+		n.Child = newChild
+	}
+}
+
+func AppendChild(c *Node) TransformFunc {
+	return AppendChildren(c)
+}
+
+func PrependChildren(cs ...*Node) TransformFunc {
+	return func(n *Node) {
+		sz := len(n.Child)
+		sz2 := len(cs)
+		newChild := make([]*Node, sz+len(cs))
+		copy(newChild[sz2:], n.Child)
+		copy(newChild[0:sz2], cs)
 		n.Child = newChild
 	}
 }
 
 func PrependChild(c *Node) TransformFunc {
-	return func(n *Node) {
-		sz := len(n.Child)
-		newChild := make([]*Node, sz+1)
-		copy(newChild[1:], n.Child)
-		newChild[0] = c
-		n.Child = newChild
-	}
+	return PrependChildren(c)
 }
 
+func RemoveChildren() TransformFunc {
+	return func(n *Node) {
+		n.Child = make([]*Node, 0)
+	}
+}
 // TODO(jwall): helper transformation functions
-// AppendChild(c *Node)
-// PrependChild(c *Node)
 // RemoveChildren()
-// Replace()
+// ReplaceChildren()
 
 // TODO(jwall): Function Modifiers
 // DoTimes(TransformFunc, n)
