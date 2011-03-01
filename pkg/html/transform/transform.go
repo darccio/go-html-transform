@@ -34,7 +34,8 @@ func NewTransform(d *Document) *Transformer {
 }
 
 func (t *Transformer) Apply(f TransformFunc, sel *SelectorQuery) *Transformer {
-
+	// TODO(jwall): use the query to apply the TransformFunc against the
+	//              Selected Nodes.
 	return t
 }
 
@@ -79,9 +80,25 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 	}
 }
 
+func ModifyAttrib(key string, val string) TransformFunc {
+	return func(n *Node) {
+		found := false
+		for i, attr := range n.Attr {
+			if attr.Key == key {
+				n.Attr[i].Val = val
+				found = true
+			}
+		}
+		if !found {
+			newAttr := make([]Attribute, len(n.Attr)+1)
+			newAttr[len(n.Attr)] = Attribute{Key:key, Val:val}
+			n.Attr = newAttr
+		}
+	}
+}
+
 // TODO(jwall): helper transformation functions
 // Clone()?
 
 // TODO(jwall): Function Modifiers
-// DoTimes(TransformFunc, n)
-// MakeAttribModifier(key, val)
+// DoTimes(n, ...TransformFunc)?

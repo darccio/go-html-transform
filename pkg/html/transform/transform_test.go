@@ -2,17 +2,6 @@
  Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
  Use of this source code is governed by the Artistic License 2.0.
  That License is included in the LICENSE file.
-
- The html transform package implements a html css selector and transformer.
-
- An html doc can be inspected and queried using css selectors as well as
- transformed.
-
- 	doc := NewDoc(str)
- 	sel := NewSelector("a", ".foo")
- 	node := sel.Apply(doc)
-
- 	transformer := func(node Node) Node { ... }
 */
 
 package transform
@@ -79,4 +68,17 @@ func TestReplaceChildren(t *testing.T) {
 	assertEqual(t, len(node.Child), 2)
 	assertEqual(t, node.Child[0], child)
 	assertEqual(t, node.Child[1], child2)
+}
+
+func TestModifyAttrib(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	assertEqual(t, node.Attr[0].Val, "foo")
+	f := ModifyAttrib("id", "bar")
+	f(node)
+	f = ModifyAttrib("class", "baz")
+	f(node)
+	assertEqual(t, node.Attr[0].Val, "bar")
+	assertEqual(t, node.Attr[1].Key, "class")
+	assertEqual(t, node.Attr[1].Val, "baz")
 }
