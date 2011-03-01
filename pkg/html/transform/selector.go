@@ -77,7 +77,6 @@ func (sel *Selector) Match(node *Node) bool {
 		tagNameResult = tagNameResult && false
 	}
 	attribResult := matchAttrib(node.Attr, sel.Attr)
-	// TODO(jwall): hook in the whole part matching
 	partsResult := true
 	for _, part := range sel.Parts {
 		partsResult = partsResult && part.match(node)
@@ -148,7 +147,6 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 }
 
 func partition(s string, f func(c int) bool) []string {
-	// TODO(jwall): make this more efficient
 	parts := []string{}
 	start := 0
 	for i, char := range s {
@@ -192,7 +190,6 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
 	// TODO(jwall): support combinators > + \S
-	// TODO(jwall): splitAfter one of ".:#["
 	parts := partition(str, func(c int) bool {
 		for _, c2 := range SELECTOR_CHARS {
 			if c == c2 {
@@ -211,10 +208,8 @@ func NewSelector(str string) *Selector {
 		case ANY: // Any tagname
 			selector = newAnyTagSelector(p)
 		case ATTR: // any tagname with attribute
-			// TODO(jwall): expanded attribute selectors
 			selector = newAnyTagAttrSelector(p)
 		default: // TAGNAME
-			// TODO(jwall): indexAny use [CLASS,...]
 			if i := s.IndexAny(p, SELECTOR_CHARS); i != -1 {
 				selector = newTagNameWithConstraints(p, i)
 			} else { // just a tagname

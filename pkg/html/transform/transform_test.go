@@ -89,3 +89,5 @@ func TestModifyAttrib(t *testing.T) {
 	assertEqual(t, node.Attr[1].Key, "class")
 	assertEqual(t, node.Attr[1].Val, "baz")
 }
+
+// TODO(jwall): benchmarking tests
