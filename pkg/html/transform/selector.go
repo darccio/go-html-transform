@@ -9,13 +9,20 @@ import (
 	s "strings"
 )
 
+// SelectorQuery is the type of a CSS Selector Query.
+// Each Selector in the slice is operated on order with
+// subsequent selectors matching against the descendants
+// of the previous selectors match.
 type SelectorQuery []*Selector
 
+// SelectorPart is the type of a single Selector's Class, ID or Pseudo part.
 type SelectorPart struct {
 	Type byte   // a bitmask of the selector types 
 	Val  string // the value we are matching against
 }
 
+// Selector is the type of a single selector in a selector query.
+// A slice of Selectors makes up a SelectorQuery.
 type Selector struct {
 	TagName string // "*" for any tag otherwise the name of the tag
 	Parts   []SelectorPart
@@ -23,15 +30,16 @@ type Selector struct {
 }
 
 const (
-	TAGNAME byte = iota // zero value so the default
-	CLASS   byte = '.'
-	ID      byte = '#'
-	PSEUDO  byte = ':'
-	ANY     byte = '*'
-	ATTR    byte = '['
+	TAGNAME byte = iota // Tagname Selector Type
+	CLASS   byte = '.' // Class SelectorPart Type
+	ID      byte = '#' // Id  SelectorPart Type
+	PSEUDO  byte = ':' // Pseudo SelectoPart Type 
+	ANY     byte = '*' // Any tag Selector Type
+	ATTR    byte = '[' // Attr Selector Type
 )
 
 const (
+	// Important characters in a Selector string
 	SELECTOR_CHARS string = ".:#["
 )
 
@@ -69,6 +77,8 @@ func (part SelectorPart) match(node *Node) bool {
 	return false
 }
 
+// The Match method tests if a Selector matches a Node.
+// Returns true for a match false otherwise.
 func (sel *Selector) Match(node *Node) bool {
 	tagNameResult := true
 	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data {
@@ -160,6 +170,9 @@ func partition(s string, f func(c int) bool) []string {
 	return parts
 }
 
+// MergeSelectors merges two *Selector types into one
+// *Selector. It merges the second selector into the first
+// modifying the first selector.
 func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 	if sel2.TagName != "" && sel2.TagName != "*" {
 		if sel1.TagName == "" || sel1.TagName == "*" {
@@ -185,6 +198,8 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 	}
 }
 
+// NewSelector is a constructor for a *Selector type.
+// It creates a Selector by parsing the string passed in.
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
 	// TODO(jwall): support combinators > + \S
@@ -219,6 +234,8 @@ func NewSelector(str string) *Selector {
 	return result
 }
 
+// NewSelectorQuery is a constructor for a SelectorQuery
+// It creates the query using the strings passed in.
 func NewSelectorQuery(sel ...string) SelectorQuery {
 	q := make([]*Selector, len(sel))
 	for i, str := range sel {
@@ -248,11 +265,8 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 	return nodes	
 }
 
-/*
- Apply the css selector to a document.
-
- Returns a Vector of nodes that the selector matched.
-*/
+// Apply the css selector to a document.
+// Returns a Vector of nodes that the selector matched.
 func (sel SelectorQuery) Apply(doc *Document) []*Node {
 	interesting := []*Node{}
 	f := func(n *Node) {

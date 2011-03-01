@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// Document is the type of a parsed html string.
 type Document struct {
 	top *Node
 }
@@ -67,6 +68,7 @@ func parseHtml(s string) (top *Node, err os.Error) {
 	return top, err
 }
 
+// NewDoc is a constructor for a Document.
 func NewDoc(s string) *Document {
 	n, err := parseHtml(s)
 	if err != nil {
@@ -86,6 +88,26 @@ func walk(n *Node, f func(*Node)) {
 	}
 }
 
+// The Top Method returns the root node of the parsed html string.
+// This node is not a parsed html node it is empty. The actual parsed
+// nodes can be found by calling the Nodes method.
+// This allows a Document to contain a full html document or
+// partial fragment.
+// Returns a *Node.
+func (d *Document) Top() *Node {
+	return d.top
+}
+
+// The Nodes method returns the parsed nodes of the html string.
+// There may be multiple nodes if the parsed string was fragment
+// and not a full document.
+// Returns a []*Node.
+func (d *Document) Nodes() []*Node {
+	return d.Top().Child
+}
+
+// The Walk method walks a Documents node tree running
+// The passed in function on it.
 func (d *Document) Walk(f func(*Node)) {
 	walk(d.top, f)
 }
@@ -111,12 +133,16 @@ func cloneNode(n *Node, p *Node) *Node {
 	return node
 }
 
+// The Clone method creates a deep copy of the Document.
 func (d *Document) Clone() *Document {
 	doc := new(Document)
 	doc.top = cloneNode(d.top, nil)
 	return doc
 }
 
+// The FindAll method searches the Document's node tree for
+// anything the passed in function returns true for.
+// Returns a vector of the found nodes.
 func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 	results := new(v.Vector)
 	fun := func(node *Node) {
