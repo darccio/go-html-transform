@@ -124,3 +124,15 @@ func TestText(t *testing.T) {
 	assertEqual(t, txt.Data, "foo bar")
 	assertEqual(t, txt.Type, TextNode)
 }
+
+func TestHtmlString(t *testing.T) {
+	nodes, err := HtmlString("<hr /><pre>foo</pre>")
+	if err != nil {
+		t.Errorf("There was an error parsing the html string")
+	}
+	assertEqual(t, len(nodes), 2)
+	assertEqual(t, nodes[0].Data, "hr")
+	assertEqual(t, nodes[1].Data, "pre")
+	assertEqual(t, len(nodes[1].Child), 1)
+	assertEqual(t, nodes[1].Child[0].Data, "foo")
+}

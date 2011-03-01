@@ -153,6 +153,15 @@ func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 func Text(str string) *Node {
 	return &Node{Data:str, Type:TextNode}
 }
+
+func HtmlString(str string) ([]*Node, os.Error) {
+	parsed, err := parseHtml(str)
+	if err == nil {
+		return parsed.Child, nil
+	}
+	return nil, err
+}
+
 // Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
 // Use of this source code is governed by the Artistic License 2.0.
 // That License is included in the LICENSE file.
