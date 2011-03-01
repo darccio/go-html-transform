@@ -30,7 +30,7 @@ type Transformer struct {
 }
 
 func NewTransform(d *Document) *Transformer {
-	return &Transformer{doc:d.Clone()}
+	return &Transformer{doc: d.Clone()}
 }
 
 func (t *Transformer) Apply(f TransformFunc, sel *SelectorQuery) *Transformer {
@@ -80,7 +80,7 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 }
 
 // TODO(jwall): helper transformation functions
-// ReplaceChildren()
+// Clone()?
 
 // TODO(jwall): Function Modifiers
 // DoTimes(TransformFunc, n)

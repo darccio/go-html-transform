@@ -2,7 +2,7 @@
  Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
  Use of this source code is governed by the Artistic License 2.0.
  That License is included in the LICENSE file.
-*/ 
+*/
 package transform
 
 import (
@@ -21,10 +21,10 @@ func tokenToNode(tok *Token) *Node {
 	node := new(Node)
 	node.Data = tok.Data
 	switch tok.Type {
-		case TextToken:
-			node.Type = TextNode
-		case SelfClosingTagToken, StartTagToken:
-			node.Type = ElementNode
+	case TextToken:
+		node.Type = TextNode
+	case SelfClosingTagToken, StartTagToken:
+		node.Type = ElementNode
 	}
 	node.Attr = tok.Attr
 	return node
@@ -49,19 +49,19 @@ func parseHtml(s string) (top *Node, err os.Error) {
 			tok := z.Token()
 			p := q.Last().(*Node)
 			switch tok.Type {
-				case TextToken, SelfClosingTagToken, StartTagToken:
-					newChild := make([]*Node, len(p.Child)+1)
-					copy(newChild, p.Child)
-					p.Child = newChild
-					node := tokenToNode(&tok)
-					node.Parent = p
-				  newChild[len(newChild)-1] = node
-					if tok.Type != SelfClosingTagToken &&
-					   tok.Type != TextToken {
-						q.Push(node)
-					}
-				case EndTagToken:
-					q.Pop()
+			case TextToken, SelfClosingTagToken, StartTagToken:
+				newChild := make([]*Node, len(p.Child)+1)
+				copy(newChild, p.Child)
+				p.Child = newChild
+				node := tokenToNode(&tok)
+				node.Parent = p
+				newChild[len(newChild)-1] = node
+				if tok.Type != SelfClosingTagToken &&
+					tok.Type != TextToken {
+					q.Push(node)
+				}
+			case EndTagToken:
+				q.Pop()
 			}
 		}
 	}
@@ -82,7 +82,7 @@ func walk(n *Node, f func(*Node)) {
 	if c != nil {
 		for i := 0; i < len(c); i++ {
 			c_node := c[i]
-			walk(c_node, f);
+			walk(c_node, f)
 		}
 	}
 }
@@ -102,7 +102,7 @@ func cloneNode(n *Node, p *Node) *Node {
 
 	newChild := make([]*Node, len(n.Child))
 	for i, c := range n.Child {
-		newChild[i] = cloneNode(c, node)	
+		newChild[i] = cloneNode(c, node)
 	}
 	node.Child = newChild
 

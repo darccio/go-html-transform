@@ -17,14 +17,14 @@ type SelectorQuery struct {
 }
 
 type SelectorPart struct {
-	Type    byte // a bitmask of the selector types 
-	Val     string // the value we are matching against
+	Type byte   // a bitmask of the selector types 
+	Val  string // the value we are matching against
 }
 
 type Selector struct {
 	TagName string // "*" for any tag otherwise the name of the tag
-	Parts []SelectorPart
-	Attr map[string]string
+	Parts   []SelectorPart
+	Attr    map[string]string
 }
 
 const (
@@ -49,7 +49,7 @@ func matchAttrib(nodeAttr []Attribute, matchAttr map[string]string) bool {
 			if key == attr.Key {
 				exists = true
 				if val == attr.Val {
-					matched = true	
+					matched = true
 				}
 				attribResult = attribResult && exists && matched
 			}
@@ -61,15 +61,15 @@ func matchAttrib(nodeAttr []Attribute, matchAttr map[string]string) bool {
 
 func (part SelectorPart) match(node *Node) bool {
 	switch part.Type {
-		case CLASS:
-			classAttr := make(map[string]string)
-			classAttr["class"] = part.Val
-			return matchAttrib(node.Attr, classAttr) 
-		case ID:
-			idAttr := make(map[string]string)
-			idAttr["id"] = part.Val
-			return matchAttrib(node.Attr, idAttr)
-		case PSEUDO:
+	case CLASS:
+		classAttr := make(map[string]string)
+		classAttr["class"] = part.Val
+		return matchAttrib(node.Attr, classAttr)
+	case ID:
+		idAttr := make(map[string]string)
+		idAttr["id"] = part.Val
+		return matchAttrib(node.Attr, idAttr)
+	case PSEUDO:
 	}
 	return false
 }
@@ -90,12 +90,12 @@ func (sel *Selector) Match(node *Node) bool {
 
 func newAnyTagClassOrIdSelector(str string) *Selector {
 	return &Selector{
-	Parts:    []SelectorPart{
+		Parts: []SelectorPart{
 			SelectorPart{
-			Type: str[0],
-			Val:     str[1:],
-		}},
-	TagName: "*",
+				Type: str[0],
+				Val:  str[1:],
+			}},
+		TagName: "*",
 	}
 }
 
@@ -121,7 +121,7 @@ func newAnyTagAttrSelector(str string) *Selector {
 		TagName: "*",
 		Attr:    map[string]string{},
 	}
-	for _, part := range parts[0:len(parts)-1] {
+	for _, part := range parts[0 : len(parts)-1] {
 		attrs := splitAttrs(part)
 		sel.Attr[attrs[0]] = attrs[1]
 	}
@@ -172,7 +172,7 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 		if sel1.TagName == "" || sel1.TagName == "*" {
 			sel1.TagName = sel2.TagName
 		} else {
-			log.Panicf("Can't merge multiple tagnames in" +
+			log.Panicf("Can't merge multiple tagnames in"+
 				" selectors: First [%s] Second [%s]",
 				sel1.TagName, sel2.TagName)
 		}
@@ -180,7 +180,7 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 	if sel1.Parts == nil {
 		sel1.Parts = make([]SelectorPart, 0)
 	}
-	newParts := make([]SelectorPart, len(sel1.Parts) + len(sel2.Parts))
+	newParts := make([]SelectorPart, len(sel1.Parts)+len(sel2.Parts))
 	copy(newParts, sel1.Parts)
 	copy(newParts[len(sel1.Parts):], sel2.Parts)
 	sel1.Parts = newParts
@@ -249,6 +249,7 @@ func NewSelectorQuery(sel ...string) *SelectorQuery {
 func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
 	interesting := new(v.Vector)
 	f := func(n *Node) {
+		// TODO(jwall): multiple Selectors
 		if sel.At(0).(*Selector).Match(n) {
 			interesting.Push(n)
 		}

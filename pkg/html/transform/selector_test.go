@@ -41,7 +41,7 @@ func assertType(t *testing.T, sel *Selector, typ byte, msg string) {
 	if (mask | typ) != typ {
 		t.Errorf(msg)
 		t.Logf("MaskResult: [%s], Type: [%s]",
-			mask & typ, typ)
+			mask&typ, typ)
 	}
 }
 
@@ -126,7 +126,7 @@ func TestSelectorMultiAttribWithTagNameMatchSucceed(t *testing.T) {
 func TestSelectorPartMatchClassSucceed(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	node := doc.top.Child[0]
-  sel := NewSelector(".foo")
+	sel := NewSelector(".foo")
 	if !sel.Parts[0].match(node) {
 		t.Error("Class selector did not match")
 	}
@@ -135,7 +135,7 @@ func TestSelectorPartMatchClassSucceed(t *testing.T) {
 func TestSelectorPartMatchIdSucceed(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" id=\"foo\"></a>")
 	node := doc.top.Child[0]
-  sel := NewSelector("#foo")
+	sel := NewSelector("#foo")
 	if !sel.Parts[0].match(node) {
 		t.Error("id selector did not match")
 	}
@@ -144,7 +144,7 @@ func TestSelectorPartMatchIdSucceed(t *testing.T) {
 func TestSelectorMatchingForPartsFail(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" class=\"bar\"></a>")
 	node := doc.top.Child[0]
-  sel := NewSelector("a#foo.bar")
+	sel := NewSelector("a#foo.bar")
 	if sel.Match(node) {
 		t.Error("Selector did match")
 	}
@@ -153,7 +153,7 @@ func TestSelectorMatchingForPartsFail(t *testing.T) {
 func TestSelectorMatchingForPartsSucceed(t *testing.T) {
 	doc := NewDoc("<a href=\"foo/bar\" class=\"bar\" id=\"foo\"></a>")
 	node := doc.top.Child[0]
-  sel := NewSelector("a#foo.bar")
+	sel := NewSelector("a#foo.bar")
 	if !sel.Match(node) {
 		t.Error("Selector did not match")
 	}
@@ -173,7 +173,7 @@ func TestNewAnyTagClassSelector(t *testing.T) {
 func TestNewAnyTagSelector(t *testing.T) {
 	selString := "*"
 	sel := newAnyTagSelector(selString)
-	assertType(t, sel, ANY,"selector type not ANY")
+	assertType(t, sel, ANY, "selector type not ANY")
 	assertTagNameAny(t, sel)
 }
 
@@ -203,7 +203,7 @@ func TestTagNameSelector(t *testing.T) {
 
 func TestTagNameWithAttr(t *testing.T) {
 	selString := "a[foo=bar]"
-        sel := newTagNameWithConstraints(selString, 1)
+	sel := newTagNameWithConstraints(selString, 1)
 	assertType(t, sel, ATTR, "selector type not ATTR")
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertAttr(t, sel, "foo", "bar", "selector key not foo")
@@ -211,7 +211,7 @@ func TestTagNameWithAttr(t *testing.T) {
 
 func TestTagNameWithClass(t *testing.T) {
 	selString := "a.foo"
-        sel := newTagNameWithConstraints(selString, 1)
+	sel := newTagNameWithConstraints(selString, 1)
 	assertType(t, sel, CLASS, "selector type not CLASS")
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
@@ -219,7 +219,7 @@ func TestTagNameWithClass(t *testing.T) {
 
 func TestTagNameWithId(t *testing.T) {
 	selString := "a#foo"
-        sel := newTagNameWithConstraints(selString, 1)
+	sel := newTagNameWithConstraints(selString, 1)
 	assertType(t, sel, ID, "selector type not ID")
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
@@ -227,7 +227,7 @@ func TestTagNameWithId(t *testing.T) {
 
 func TestTagNameWithPseudo(t *testing.T) {
 	selString := "a:foo"
-        sel := newTagNameWithConstraints(selString, 1)
+	sel := newTagNameWithConstraints(selString, 1)
 	assertType(t, sel, PSEUDO, "selector type not PSEUDO")
 	assertTagName(t, sel, "a", "selector TagName not a")
 	assertVal(t, sel, "foo", "selector val not foo")
@@ -242,7 +242,7 @@ func TestNewSelector(t *testing.T) {
 
 	selString = "*"
 	sel = NewSelector(selString)
-	assertType(t, sel, ANY,"selector type not ANY")
+	assertType(t, sel, ANY, "selector type not ANY")
 	assertTagNameAny(t, sel)
 
 	selString = "[foo=bar]"
@@ -309,7 +309,7 @@ func TestMergeSelectorsMultipleParts(t *testing.T) {
 
 func TestMergeSelectorsEmptySelectors(t *testing.T) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			t.Error("Merging two Empty Selectors failed %s", err)
 		}
 	}()
@@ -321,7 +321,7 @@ func TestMergeSelectorsEmptySelectors(t *testing.T) {
 
 func TestMergeSelectorsTwoTagNames(t *testing.T) {
 	defer func() {
-		if err := recover(); err == nil{
+		if err := recover(); err == nil {
 			t.Error("Merging two Selectors with tagnames did not fail")
 		}
 	}()
@@ -339,7 +339,7 @@ func TestNewSelectorMultipleConstraints(t *testing.T) {
 }
 
 func TestNewSelectorQuery(t *testing.T) {
-	 NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
+	NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
 	q := NewSelectorQuery("a.foo", ".bar", "[id=foobar]")
 	sel := q.At(0).(*Selector)
 	assertType(t, sel, CLASS, "selector type not CLASS")
@@ -401,7 +401,7 @@ func TestPartitionInitialChar(t *testing.T) {
 
 func TestSelectorQueryApply(t *testing.T) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			t.Error("Selector Query application failed %s", err)
 		}
 	}()
@@ -417,7 +417,7 @@ func TestSelectorQueryApply(t *testing.T) {
 
 func TestSelectorQueryApplyMulti(t *testing.T) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			t.Error("Selector Query application failed %s", err)
 		}
 	}()
