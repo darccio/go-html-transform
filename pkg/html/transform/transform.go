@@ -72,11 +72,16 @@ func RemoveChildren() TransformFunc {
 		n.Child = make([]*Node, 0)
 	}
 }
+
+func ReplaceChildren(ns ...*Node) TransformFunc {
+	return func(n *Node) {
+		n.Child = ns
+	}
+}
+
 // TODO(jwall): helper transformation functions
-// RemoveChildren()
 // ReplaceChildren()
 
 // TODO(jwall): Function Modifiers
 // DoTimes(TransformFunc, n)
 // MakeAttribModifier(key, val)
-

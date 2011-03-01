@@ -68,3 +68,15 @@ func TestRemoveChildren(t *testing.T) {
 	f(node)
   assertEqual(t, len(node.Child), 0)
 }
+
+func TestReplaceChildren(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+ 	node := doc.top.Child[0]
+	child := new(Node)
+	child2 := new(Node)
+  f := ReplaceChildren(child, child2)
+	f(node)
+  assertEqual(t, len(node.Child), 2)
+	assertEqual(t, node.Child[0], child)
+	assertEqual(t, node.Child[1], child2)
+}
