@@ -18,6 +18,13 @@ func TestNewTransform(t *testing.T) {
 	assertEqual(t, (*tf.doc.top).Type, (*doc.top).Type)
 }
 
+func TestTransformApply(t *testing.T) {
+	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+	tf := NewTransform(doc)
+	newDoc := tf.Apply(AppendChild(new(Node)), "body").doc
+	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
+}
+
 func TestAppendChild(t *testing.T) {
 	doc := NewDoc("<div id=\"foo\"></div><")
 	node := doc.top
@@ -76,9 +83,9 @@ func TestModifyAttrib(t *testing.T) {
 	assertEqual(t, node.Attr[0].Val, "foo")
 	f := ModifyAttrib("id", "bar")
 	f(node)
+	assertEqual(t, node.Attr[0].Val, "bar")
 	f = ModifyAttrib("class", "baz")
 	f(node)
-	assertEqual(t, node.Attr[0].Val, "bar")
 	assertEqual(t, node.Attr[1].Key, "class")
 	assertEqual(t, node.Attr[1].Val, "baz")
 }

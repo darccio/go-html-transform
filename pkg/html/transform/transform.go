@@ -33,9 +33,13 @@ func NewTransform(d *Document) *Transformer {
 	return &Transformer{doc: d.Clone()}
 }
 
-func (t *Transformer) Apply(f TransformFunc, sel *SelectorQuery) *Transformer {
-	// TODO(jwall): use the query to apply the TransformFunc against the
-	//              Selected Nodes.
+func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
+	sq := NewSelectorQuery(sel...)
+	nodes := sq.Apply(t.doc)
+	for nodes.Len() > 0 {
+		n := nodes.Pop().(*Node)
+		f(n)
+	}
 	return t
 }
 
@@ -101,4 +105,5 @@ func ModifyAttrib(key string, val string) TransformFunc {
 // Clone()?
 
 // TODO(jwall): Function Modifiers
-// DoTimes(n, ...TransformFunc)?
+// DoTimes(n int, fs ...TransformFunc)?
+// DoAll(fs ...TransformFunc)?
