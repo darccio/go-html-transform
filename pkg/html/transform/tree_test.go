@@ -118,3 +118,9 @@ func TestCopySingleNodeNoChildren(t *testing.T) {
 	assertEqual(t, len(doc1.top.Child[0].Attr), len(doc1.top.Child[0].Attr))
 	assertEqual(t, doc2.top.Child[0].Parent.Type, doc1.top.Child[0].Parent.Type)
 }
+
+func TestText(t *testing.T) {
+	txt := Text("foo bar")
+	assertEqual(t, txt.Data, "foo bar")
+	assertEqual(t, txt.Type, TextNode)
+}

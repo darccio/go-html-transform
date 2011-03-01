@@ -124,4 +124,3 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 
 // TODO(jwall): Function Modifiers
 // DoTimes(n int, fs ...TransformFunc)?
-// DoAll(fs ...TransformFunc)?

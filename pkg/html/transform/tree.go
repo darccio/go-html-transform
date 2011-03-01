@@ -150,6 +150,9 @@ func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 	return results
 }
 
+func Text(str string) *Node {
+	return &Node{Data:str, Type:TextNode}
+}
 // Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
 // Use of this source code is governed by the Artistic License 2.0.
 // That License is included in the LICENSE file.
