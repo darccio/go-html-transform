@@ -150,10 +150,12 @@ func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 	return results
 }
 
+// Constructs a TextNode for the string passed in
 func Text(str string) *Node {
 	return &Node{Data:str, Type:TextNode}
 }
 
+// Constructs a slice of *Nodes from a string of html.
 func HtmlString(str string) ([]*Node, os.Error) {
 	parsed, err := parseHtml(str)
 	if err == nil {
