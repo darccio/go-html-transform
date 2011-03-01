@@ -8,23 +8,53 @@
  An html doc can be inspected and queried using css selectors as well as
  transformed.
 
- 	doc := Document{}
- 	sel := NewSelector("a", ".foo")
- 	node := sel.Apply(doc)
-
- 	transformer := func(node Node) Node { ... }
- 	Transform(doc, sel, transformer)
- 	doc.ToString()
+ 	doc := NewDoc(str)
+ 	sel1 := NewSelector("div.foo")
+ 	sel2 := NewSelector("a")
+  t := NewTransform(doc)
+ 	newDoc := t.Apply(AppendChild, sel1)
+  	.Apply(Replace, sel2)
+  	.doc
 */
 package transform
 
 import (
-	v "container/vector"
 	. "html"
 )
 
-func Transform(doc *Document, sel *SelectorQuery, f func(*v.Vector) *Node) {
-	sel.Replace(doc, f(sel.Apply(doc)))
+// The TransformFunc type is the type of a Node transformation function.
+type TransformFunc func(*Node)
+
+type Transformer struct {
+	doc *Document
+}
+
+func NewTransform(d *Document) *Transformer {
+	return &Transformer{doc:d.Clone()}
+}
+
+func (t *Transformer) Apply(f TransformFunc, sel *SelectorQuery) *Transformer {
+
+	return t
+}
+
+func AppendChild(c *Node) TransformFunc {
+	return func(n *Node) {
+		sz := len(n.Child)
+		newChild := make([]*Node, sz+1)
+		copy(newChild, n.Child)
+		newChild[sz] = c
+		n.Child = newChild
+	}
 }
 
 // TODO(jwall): helper transformation functions
+// AppendChild(c *Node)
+// PrependChild(c *Node)
+// RemoveChildren()
+// Replace()
+
+// TODO(jwall): Function Modifiers
+// DoTimes(TransformFunc, n)
+// MakeAttribModifier(key, val)
+
