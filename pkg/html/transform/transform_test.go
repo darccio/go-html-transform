@@ -70,4 +70,19 @@ func TestModifyAttrib(t *testing.T) {
 	assertEqual(t, node.Attr[1].Val, "baz")
 }
 
+func TestDoAll(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	preNode := new(Node)
+	preNode.Data = "pre node"
+	postNode := new(Node)
+	postNode.Data = "post node"
+	f := DoAll(AppendChildren(postNode),
+		         PrependChildren(preNode))
+	f(node)
+	assertEqual(t, len(node.Child), 3)
+	assertEqual(t, node.Child[0].Data, preNode.Data)
+	assertEqual(t, node.Child[len(node.Child)-1].Data, postNode.Data)
+}
+
 // TODO(jwall): benchmarking tests

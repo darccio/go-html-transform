@@ -1,6 +1,3 @@
-// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
-// Use of this source code is governed by the Artistic License 2.0.
-// That License is included in the LICENSE file.
 package transform
 
 import (
@@ -276,3 +273,7 @@ func (sel SelectorQuery) Apply(doc *Document) []*Node {
 	doc.Walk(f)
 	return interesting
 }
+
+// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
+// Use of this source code is governed by the Artistic License 2.0.
+// That License is included in the LICENSE file.

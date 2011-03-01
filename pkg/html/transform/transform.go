@@ -111,6 +111,14 @@ func ModifyAttrib(key string, val string) TransformFunc {
 	}
 }
 
+func DoAll(fs ...TransformFunc) TransformFunc {
+	return func(n *Node) {
+		for _, f := range fs {
+			f(n)
+		}
+	}
+}
+
 // TODO(jwall): helper transformation functions
 // Clone()?
 
