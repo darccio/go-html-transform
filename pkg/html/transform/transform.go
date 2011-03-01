@@ -12,9 +12,9 @@ transformed.
  	sel1 := NewSelector("div.foo")
  	sel2 := NewSelector("a")
 	t := NewTransform(doc)
- 	newDoc := t.Apply(AppendChild, sel1)
-  	.Apply(Replace, sel2)
-  	.doc
+ 	t.Apply(AppendChild, sel1)
+  t..Apply(Replace, sel2)
+  newDoc := t.Doc()
 */
 package transform
 
@@ -35,6 +35,11 @@ type Transformer struct {
 // and transforms that instead of the original.
 func NewTransform(d *Document) *Transformer {
 	return &Transformer{doc: d.Clone()}
+}
+
+// The Doc method returns the document under transformation.
+func (t *Transformer) Doc() *Document {
+	return t.doc
 }
 
 // The Apply method applies a TransformFunc to the nodes returned from
