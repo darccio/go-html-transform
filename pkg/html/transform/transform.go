@@ -26,14 +26,19 @@ import (
 // The TransformFunc type is the type of a Node transformation function.
 type TransformFunc func(*Node)
 
+// Transformer encapsulates a document under transformation.
 type Transformer struct {
 	doc *Document
 }
 
+// Constructor for a Transformer. It makes a copy of the document
+// and transforms that instead of the original.
 func NewTransform(d *Document) *Transformer {
 	return &Transformer{doc: d.Clone()}
 }
 
+// The Apply method applies a TransformFunc to the nodes returned from
+// the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	sq := NewSelectorQuery(sel...)
 	nodes := sq.Apply(t.doc)
@@ -43,6 +48,7 @@ func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	return t
 }
 
+// AppendChildren creates a TransformFunc that appends the Children passed in.
 func AppendChildren(cs ...*Node) TransformFunc {
 	return func(n *Node) {
 		sz := len(n.Child)
@@ -53,10 +59,7 @@ func AppendChildren(cs ...*Node) TransformFunc {
 	}
 }
 
-func AppendChild(c *Node) TransformFunc {
-	return AppendChildren(c)
-}
-
+// PrependChildren creates a TransformFunc that prepends the Children passed in.
 func PrependChildren(cs ...*Node) TransformFunc {
 	return func(n *Node) {
 		sz := len(n.Child)
@@ -68,22 +71,24 @@ func PrependChildren(cs ...*Node) TransformFunc {
 	}
 }
 
-func PrependChild(c *Node) TransformFunc {
-	return PrependChildren(c)
-}
-
+// RemoveChildren creates a TransformFunc that removes the Children of the node
+// it operates on.
 func RemoveChildren() TransformFunc {
 	return func(n *Node) {
 		n.Child = make([]*Node, 0)
 	}
 }
 
+// ReplaceChildren creates a TransformFunc that replaces the Children of the
+// node it operates on with the Children passed in.
 func ReplaceChildren(ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		n.Child = ns
 	}
 }
 
+// ModifyAttrb creates a TransformFunc that modifies the attributes
+// of the node it operates on.
 func ModifyAttrib(key string, val string) TransformFunc {
 	return func(n *Node) {
 		found := false

@@ -21,18 +21,8 @@ func TestNewTransform(t *testing.T) {
 func TestTransformApply(t *testing.T) {
 	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
 	tf := NewTransform(doc)
-	newDoc := tf.Apply(AppendChild(new(Node)), "body").doc
+	newDoc := tf.Apply(AppendChildren(new(Node)), "body").doc
 	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
-}
-
-func TestAppendChild(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\"></div><")
-	node := doc.top
-	child := new(Node)
-	f := AppendChild(child)
-	f(node)
-	assertEqual(t, len(node.Child), 2)
-	assertEqual(t, node.Child[1], child)
 }
 
 func TestAppendChildren(t *testing.T) {
@@ -45,16 +35,6 @@ func TestAppendChildren(t *testing.T) {
 	assertEqual(t, len(node.Child), 3)
 	assertEqual(t, node.Child[1], child)
 	assertEqual(t, node.Child[2], child2)
-}
-
-func TestPrependChild(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\"></div><")
-	node := doc.top
-	child := new(Node)
-	f := PrependChild(child)
-	f(node)
-	assertEqual(t, len(node.Child), 2)
-	assertEqual(t, node.Child[0], child)
 }
 
 func TestRemoveChildren(t *testing.T) {
