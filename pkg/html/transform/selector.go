@@ -7,14 +7,11 @@ package transform
 
 import (
 	. "html"
-	v "container/vector"
 	"log"
 	s "strings"
 )
 
-type SelectorQuery struct {
-	*v.Vector
-}
+type SelectorQuery []*Selector
 
 type SelectorPart struct {
 	Type byte   // a bitmask of the selector types 
@@ -229,16 +226,33 @@ func NewSelector(str string) *Selector {
 	return result
 }
 
-func NewSelectorQuery(sel ...string) *SelectorQuery {
-	q := SelectorQuery{Vector: new(v.Vector)}
-	for _, str := range sel {
+func NewSelectorQuery(sel ...string) SelectorQuery {
+	q := make([]*Selector, len(sel))
+	for i, str := range sel {
 		selPart := NewSelector(str)
 		if selPart == nil {
 			log.Panic("Invalid Selector in query")
 		}
-		q.Push(selPart)
+		q[i] = selPart
 	}
-	return &q
+	return q
+}
+
+func applyToNode(sel []*Selector, n *Node) []*Node {
+	var nodes []*Node
+	if sel[0].Match(n) {
+		for _, c := range n.Child {
+			if len(sel) > 1 {
+				ns := applyToNode(sel[1:], c)
+				if len(ns) > 0 {
+					nodes = append(nodes, ns...)
+				}
+			} else {
+				nodes = []*Node{n}
+			}
+		}
+	}
+	return nodes	
 }
 
 /*
@@ -246,13 +260,11 @@ func NewSelectorQuery(sel ...string) *SelectorQuery {
 
  Returns a Vector of nodes that the selector matched.
 */
-func (sel *SelectorQuery) Apply(doc *Document) *v.Vector {
-	interesting := new(v.Vector)
+func (sel SelectorQuery) Apply(doc *Document) []*Node {
+	interesting := []*Node{}
 	f := func(n *Node) {
-		// TODO(jwall): multiple Selectors
-		if sel.At(0).(*Selector).Match(n) {
-			interesting.Push(n)
-		}
+		found := applyToNode(sel, n)
+		interesting = append(interesting, found...)
 	}
 	doc.Walk(f)
 	return interesting

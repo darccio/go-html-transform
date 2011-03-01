@@ -36,8 +36,7 @@ func NewTransform(d *Document) *Transformer {
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	sq := NewSelectorQuery(sel...)
 	nodes := sq.Apply(t.doc)
-	for nodes.Len() > 0 {
-		n := nodes.Pop().(*Node)
+	for _, n := range nodes{
 		f(n)
 	}
 	return t
