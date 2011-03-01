@@ -48,6 +48,16 @@ func AppendChild(c *Node) TransformFunc {
 	}
 }
 
+func PrependChild(c *Node) TransformFunc {
+	return func(n *Node) {
+		sz := len(n.Child)
+		newChild := make([]*Node, sz+1)
+		copy(newChild[1:], n.Child)
+		newChild[0] = c
+		n.Child = newChild
+	}
+}
+
 // TODO(jwall): helper transformation functions
 // AppendChild(c *Node)
 // PrependChild(c *Node)

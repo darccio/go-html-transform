@@ -31,11 +31,20 @@ func TestNewTransform(t *testing.T) {
 
 func TestAppendChild(t *testing.T) {
 	doc := NewDoc("<div id=\"foo\"></div><")
- 	node := doc.top.Child[0]
+ 	node := doc.top
 	child := new(Node)
   f := AppendChild(child)
 	f(node)
-	t.Logf("node: %s", *node)
-	t.Logf("child 1: %s", *(node.Child[0]))
-  assertEqual(t, len(node.Child), 1)
+  assertEqual(t, len(node.Child), 2)
+	assertEqual(t, node.Child[1], child)
+}
+
+func TestPrependChild(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\"></div><")
+ 	node := doc.top
+	child := new(Node)
+  f := PrependChild(child)
+	f(node)
+  assertEqual(t, len(node.Child), 2)
+	assertEqual(t, node.Child[0], child)
 }
