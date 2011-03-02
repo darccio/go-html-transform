@@ -126,22 +126,27 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 // or func(*Node) TransformFunc. Any other type will panic.
 // Returns a TransformFunc.
 func ForEach(f interface{}, ns ...*Node) TransformFunc {
-	return func(n *Node) {
-		for _, n2 := range ns {
-			switch t := f.(type) {
-				case func(...*Node) TransformFunc:
+	switch t := f.(type) {
+		case func(...*Node) TransformFunc:
+			return func(n *Node) {
+				for _, n2 := range ns {
 					f1 := f.(func(...*Node) TransformFunc)
 					f2 := f1(n2)
 					f2(n)
-				case func(*Node) TransformFunc:
+				}
+			}
+		case func(*Node) TransformFunc:
+			return func(n *Node) {
+				for _, n2 := range ns {
 					f1 := f.(func(*Node) TransformFunc)
 					f2 := f1(n2)
 					f2(n)
-				default:
-					log.Panicf("Wrong function type passed to ForEach %s", t) 
+				}
 			}
-		}
+		default:
+			log.Panicf("Wrong function type passed to ForEach %s", t) 
 	}
+	return nil
 }
 
 // TODO(jwall): helper transformation functions

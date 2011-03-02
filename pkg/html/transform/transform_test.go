@@ -96,4 +96,14 @@ func TestForEach(t *testing.T) {
 	assertEqual(t, node.Child[2].Data, txtNode2.Data)
 }
 
+func TestForEachPanic(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("ForEach Failed to panic")
+		}
+	}()
+	txtNode1 := Text(" bar")
+	txtNode2 := Text(" baz")
+	ForEach("foo", txtNode1, txtNode2)
+}
 // TODO(jwall): benchmarking tests
