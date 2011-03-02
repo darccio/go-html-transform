@@ -93,6 +93,13 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 	}
 }
 
+func Replace(ns ...*Node) TransformFunc {
+	return func(n *Node) {
+		p := n.Parent
+		p.Child = ns
+	}
+}
+
 // ModifyAttrb creates a TransformFunc that modifies the attributes
 // of the node it operates on.
 func ModifyAttrib(key string, val string) TransformFunc {
@@ -119,9 +126,6 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 		}
 	}
 }
-
-// TODO(jwall): helper transformation functions
-// CloneAnd(TransformFunc) TransformFunc
 
 // ForEach takes a function and a list of Nodes and performs that
 // function for each node in the list.

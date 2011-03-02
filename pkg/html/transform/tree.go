@@ -156,12 +156,12 @@ func Text(str string) *Node {
 }
 
 // Constructs a slice of *Nodes from a string of html.
-func HtmlString(str string) ([]*Node, os.Error) {
+func HtmlString(str string) []*Node {
 	parsed, err := parseHtml(str)
 	if err == nil {
-		return parsed.Child, nil
+		return parsed.Child
 	}
-	return nil, err
+	return nil
 }
 
 // Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)

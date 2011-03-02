@@ -126,8 +126,8 @@ func TestText(t *testing.T) {
 }
 
 func TestHtmlString(t *testing.T) {
-	nodes, err := HtmlString("<hr /><pre>foo</pre>")
-	if err != nil {
+	nodes := HtmlString("<hr /><pre>foo</pre>")
+	if nodes == nil {
 		t.Errorf("There was an error parsing the html string")
 	}
 	assertEqual(t, len(nodes), 2)

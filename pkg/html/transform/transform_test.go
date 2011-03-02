@@ -56,6 +56,17 @@ func TestReplaceChildren(t *testing.T) {
 	assertEqual(t, node.Child[1], child2)
 }
 
+func TestReplace(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	ns := HtmlString("<span>foo</span>")
+	f := Replace(ns...)
+	//f := Replace(HtmlString("<span>foo</span>")...)
+	f(node)
+	assertEqual(t, len(doc.top.Child), 1)
+	assertEqual(t, doc.top.Child[0].Data, "span")
+}
+
 func TestModifyAttrib(t *testing.T) {
 	doc := NewDoc("<div id=\"foo\">foo</div><")
 	node := doc.top.Child[0]
