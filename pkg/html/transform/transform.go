@@ -120,6 +120,9 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 	}
 }
 
+// TODO(jwall): helper transformation functions
+// CloneAnd(TransformFunc) TransformFunc
+
 // ForEach takes a function and a list of Nodes and performs that
 // function for each node in the list.
 // The function should be of a type either func(...*Node) TransformFunc
@@ -148,9 +151,3 @@ func ForEach(f interface{}, ns ...*Node) TransformFunc {
 	}
 	return nil
 }
-
-// TODO(jwall): helper transformation functions
-// Clone()?
-
-// TODO(jwall): Function Modifiers
-// DoTimes(n int, fs ...TransformFunc)?

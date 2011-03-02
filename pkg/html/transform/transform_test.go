@@ -121,4 +121,5 @@ func TestForEachPanic(t *testing.T) {
 	txtNode2 := Text(" baz")
 	ForEach("foo", txtNode1, txtNode2)
 }
+
 // TODO(jwall): benchmarking tests
