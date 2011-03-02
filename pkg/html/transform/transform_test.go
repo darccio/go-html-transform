@@ -85,4 +85,16 @@ func TestDoAll(t *testing.T) {
 	assertEqual(t, node.Child[len(node.Child)-1].Data, postNode.Data)
 }
 
+func TestForEach(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	txtNode1 := Text(" bar")
+	txtNode2 := Text(" baz")
+	f := ForEach(AppendChildren, txtNode1, txtNode2)
+	f(node)
+	assertEqual(t, len(node.Child), 3)
+	assertEqual(t, node.Child[1].Data, txtNode1.Data)
+	assertEqual(t, node.Child[2].Data, txtNode2.Data)
+}
+
 // TODO(jwall): benchmarking tests

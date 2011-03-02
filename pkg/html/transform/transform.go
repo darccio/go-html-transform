@@ -21,6 +21,7 @@ package transform
 // TODO(jwall): Documentation...
 import (
 	. "html"
+	"log"
 )
 
 // The TransformFunc type is the type of a Node transformation function.
@@ -115,6 +116,25 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		for _, f := range fs {
 			f(n)
+		}
+	}
+}
+
+func ForEach(f interface{}, ns ...*Node) TransformFunc {
+	return func(n *Node) {
+		for _, n2 := range ns {
+			switch t := f.(type) {
+				case func(...*Node) TransformFunc:
+					f1 := f.(func(...*Node) TransformFunc)
+					f2 := f1(n2)
+					f2(n)
+				case func(*Node) TransformFunc:
+					f1 := f.(func(*Node) TransformFunc)
+					f2 := f1(n2)
+					f2(n)
+				default:
+					log.Panicf("Wrong function type passed to ForEach %s", t) 
+			}
 		}
 	}
 }
