@@ -96,6 +96,21 @@ func TestForEach(t *testing.T) {
 	assertEqual(t, node.Child[2].Data, txtNode2.Data)
 }
 
+func TestForEachSingleArgFuncs(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	txtNode1 := Text(" bar")
+	txtNode2 := Text(" baz")
+	singleArgFun := func(n *Node) TransformFunc {
+		return AppendChildren(n)
+	}
+	f := ForEach(singleArgFun, txtNode1, txtNode2)
+	f(node)
+	assertEqual(t, len(node.Child), 3)
+	assertEqual(t, node.Child[1].Data, txtNode1.Data)
+	assertEqual(t, node.Child[2].Data, txtNode2.Data)
+}
+
 func TestForEachPanic(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
