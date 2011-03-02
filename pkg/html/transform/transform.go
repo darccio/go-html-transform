@@ -120,6 +120,11 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 	}
 }
 
+// ForEach takes a function and a list of Nodes and performs that
+// function for each node in the list.
+// The function should be of a type either func(...*Node) TransformFunc
+// or func(*Node) TransformFunc. Any other type will panic.
+// Returns a TransformFunc.
 func ForEach(f interface{}, ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		for _, n2 := range ns {
