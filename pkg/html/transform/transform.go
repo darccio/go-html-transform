@@ -9,11 +9,11 @@ An html doc can be inspected and queried using css selectors as well as
 transformed.
 
  	doc := NewDoc(str)
- 	sel1 := NewSelector("div.foo")
+ 	sel1 := NewSelector("li.menuitem")
  	sel2 := NewSelector("a")
 	t := NewTransform(doc)
- 	t.Apply(AppendChild, sel1)
-  t..Apply(Replace, sel2)
+ 	t.Apply(CopyAnd(myModifiers...), sel1)
+  t..Apply(Replace(Text("my new text"), sel2)
   newDoc := t.Doc()
 */
 package transform
@@ -169,6 +169,11 @@ func ForEach(f interface{}, ns ...*Node) TransformFunc {
 	return nil
 }
 
+// CopyAnd will construct a TransformFunc that will
+// make a copy of the node for each passed in TransformFunc
+// And replace the passed in node with the resulting transformed
+// Nodes.
+// Returns a TransformFunc
 func CopyAnd(fns ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		newNodes := make([]*Node, len(fns))
