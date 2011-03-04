@@ -43,6 +43,10 @@ func (t *Transformer) Doc() *Document {
 	return t.doc
 }
 
+func (t *Transformer) String() string {
+	return t.doc.String()
+}
+
 // The Apply method applies a TransformFunc to the nodes returned from
 // the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {

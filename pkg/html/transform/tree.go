@@ -73,6 +73,10 @@ func NewDoc(s string) *Document {
 	return &Document{top: n}
 }
 
+func (d Document) String() string {
+	return String(d.top)
+}
+
 func walk(n *Node, f func(*Node)) {
 	f(n)
 	c := n.Child
