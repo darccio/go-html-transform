@@ -74,7 +74,7 @@ func NewDoc(s string) *Document {
 }
 
 func (d Document) String() string {
-	return String(d.top)
+	return toString(d.top)
 }
 
 func walk(n *Node, f func(*Node)) {
@@ -120,13 +120,12 @@ func attribsString(n *Node) string {
 	return str
 }
 
-// String turns a node into a string recursively.
-func String(n *Node) string {
+func toString(n *Node) string {
 	str := ""
 	switch n.Type {
 	case DocumentNode:
 		for _, c := range n.Child {
-			str += String(c)
+			str += toString(c)
 		}
 	case TextNode:
 		str = n.Data
@@ -135,7 +134,7 @@ func String(n *Node) string {
 		if len(n.Child) > 0 {
 			str += ">"
 			for _, c := range n.Child {
-				str += String(c)
+				str += toString(c)
 			}
 			str += "</" + n.Data + ">"
 		} else {
