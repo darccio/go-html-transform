@@ -136,3 +136,10 @@ func TestHtmlString(t *testing.T) {
 	assertEqual(t, len(nodes[1].Child), 1)
 	assertEqual(t, nodes[1].Child[0].Data, "foo")
 }
+
+func TestNodeString(t *testing.T) {
+	str := "<html><body class=\"foo\"><hr id=\"line\" /></body></html>"
+	node, _ := parseHtml(str)
+	html := String(node)
+	assertEqual(t, html, str)
+}

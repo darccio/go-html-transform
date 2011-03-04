@@ -108,6 +108,39 @@ func (d *Document) Walk(f func(*Node)) {
 	walk(d.top, f)
 }
 
+func attribsString(n *Node) string {
+	str := ""
+	for _, attr := range n.Attr {
+		str += " " + attr.Key + "=\"" + attr.Val + "\""
+	}
+	return str
+}
+
+// String turns a node into a string recursively.
+func String(n *Node) string {
+	str := ""
+	switch n.Type {
+	case DocumentNode:
+		for _, c := range n.Child {
+			str += String(c)
+		}
+	case TextNode:
+		str = n.Data
+	case ElementNode:
+		str += "<" + n.Data + attribsString(n)
+		if len(n.Child) > 0 {
+			str += ">"
+			for _, c := range n.Child {
+				str += String(c)
+			}
+			str += "</" + n.Data + ">"
+		} else {
+			str += " />" // this is a self-closing tag 
+		}
+	}
+	return str
+}
+
 func cloneNode(n *Node, p *Node) *Node {
 	node := new(Node)
 	node.Parent = p
