@@ -171,15 +171,13 @@ func ForEach(f interface{}, ns ...*Node) TransformFunc {
 
 func CopyAnd(fns ...TransformFunc) TransformFunc {
 	return func(n *Node) {
-		/*
-		newNodes := make([]*Nodes, len(fns))
+		newNodes := make([]*Node, len(fns))
 		for i, fn := range fns {
-			node := cloneNode(n)
+			node := cloneNode(n, n.Parent)
 			fn(node)
 			newNodes[i] = node
 		}
-		replaceFn := Replace(n, newNodes...)
-		replaceFn()
-		*/
+		replaceFn := Replace(newNodes...)
+		replaceFn(n)
 	}
 }

@@ -154,4 +154,35 @@ func TestForEachPanic(t *testing.T) {
 	ForEach("foo", txtNode1, txtNode2)
 }
 
+func TestCopyAnd(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Error("TestCopyAnd paniced %s", err)
+		}
+	}()
+	doc := NewDoc("<ul><li class=\"item\">item1</li></ul>")
+	ul := doc.top.Child[0]
+	node := ul.Child[0]
+	fn1 := func(n *Node) {
+		n.Child[0].Data = "foo"
+	}
+	fn2 := func(n *Node) {
+		n.Child[0].Data = "bar"
+	}
+	f := CopyAnd(fn1, fn2)
+
+	assertEqual(t, len(ul.Child), 1)
+	f(node)
+	assertEqual(t, len(ul.Child), 2)
+	assertEqual(t, ul.Child[0].Data, "li")
+	assertEqual(t, ul.Child[0].Attr[0].Key, "class")
+	assertEqual(t, ul.Child[0].Attr[0].Val, "item")
+	assertEqual(t, ul.Child[0].Child[0].Data, "foo")
+
+	assertEqual(t, ul.Child[1].Data, "li")
+	assertEqual(t, ul.Child[1].Attr[0].Key, "class")
+	assertEqual(t, ul.Child[1].Attr[0].Val, "item")
+	assertEqual(t, ul.Child[1].Child[0].Data, "bar")
+}
+
 // TODO(jwall): benchmarking tests
