@@ -6,6 +6,7 @@ import (
 	l "log"
 	"os"
 	"strings"
+	"reflect"
 )
 
 // Document is the type of a parsed html string.
@@ -127,6 +128,10 @@ func cloneNode(n *Node, p *Node) *Node {
 	copy(newAttr, n.Attr)
 	node.Attr = newAttr
 	return node
+}
+
+func compareNodes(n1 *Node, n2 *Node) bool {
+	return reflect.DeepEqual(n1, n2)
 }
 
 // The Clone method creates a deep copy of the Document.

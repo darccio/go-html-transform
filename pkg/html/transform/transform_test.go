@@ -57,14 +57,35 @@ func TestReplaceChildren(t *testing.T) {
 }
 
 func TestReplace(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Error("TestReplace paniced")
+		}
+	}()
 	doc := NewDoc("<div id=\"foo\">foo</div><")
 	node := doc.top.Child[0]
 	ns := HtmlString("<span>foo</span>")
 	f := Replace(ns...)
-	//f := Replace(HtmlString("<span>foo</span>")...)
 	f(node)
 	assertEqual(t, len(doc.top.Child), 1)
 	assertEqual(t, doc.top.Child[0].Data, "span")
+}
+
+func TestReplaceSplice(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Error("TestReplaceSplice paniced")
+		}
+	}()
+	doc := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	node := doc.top.Child[0].Child[0]
+	ns := HtmlString("<span>foo</span>")
+	f := Replace(ns...)
+	f(node)
+	assertEqual(t, len(doc.top.Child[0].Child), 2)
+	assertEqual(t, doc.top.Child[0].Child[0].Data, "span")
+	assertEqual(t, doc.top.Child[0].Child[0].Child[0].Data, "foo")
+	assertEqual(t, doc.top.Child[0].Child[1].Child[0].Data, "bar")
 }
 
 func TestModifyAttrib(t *testing.T) {

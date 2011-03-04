@@ -96,7 +96,20 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 func Replace(ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		p := n.Parent
-		p.Child = ns
+		// TODO(jwall): splice the new nodes into the spot the current node is
+		for i, c := range p.Child {
+			if c == n {
+				n := i-1
+				if n < 0 {
+					n = 0
+				}
+				var newChild []*Node
+				pre := p.Child[:n]
+				post := p.Child[i+1:]
+				newChild = append(pre, ns...)
+				p.Child = append(newChild, post...)
+			}
+		}
 	}
 }
 
@@ -154,4 +167,19 @@ func ForEach(f interface{}, ns ...*Node) TransformFunc {
 			log.Panicf("Wrong function type passed to ForEach %s", t) 
 	}
 	return nil
+}
+
+func CopyAnd(fns ...TransformFunc) TransformFunc {
+	return func(n *Node) {
+		/*
+		newNodes := make([]*Nodes, len(fns))
+		for i, fn := range fns {
+			node := cloneNode(n)
+			fn(node)
+			newNodes[i] = node
+		}
+		replaceFn := Replace(n, newNodes...)
+		replaceFn()
+		*/
+	}
 }
