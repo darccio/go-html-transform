@@ -36,8 +36,14 @@ func TestAppendChildren(t *testing.T) {
 	assertEqual(t, node.Child[2], child2)
 }
 
+func TestDocStringification(t *testing.T) {
+	str := "<div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
+	doc := NewDoc(str)
+	assertEqual(t, str, doc.String())
+}
+
 func TestRemoveChildren(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
+	doc := NewDoc("<div id=\"foo\">foo</div>")
 	node := doc.top.Child[0]
 	f := RemoveChildren()
 	f(node)
@@ -45,7 +51,7 @@ func TestRemoveChildren(t *testing.T) {
 }
 
 func TestReplaceChildren(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
+	doc := NewDoc("<div id=\"foo\">foo</div>")
 	node := doc.top.Child[0]
 	child := new(Node)
 	child2 := new(Node)
