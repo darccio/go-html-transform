@@ -248,14 +248,18 @@ func NewSelectorQuery(sel ...string) SelectorQuery {
 func applyToNode(sel []*Selector, n *Node) []*Node {
 	var nodes []*Node
 	if sel[0].Match(n) {
-		for _, c := range n.Child {
-			if len(sel) > 1 {
-				ns := applyToNode(sel[1:], c)
-				if len(ns) > 0 {
-					nodes = append(nodes, ns...)
+		if len(sel) == 1 {
+			nodes = []*Node{n}
+		} else {
+			for _, c := range n.Child {
+				if len(sel) > 1 {
+					ns := applyToNode(sel[1:], c)
+					if len(ns) > 0 {
+						nodes = append(nodes, ns...)
+					}
+				} else {
+					nodes = []*Node{n}
 				}
-			} else {
-				nodes = []*Node{n}
 			}
 		}
 	}

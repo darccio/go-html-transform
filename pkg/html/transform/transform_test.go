@@ -20,8 +20,21 @@ func TestNewTransform(t *testing.T) {
 func TestTransformApply(t *testing.T) {
 	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
 	tf := NewTransform(doc)
-	newDoc := tf.Apply(AppendChildren(new(Node)), "body").doc
+	newDoc := tf.Apply(AppendChildren(new(Node)), "body").Doc()
 	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
+}
+
+func TestTransformApplyMulti(t *testing.T) {
+	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+	tf := NewTransform(doc)
+	tf.Apply(AppendChildren(new(Node)), "body")
+	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
+		t.Logf("Rewriting Url")
+		return "bar"
+	}), "div").Doc()
+	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
+	assertEqual(t, newDoc.top.Child[0].Child[0].Child[0].Attr[0].Val,
+		"bar")
 }
 
 func TestAppendChildren(t *testing.T) {
