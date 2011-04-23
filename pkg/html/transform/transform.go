@@ -52,7 +52,7 @@ func (t *Transformer) String() string {
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	sq := NewSelectorQuery(sel...)
 	nodes := sq.Apply(t.doc)
-	for _, n := range nodes{
+	for _, n := range nodes {
 		f(n)
 	}
 	return t
@@ -103,7 +103,7 @@ func Replace(ns ...*Node) TransformFunc {
 		// TODO(jwall): splice the new nodes into the spot the current node is
 		for i, c := range p.Child {
 			if c == n {
-				n := i-1
+				n := i - 1
 				if n < 0 {
 					n = 0
 				}
@@ -130,7 +130,7 @@ func ModifyAttrib(key string, val string) TransformFunc {
 		}
 		if !found {
 			newAttr := make([]Attribute, len(n.Attr)+1)
-			newAttr[len(n.Attr)] = Attribute{Key:key, Val:val}
+			newAttr[len(n.Attr)] = Attribute{Key: key, Val: val}
 			n.Attr = newAttr
 		}
 	}
@@ -161,24 +161,24 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 // Returns a TransformFunc.
 func ForEach(f interface{}, ns ...*Node) TransformFunc {
 	switch t := f.(type) {
-		case func(...*Node) TransformFunc:
-			return func(n *Node) {
-				for _, n2 := range ns {
-					f1 := f.(func(...*Node) TransformFunc)
-					f2 := f1(n2)
-					f2(n)
-				}
+	case func(...*Node) TransformFunc:
+		return func(n *Node) {
+			for _, n2 := range ns {
+				f1 := f.(func(...*Node) TransformFunc)
+				f2 := f1(n2)
+				f2(n)
 			}
-		case func(*Node) TransformFunc:
-			return func(n *Node) {
-				for _, n2 := range ns {
-					f1 := f.(func(*Node) TransformFunc)
-					f2 := f1(n2)
-					f2(n)
-				}
+		}
+	case func(*Node) TransformFunc:
+		return func(n *Node) {
+			for _, n2 := range ns {
+				f1 := f.(func(*Node) TransformFunc)
+				f2 := f1(n2)
+				f2(n)
 			}
-		default:
-			log.Panicf("Wrong function type passed to ForEach %s", t) 
+		}
+	default:
+		log.Panicf("Wrong function type passed to ForEach %s", t)
 	}
 	return nil
 }

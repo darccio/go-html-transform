@@ -153,7 +153,7 @@ func toString(n *Node) string {
 			str += "</" + n.Data + ">"
 		} else {
 			// this is a self-closing tag
-			str += "></" + n.Data + ">" 
+			str += "></" + n.Data + ">"
 		}
 	}
 	return str
@@ -203,7 +203,7 @@ func (d *Document) FindAll(f func(*Node) bool) *v.Vector {
 
 // Constructs a TextNode for the string passed in
 func Text(str string) *Node {
-	return &Node{Data:str, Type:TextNode}
+	return &Node{Data: str, Type: TextNode}
 }
 
 // Constructs a slice of *Nodes from a string of html.

@@ -31,7 +31,8 @@ func TestTransformApplyMulti(t *testing.T) {
 	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
 		t.Logf("Rewriting Url")
 		return "bar"
-	}), "div").Doc()
+	}),
+		"div").Doc()
 	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
 	assertEqual(t, newDoc.top.Child[0].Child[0].Child[0].Attr[0].Val,
 		"bar")
@@ -124,7 +125,7 @@ func TestTransformAttrib(t *testing.T) {
 	doc := NewDoc("<div id=\"foo\">foo</div><")
 	node := doc.top.Child[0]
 	assertEqual(t, node.Attr[0].Val, "foo")
-	f := TransformAttrib("id", func(s string) string { return "bar"})
+	f := TransformAttrib("id", func(s string) string { return "bar" })
 	f(node)
 	assertEqual(t, node.Attr[0].Val, "bar")
 }
@@ -137,7 +138,7 @@ func TestDoAll(t *testing.T) {
 	postNode := new(Node)
 	postNode.Data = "post node"
 	f := DoAll(AppendChildren(postNode),
-		         PrependChildren(preNode))
+		PrependChildren(preNode))
 	f(node)
 	assertEqual(t, len(node.Child), 3)
 	assertEqual(t, node.Child[0].Data, preNode.Data)

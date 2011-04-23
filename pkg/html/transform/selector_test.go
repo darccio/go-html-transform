@@ -443,7 +443,7 @@ func TestSelectorQueryMultipleSelectors(t *testing.T) {
 	doc := NewDoc(docStr)
 	expectedNode := doc.top.Child[0].Child[1].Child[0].Child[0]
 	selQuery := NewSelectorQuery("div.content", "a") // descendent a's of div.content
-	
+
 	nodes := selQuery.Apply(doc)
 	assertEqual(t, len(nodes), 1)
 	assertEqual(t, nodes[0], expectedNode)

@@ -28,11 +28,11 @@ type Selector struct {
 
 const (
 	TAGNAME byte = iota // Tagname Selector Type
-	CLASS   byte = '.' // Class SelectorPart Type
-	ID      byte = '#' // Id  SelectorPart Type
-	PSEUDO  byte = ':' // Pseudo SelectoPart Type 
-	ANY     byte = '*' // Any tag Selector Type
-	ATTR    byte = '[' // Attr Selector Type
+	CLASS   byte = '.'  // Class SelectorPart Type
+	ID      byte = '#'  // Id  SelectorPart Type
+	PSEUDO  byte = ':'  // Pseudo SelectoPart Type 
+	ANY     byte = '*'  // Any tag Selector Type
+	ATTR    byte = '['  // Attr Selector Type
 )
 
 const (
@@ -263,7 +263,7 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 			}
 		}
 	}
-	return nodes	
+	return nodes
 }
 
 // Apply the css selector to a document.
