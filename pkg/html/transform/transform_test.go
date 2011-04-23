@@ -37,7 +37,7 @@ func TestAppendChildren(t *testing.T) {
 }
 
 func TestDocStringification(t *testing.T) {
-	str := "<div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
+	str := "<selfClosed /><div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
 	doc := NewDoc(str)
 	assertEqual(t, str, doc.String())
 }
@@ -105,6 +105,15 @@ func TestModifyAttrib(t *testing.T) {
 	f(node)
 	assertEqual(t, node.Attr[1].Key, "class")
 	assertEqual(t, node.Attr[1].Val, "baz")
+}
+
+func TestTransformAttrib(t *testing.T) {
+	doc := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.top.Child[0]
+	assertEqual(t, node.Attr[0].Val, "foo")
+	f := TransformAttrib("id", func(s string) string { return "bar"})
+	f(node)
+	assertEqual(t, node.Attr[0].Val, "bar")
 }
 
 func TestDoAll(t *testing.T) {

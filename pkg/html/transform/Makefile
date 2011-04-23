@@ -1,7 +1,7 @@
 # defines $GC) (compiler), $(LD) (linker) and $(O) (architecture)
 include $(GOROOT)/src/Make.inc
 
-TARG=html/trans
+TARG=html/transform
 GOFILES=\
 	tree.go\
 	selector.go\

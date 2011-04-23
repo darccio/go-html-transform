@@ -5,6 +5,7 @@ import (
 	. "html"
 	l "log"
 	"os"
+	"io"
 	"strings"
 )
 
@@ -26,8 +27,12 @@ func tokenToNode(tok *Token) *Node {
 	return node
 }
 
-func parseHtml(s string) (top *Node, err os.Error) {
+func parseHtml(s string) (*Node, os.Error) {
 	r := strings.NewReader(s)
+	return readHtml(r)
+}
+
+func readHtml(r io.Reader) (top *Node, err os.Error) {
 	z := NewTokenizer(r)
 	top = new(Node)
 	top.Type = DocumentNode
@@ -73,7 +78,15 @@ func NewDoc(s string) *Document {
 	return &Document{top: n}
 }
 
-func (d Document) String() string {
+func NewDocFromReader(r io.Reader) *Document {
+	n, err := readHtml(r)
+	if err != nil {
+		l.Panicf("Failure parsing html from reader")
+	}
+	return &Document{top: n}
+}
+
+func (d *Document) String() string {
 	return toString(d.top)
 }
 

@@ -136,6 +136,16 @@ func ModifyAttrib(key string, val string) TransformFunc {
 	}
 }
 
+func TransformAttrib(key string, f func(string) string) TransformFunc {
+	return func(n *Node) {
+		for i, attr := range n.Attr {
+			if attr.Key == key {
+				n.Attr[i].Val = f(n.Attr[i].Val)
+			}
+		}
+	}
+}
+
 func DoAll(fs ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		for _, f := range fs {
