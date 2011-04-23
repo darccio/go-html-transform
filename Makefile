@@ -1,14 +1,23 @@
+SRCDIR := pkg/html/transform
+GOSRCS := $(shell ls ${SRCDIR}/*.go)
+GOFMTARGS := ${GOSRCS:%.go=%.fmt}
+
 default:
-	(cd pkg/html/transform && gomake)
+	(cd ${SRCDIR} && gomake)
 
 test:
-	(cd pkg/html/transform && gotest -test.v)
+	(cd ${SRCDIR} && gotest -test.v)
 
 benchmark:
-	(cd pkg/html/transform && gotest -benchmarks=".*")
+	(cd ${SRCDIR} && gotest -benchmarks=".*")
 
 install:
-	(cd pkg/html/transform && make install)
+	(cd ${SRCDIR} && make install)
 
 clean:
-	(cd pkg/html/transform && make clean)
+	(cd ${SRCDIR} && make clean)
+
+format: ${GOFMTARGS}
+
+${SRCDIR}/%.fmt: ${SRCDIR}/%.go
+	gofmt -spaces -w $<
