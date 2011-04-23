@@ -58,7 +58,8 @@ func readHtml(r io.Reader) (top *Node, err os.Error) {
 				node.Parent = p
 				newChild[len(newChild)-1] = node
 				if tok.Type != SelfClosingTagToken &&
-					tok.Type != TextToken {
+					tok.Type != TextToken &&
+					tok.Data != "link" {
 					q.Push(node)
 				}
 			case EndTagToken:
@@ -151,7 +152,8 @@ func toString(n *Node) string {
 			}
 			str += "</" + n.Data + ">"
 		} else {
-			str += " />" // this is a self-closing tag 
+			// this is a self-closing tag
+			str += "></" + n.Data + ">" 
 		}
 	}
 	return str

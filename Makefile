@@ -9,3 +9,6 @@ benchmark:
 
 install:
 	(cd pkg/html/transform && make install)
+
+clean:
+	(cd pkg/html/transform && make clean)
