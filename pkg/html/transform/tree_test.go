@@ -15,7 +15,7 @@ import (
 
 func assertEqual(t *testing.T, val interface{}, expected interface{}) {
 	if val != expected {
-		t.Errorf("NotEqual Expected: [%s] Actual[ %s]",
+		t.Errorf("NotEqual Expected: [%s] Actual: [%s]",
 			expected, val)
 	}
 }
@@ -159,5 +159,5 @@ func TestNodeString(t *testing.T) {
 	str := "<html><body class=\"foo\"><hr id=\"line\" /></body></html>"
 	node, _ := parseHtml(str)
 	html := toString(node)
-	assertEqual(t, html, str)
+	assertEqual(t, str, html)
 }

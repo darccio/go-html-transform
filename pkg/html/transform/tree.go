@@ -214,7 +214,7 @@ func toString(n *Node) string {
 			str += "</" + n.Data + ">"
 		} else {
 			// this is a self-closing tag
-			str += "></" + n.Data + ">"
+			str += " />"
 		}
 	}
 	return str
