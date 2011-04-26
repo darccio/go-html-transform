@@ -4,6 +4,7 @@ import (
 	. "html/transform"
 	"os"
 	"testing"
+	l "log"
 )
 
 func benchParseReader(b *testing.B, f *os.File) {
@@ -35,6 +36,11 @@ func BenchmarkNewDocComplex(b *testing.B) {
 }
 
 func BenchmarkNewDocRealPage(b *testing.B) {
+	defer func() {
+		if err := recover(); err != nil {
+			l.Printf("Paniced while parsing: %s", err)
+		}
+	}()
 	f, _ := os.OpenFile("walljm.com.html", os.O_RDONLY, 0666)
 	benchParseReader(b, f)	
 }
