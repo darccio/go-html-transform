@@ -10,11 +10,12 @@ import (
 	v "container/vector"
 	s "strings"
 	. "html"
+	"fmt"
 )
 
 func assertEqual(t *testing.T, val interface{}, expected interface{}) {
 	if val != expected {
-		t.Errorf("NotEqual Expected: %s Actual %s",
+		t.Errorf("NotEqual Expected: [%s] Actual[ %s]",
 			expected, val)
 	}
 }
@@ -93,6 +94,18 @@ func TestParseHtmlSelfClosingTag(t *testing.T) {
 	}
 	assertEqual(t, len(node.Child[0].Child), 2)
 	assertEqual(t, len(node.Child[0].Child[1].Child), 2)
+}
+
+func TestParseHtmlScriptTags(t *testing.T) {
+	scriptStr := " var div = \"<div>foo</div>\"; i < 0;"
+	docStr := fmt.Sprintf("<script>%s</script>", scriptStr)
+	doc := NewDoc(docStr)
+	node := doc.top
+	assertEqual(t, node.Child[0].Parent, node)
+	assertEqual(t, node.Child[0].Data, "script")
+	assertEqual(t, len(node.Child[0].Child), 1)
+	assertEqual(t, node.Child[0].Child[0].Type, TextNode)
+	assertEqual(t, node.Child[0].Child[0].Data, []byte(scriptStr))
 }
 
 func TestNewDoc(t *testing.T) {

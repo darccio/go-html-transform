@@ -32,7 +32,61 @@ func parseHtml(s string) (*Node, os.Error) {
 	return readHtml(r)
 }
 
+func emptyElement(tok *Token) bool {
+	return tok.Data == "area" ||
+		tok.Data == "base" ||
+		tok.Data == "basefont" ||
+		tok.Data == "br" ||
+		tok.Data == "col" ||
+		tok.Data == "frame" ||
+		tok.Data == "input" ||
+		tok.Data == "img" ||
+		tok.Data == "link" ||
+		tok.Data == "meta" ||
+		tok.Data == "param"
+}
+
+var okError = "html: TODO"
+
+func inScript(z *Tokenizer, script *Node) (ok bool, err os.Error) {
+	// we need to consume the raw tokens until we come to the script token
+	l.Printf("handling the script tag")
+	ok = false
+	node := new(Node)
+	node.Type = TextNode
+	node.Data = ""
+	script.Child = append(script.Child, node)
+	for {
+		tt := z.Next()
+		raw := z.Raw()
+		if tt == ErrorToken {
+			err = z.Error()
+			errMsg := err.String()
+			if len(errMsg) >= len(okError) &&
+				errMsg[:len(okError)] == okError {
+				// TODO(jwall): find a safe way to handle this.
+				return
+			} else {
+				return
+			}
+		}
+		l.Printf("adding [%s] to script contents", raw)
+		tok := z.Token()
+		if tok.Data == "script" {
+			l.Printf("exiting script tag")
+			ok = true
+			return
+		} else {
+			node.Data += string(raw)
+		}
+	}
+	l.Panicf("Script tag never terminated")
+	// impossible to reach
+	return
+}
+
 func readHtml(r io.Reader) (top *Node, err os.Error) {
+	// TODO(jwall): start using the Scanner instead of the tokenizer
 	z := NewTokenizer(r)
 	top = new(Node)
 	top.Type = DocumentNode
@@ -47,19 +101,26 @@ func readHtml(r io.Reader) (top *Node, err os.Error) {
 				break // done parsing since end of file
 			}
 		} else {
+			l.Printf("handling raw token: %s", z.Raw())
 			tok := z.Token()
 			p := q.Last().(*Node)
 			switch tok.Type {
 			case TextToken, SelfClosingTagToken, StartTagToken:
+				node := tokenToNode(&tok)
+				if tok.Data == "script" {
+					ok, sErr := inScript(z, node)
+					if !ok && sErr != nil {
+						l.Panicf("Error parsing script: %s", sErr)
+					}
+				}
 				newChild := make([]*Node, len(p.Child)+1)
 				copy(newChild, p.Child)
 				p.Child = newChild
-				node := tokenToNode(&tok)
 				node.Parent = p
 				newChild[len(newChild)-1] = node
 				if tok.Type != SelfClosingTagToken &&
 					tok.Type != TextToken &&
-					tok.Data != "link" {
+					!emptyElement(&tok) {
 					q.Push(node)
 				}
 			case EndTagToken:
