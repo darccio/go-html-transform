@@ -4,7 +4,6 @@ include $(GOROOT)/src/Make.inc
 TARG=html/transform
 GOFILES=\
 	tree.go\
-	parse.go\
 	selector.go\
 	transform.go\
 
