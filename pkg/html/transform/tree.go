@@ -50,7 +50,7 @@ var okError = "html: TODO"
 
 func inScript(z *Tokenizer, script *Node) (ok bool, err os.Error) {
 	// we need to consume the raw tokens until we come to the script token
-	l.Printf("handling the script tag")
+	//l.Printf("handling the script tag")
 	ok = false
 	node := new(Node)
 	node.Type = TextNode
@@ -70,10 +70,10 @@ func inScript(z *Tokenizer, script *Node) (ok bool, err os.Error) {
 				return
 			}
 		}
-		l.Printf("adding [%s] to script contents", raw)
+		//l.Printf("adding [%s] to script contents", raw)
 		tok := z.Token()
 		if tok.Data == "script" {
-			l.Printf("exiting script tag")
+			//l.Printf("exiting script tag")
 			ok = true
 			return
 		} else {
@@ -101,7 +101,7 @@ func readHtml(r io.Reader) (top *Node, err os.Error) {
 				break // done parsing since end of file
 			}
 		} else {
-			l.Printf("handling raw token: %s", z.Raw())
+			//l.Printf("handling raw token: %s", z.Raw())
 			tok := z.Token()
 			p := q.Last().(*Node)
 			switch tok.Type {

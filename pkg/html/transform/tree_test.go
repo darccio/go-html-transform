@@ -97,6 +97,11 @@ func TestParseHtmlSelfClosingTag(t *testing.T) {
 }
 
 func TestParseHtmlScriptTags(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Errorf("TestParseScriptTags paniced: %s", err)
+		}
+	}()
 	scriptStr := " var div = \"<div>foo</div>\"; i < 0;"
 	docStr := fmt.Sprintf("<script>%s</script>", scriptStr)
 	doc := NewDoc(docStr)
