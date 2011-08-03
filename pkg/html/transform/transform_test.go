@@ -51,7 +51,7 @@ func TestAppendChildren(t *testing.T) {
 }
 
 func TestDocStringification(t *testing.T) {
-	str := "<selfClosed /><div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
+	str := "<selfclosed></selfclosed><div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
 	doc := NewDoc(str)
 	assertEqual(t, str, doc.String())
 }
