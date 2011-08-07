@@ -53,7 +53,7 @@ func (p *Parser) nextInput() (int, os.Error) {
 
 func (p *Parser) Parse() os.Error {
 	// we start in the data state
-	h := handleChar(handleData)
+	h := handleChar(dataStateHandler)
 	for h != nil {
 		h2, err := h(p)
 		if err == os.EOF {
@@ -83,7 +83,7 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 }
 
 // Section 11.2.4.1
-func handleData(p *Parser, c int) stateHandler {
+func dataStateHandler(p *Parser, c int) stateHandler {
 	switch c {
 	//case '&': // TODO(jwall): do we actually care for this parser?
 		//return handleChar(charRefHandler)
@@ -92,7 +92,7 @@ func handleData(p *Parser, c int) stateHandler {
 	default:
 		// consume the token
 		textConsumer(p, c)
-		return handleChar(handleData)
+		return handleChar(dataStateHandler)
 	}
 	panic("Unreachable")
 }
@@ -100,7 +100,7 @@ func handleData(p *Parser, c int) stateHandler {
 // Section 11.2.4.2
 func charRefHandler(p *Parser, c int) stateHandler {
 	switch c {
-	case '\t', '\n', '\u000C', ' ', '<', '&':
+	case '\t', '\n', '\f', ' ', '<', '&':
 		// TODO
 	case '#':
 		// TODO
@@ -116,15 +116,130 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 	case '!': // markup declaration state
 		// TODO
 	case '/': // end tag open state
+		return endTagOpenHandler
 		// TODO
 	case '?': // parse error // bogus comment state
+		return bogusCommentHandler
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		// TODO
+		lc := c + 0x0020 // lowercase it
+		pushNode(p).data = []int{lc}
+		return handleChar(tagNameHandler)
+		// TODO // start new node with name set to lowercase c
 	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
 		// TODO
+		pushNode(p).data = []int{c}
+		return handleChar(tagNameHandler)
 	default: // parse error // recover using Section 11.2.4.8 rules
+		// TODO
 	}
 	return nil
+}
+
+// Section 11.2.4.10
+func tagNameHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// TODO beforeAttributeNameHandler
+	case '/':
+		// TODO selfClosingTagStartHandler
+	case '>':
+		return handleChar(dataStateHandler)
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		n.data = append(n.data, lc)
+		return handleChar(tagNameHandler)
+	default:
+		n.data = append(n.data, c)
+		return handleChar(tagNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.9
+func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
+	// compare to current tags name
+	n := p.curr
+	for i := 0; i < len(p.curr.data); i++ {
+		c, err := p.nextInput()
+		if err == os.EOF { // Parse Error
+			// TODO
+			return nil, err
+		}
+		if err != nil {
+			return nil, err
+		}
+		switch c {
+		case '>':
+			// parse error
+			return handleChar(dataStateHandler), nil
+		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+			lc := c + 0x0020 // lowercase it
+			if n.data[i] != lc {
+				// parse error
+			} else {
+				popNode(p)
+			}
+			return handleChar(dataStateHandler), nil
+		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+			if n.data[i] != c {
+				// parse error
+			} else {
+				popNode(p)
+			}
+			return handleChar(dataStateHandler), nil
+		default: // Bogus Comment state
+			return bogusCommentHandler, nil
+		}
+	}
+	panic("unreachable")
+}
+
+func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
+	n := addChild(p)
+	for {
+		c, err := p.nextInput()
+		if err != nil {
+			return nil, err
+		}
+		switch c {
+		case '>':
+			return handleChar(dataStateHandler), nil
+		default:
+			n.data = append(n.data, c)
+			return handleChar(dataStateHandler), nil
+		}
+	}
+	panic("Unreachable")
+}
+
+// TODO(jwall): UNITTESTS!!!!
+func addChild(p *Parser) *Node {
+	n := new(Node)
+	p.curr.Children = append(p.curr.Children, n)
+	return n
+}
+
+func pushNode(p *Parser) *Node {
+	n := new(Node)
+	if p.Top != nil {
+		p.Top = n
+	}
+	if p.curr == nil {
+		p.curr = n
+	} else {
+		n.Parent = p.curr
+		p.curr = n
+	}
+	return n
+}
+
+func popNode(p *Parser) *Node {
+	p.curr = p.curr.Parent
+	return p.curr
 }
