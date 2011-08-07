@@ -60,7 +60,7 @@ func (p *Parser) Parse() os.Error {
 			return nil
 		}
 		if err != nil {
-			// parse error
+			// TODO parse error
 			return os.NewError(fmt.Sprintf("Parse error: %s", err))
 		}
 		h = h2
@@ -118,7 +118,7 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 	case '/': // end tag open state
 		return endTagOpenHandler
 		// TODO
-	case '?': // parse error // bogus comment state
+	case '?': // TODO parse error // bogus comment state
 		return bogusCommentHandler
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -174,13 +174,13 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		}
 		switch c {
 		case '>':
-			// parse error
+			// TODO parse error
 			return handleChar(dataStateHandler), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
 			if n.data[i] != lc {
-				// parse error
+				// TODO parse error
 			} else {
 				popNode(p)
 			}
@@ -188,7 +188,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
 			if n.data[i] != c {
-				// parse error
+				// TODO parse error
 			} else {
 				popNode(p)
 			}
