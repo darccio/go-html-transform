@@ -217,7 +217,6 @@ func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 			return handleChar(dataStateHandler), nil
 		default:
 			n.data = append(n.data, c)
-			return handleChar(dataStateHandler), nil
 		}
 	}
 	panic("Unreachable")

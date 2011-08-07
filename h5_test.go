@@ -46,3 +46,21 @@ func TestAddSibling(t *testing.T) {
 	util.AssertEqual(t, top.Children[0], next)
 	util.AssertEqual(t, top.Children[1], sib)
 }
+
+func TestBogusCommentHandlerNoEOF(t *testing.T) {
+	p := NewParserFromString("foo comment >")
+	top := pushNode(p)
+	pushNode(p)
+	bogusCommentHandler(p)
+	util.AssertEqual(t, len(top.Children), 2)
+	util.AssertEqual(t, string(top.Children[1].data), "foo comment ")
+}
+
+func TestBogusCommentHandlerEOF(t *testing.T) {
+	p := NewParserFromString("foo comment")
+	top := pushNode(p)
+	pushNode(p)
+	bogusCommentHandler(p)
+	util.AssertEqual(t, len(top.Children), 2)
+	util.AssertEqual(t, string(top.Children[1].data), "foo comment")
+}
