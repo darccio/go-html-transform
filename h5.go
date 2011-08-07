@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"io"
+	"strings"
 )
 
 type Attribute struct {
@@ -41,6 +42,10 @@ type Parser struct {
 
 // Handles the various tokenization states
 type stateHandler func(p *Parser) (stateHandler, os.Error)
+
+func NewParserFromString(s string) *Parser {
+	return NewParser(strings.NewReader(s))
+}
 
 func NewParser(r io.Reader) *Parser {
 	return &Parser{In: bufio.NewReader(r)}
@@ -201,7 +206,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
-	n := addChild(p)
+	n := addSibling(p)
 	for {
 		c, err := p.nextInput()
 		if err != nil {
@@ -219,21 +224,22 @@ func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 // TODO(jwall): UNITTESTS!!!!
-func addChild(p *Parser) *Node {
+func addSibling(p *Parser) *Node {
 	n := new(Node)
-	p.curr.Children = append(p.curr.Children, n)
+	p.curr.Parent.Children = append(p.curr.Parent.Children, n)
 	return n
 }
 
 func pushNode(p *Parser) *Node {
 	n := new(Node)
-	if p.Top != nil {
+	if p.Top == nil {
 		p.Top = n
 	}
 	if p.curr == nil {
 		p.curr = n
 	} else {
 		n.Parent = p.curr
+		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
 	}
 	return n
