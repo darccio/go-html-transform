@@ -142,6 +142,7 @@ func charRefHandler(p *Parser, c int) stateHandler {
 // TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
+	curr := pushNode(p)
 	switch c {
 	case '!': // markup declaration state
 		// TODO
@@ -152,14 +153,14 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 		return bogusCommentHandler
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		curr.Type = ElementNode
 		lc := c + 0x0020 // lowercase it
-		pushNode(p).data = []int{lc}
+		curr.data = []int{lc}
 		return handleChar(tagNameHandler)
-		// TODO // start new node with name set to lowercase c
 	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
-		// TODO
-		pushNode(p).data = []int{c}
+		curr.Type = ElementNode
+		curr.data = []int{c}
 		return handleChar(tagNameHandler)
 	default: // parse error // recover using Section 11.2.4.8 rules
 		// TODO

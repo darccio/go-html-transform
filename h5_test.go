@@ -158,3 +158,18 @@ func TestTagNameHandler(t *testing.T) {
 	util.AssertTrue(t, err == nil, "err is not nil")
 	util.AssertEqual(t, curr.data[0], 'f')
 }
+
+func TestTagOpenHandler(t *testing.T) {
+	p := NewParserFromString("")
+	st := tagOpenHandler(p, 'f')
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertEqual(t, p.curr.data[0], 'f')
+	util.AssertEqual(t, p.curr.Type, ElementNode)
+}
+
+func TestTagOpenHandlerEndTag(t *testing.T) {
+	p := NewParserFromString("")
+	st := tagOpenHandler(p, '/')
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, p.curr.data == nil, "data is currently nil")
+}
