@@ -8,6 +8,19 @@ import (
 	"strings"
 )
 
+type ParseError struct {
+	msg string
+	node *Node
+}
+
+func NewParseError(n *Node, msg string, args... interface{}) *ParseError {
+	return &ParseError{node:n, msg:fmt.Sprintf(msg, args...)}
+}
+
+func (e ParseError) String() string {
+	return e.msg
+}
+
 type Attribute struct {
 	Name string
 	Value string
@@ -17,7 +30,7 @@ type NodeType int
 const (
 	TextNode NodeType = iota // zero value so the default
 	ElementNode NodeType = iota
-	)
+)
 
 type Node struct {
 	Type NodeType
@@ -56,6 +69,7 @@ func (p *Parser) nextInput() (int, os.Error) {
 	return r, err
 }
 
+// TODO(jwall): UNITTESTS!!!!
 func (p *Parser) Parse() os.Error {
 	// we start in the data state
 	h := handleChar(dataStateHandler)
@@ -73,10 +87,12 @@ func (p *Parser) Parse() os.Error {
 	return nil
 }
 
+// TODO(jwall): UNITTESTS!!!!
 func textConsumer(p *Parser, chars... int) {
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
+// TODO(jwall): UNITTESTS!!!!
 func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 	return func(p *Parser) (stateHandler, os.Error) {
 			c, err := p.nextInput()
@@ -87,6 +103,7 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 		}
 }
 
+// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
 	switch c {
@@ -102,6 +119,7 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
+// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.2
 func charRefHandler(p *Parser, c int) stateHandler {
 	switch c {
@@ -115,6 +133,7 @@ func charRefHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
+// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
 	switch c {
@@ -142,6 +161,7 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 	return nil
 }
 
+// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.10
 func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
@@ -164,36 +184,49 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
+// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.9
 func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
 	n := p.curr
-	for i := 0; i < len(p.curr.data); i++ {
+	tag := make([]int, len(n.data))
+	for i := 0; i <= len(n.data); i++ {
 		c, err := p.nextInput()
 		if err == os.EOF { // Parse Error
 			// TODO
 			return nil, err
 		}
 		if err != nil {
+			// TODO
 			return nil, err
+		}
+		if i == len(n.data) {
+				return nil, NewParseError(
+					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
+					n.data, tag)
 		}
 		switch c {
 		case '>':
-			// TODO parse error
 			return handleChar(dataStateHandler), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
+			tag[i] = lc
 			if n.data[i] != lc {
-				// TODO parse error
+				return nil, NewParseError(
+					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
+					n.data, tag)
 			} else {
 				popNode(p)
 			}
 			return handleChar(dataStateHandler), nil
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+			tag[i] = c
 			if n.data[i] != c {
-				// TODO parse error
+				return nil, NewParseError(
+					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
+					n.data, tag)
 			} else {
 				popNode(p)
 			}
@@ -205,6 +238,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	panic("unreachable")
 }
 
+// Section 11.2.4.44
 func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 	n := addSibling(p)
 	for {
@@ -222,7 +256,6 @@ func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 	panic("Unreachable")
 }
 
-// TODO(jwall): UNITTESTS!!!!
 func addSibling(p *Parser) *Node {
 	n := new(Node)
 	p.curr.Parent.Children = append(p.curr.Parent.Children, n)

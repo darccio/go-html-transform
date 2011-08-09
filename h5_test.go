@@ -51,16 +51,35 @@ func TestBogusCommentHandlerNoEOF(t *testing.T) {
 	p := NewParserFromString("foo comment >")
 	top := pushNode(p)
 	pushNode(p)
-	bogusCommentHandler(p)
+	st, err := bogusCommentHandler(p)
 	util.AssertEqual(t, len(top.Children), 2)
 	util.AssertEqual(t, string(top.Children[1].data), "foo comment ")
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, err == nil, "err is not nil")
 }
 
+// TODO error cases
 func TestBogusCommentHandlerEOF(t *testing.T) {
 	p := NewParserFromString("foo comment")
 	top := pushNode(p)
 	pushNode(p)
-	bogusCommentHandler(p)
+	st, err := bogusCommentHandler(p)
 	util.AssertEqual(t, len(top.Children), 2)
 	util.AssertEqual(t, string(top.Children[1].data), "foo comment")
+	util.AssertTrue(t, st == nil, "next state handler is not nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+}
+
+// TODO the tag name too short case
+// TODO the tag name too long case
+// TODO the tag name different
+func TestEndTagOpenHandlerOk(t *testing.T) {
+	p := NewParserFromString("foo>")
+	curr := pushNode(p)
+	curr.data = []int("foo")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, err == nil, "err is not nil")
+	util.AssertTrue(t, p.curr == nil, "did not pop node")
 }
