@@ -167,7 +167,6 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 	return nil
 }
 
-// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.10
 func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr

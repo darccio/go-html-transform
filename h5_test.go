@@ -74,7 +74,7 @@ func TestBogusCommentHandlerEOF(t *testing.T) {
 // TODO the tag name too long case
 // TODO the tag name different
 func TestEndTagOpenHandlerOk(t *testing.T) {
-	p := NewParserFromString("foo>")
+	p := NewParserFromString("FoO>")
 	curr := pushNode(p)
 	curr.data = []int("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
@@ -88,7 +88,7 @@ func TestEndTagOpenHandlerOk(t *testing.T) {
 func TestEndTagOpenHandlerTrunc(t *testing.T) {
 	p := NewParserFromString("fo>")
 	curr := pushNode(p)
-	curr.data = []int("fo0")
+	curr.data = []int("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st == nil, "next state handler is not nil")
@@ -138,4 +138,23 @@ func TestEndTagOpenHandlerEOF(t *testing.T) {
 	util.AssertTrue(t, st == nil, "next state handler is nil")
 	util.AssertTrue(t, err != nil, "err is nil")
 	util.AssertEqual(t, p.curr, curr)
+}
+
+func TestTagNameHandler(t *testing.T) {
+	p := NewParserFromString("f> ")
+	curr := pushNode(p)
+	st, err := handleChar(tagNameHandler)(p)
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, err == nil, "err is not nil")
+	util.AssertEqual(t, curr.data[0], 'f')
+	st, err = handleChar(tagNameHandler)(p)
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, err == nil, "err is not nil")
+	util.AssertEqual(t, curr.data[0], 'f')
+	p = NewParserFromString("F")
+	curr = pushNode(p)
+	st, err = handleChar(tagNameHandler)(p)
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, err == nil, "err is not nil")
+	util.AssertEqual(t, curr.data[0], 'f')
 }
