@@ -89,6 +89,9 @@ func (p *Parser) Parse() os.Error {
 
 // TODO(jwall): UNITTESTS!!!!
 func textConsumer(p *Parser, chars... int) {
+	if p.curr == nil {
+		pushNode(p)
+	}
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
@@ -125,7 +128,7 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
-// TODO(jwall): UNITTESTS!!!!
+// TODO(jwall):
 // Section 11.2.4.2
 func charRefHandler(p *Parser, c int) stateHandler {
 	switch c {
@@ -139,7 +142,6 @@ func charRefHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
-// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
 	curr := pushNode(p)

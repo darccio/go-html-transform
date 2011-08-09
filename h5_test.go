@@ -173,3 +173,16 @@ func TestTagOpenHandlerEndTag(t *testing.T) {
 	util.AssertTrue(t, st != nil, "next state handler is nil")
 	util.AssertTrue(t, p.curr.data == nil, "data is currently nil")
 }
+
+func TestDataStateHandler(t *testing.T) {
+	p := NewParserFromString("")
+	st := dataStateHandler(p, '<')
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, p.curr == nil, "curr is currently nil")
+	util.AssertTrue(t, p.Top == nil, "Top is currently nil")
+	st = dataStateHandler(p, 'f')
+	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertTrue(t, p.curr != nil, "curr is currently nil")
+	util.AssertTrue(t, p.Top != nil, "Top is currently nil")
+	util.AssertEqual(t, p.curr.data, []int{'f'})
+}
