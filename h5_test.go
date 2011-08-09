@@ -80,6 +80,62 @@ func TestEndTagOpenHandlerOk(t *testing.T) {
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertEqual(t, err, nil)
 	util.AssertTrue(t, err == nil, "err is not nil")
 	util.AssertTrue(t, p.curr == nil, "did not pop node")
+}
+
+func TestEndTagOpenHandlerTrunc(t *testing.T) {
+	p := NewParserFromString("fo>")
+	curr := pushNode(p)
+	curr.data = []int("fo0")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st == nil, "next state handler is not nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+	util.AssertEqual(t, p.curr, curr)
+}
+
+func TestEndTagOpenHandlerLong(t *testing.T) {
+	p := NewParserFromString("fooo>")
+	curr := pushNode(p)
+	curr.data = []int("foo")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st == nil, "next state handler is not nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+	util.AssertEqual(t, p.curr, curr)
+}
+
+func TestEndTagOpenHandlerWrong(t *testing.T) {
+	p := NewParserFromString("bar>")
+	curr := pushNode(p)
+	curr.data = []int("foo")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st == nil, "next state handler is not nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+	util.AssertEqual(t, p.curr, curr)
+}
+
+func TestEndTagOpenHandlerBogusComment(t *testing.T) {
+	p := NewParserFromString("f\no>")
+	curr := pushNode(p)
+	curr.data = []int("foo")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st != nil, "next state handler is not nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+	util.AssertEqual(t, p.curr, curr)
+}
+
+func TestEndTagOpenHandlerEOF(t *testing.T) {
+	p := NewParserFromString("foo")
+	curr := pushNode(p)
+	curr.data = []int("foo")
+	util.AssertTrue(t, p.curr != nil, "curr is not nil")
+	st, err := endTagOpenHandler(p)
+	util.AssertTrue(t, st == nil, "next state handler is nil")
+	util.AssertTrue(t, err != nil, "err is nil")
+	util.AssertEqual(t, p.curr, curr)
 }

@@ -200,42 +200,52 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 			// TODO
 			return nil, err
 		}
-		if i == len(n.data) {
+		if i > len(n.data) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
 					n.data, tag)
 		}
 		switch c {
 		case '>':
+			if i != len(n.data) {
+				return nil, NewParseError(n, "End Tag Truncated: [%s]", tag)
+			}
+			if string(n.data) != string(tag) {
+				return nil, NewParseError(
+					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
+					n.data, tag)
+			}
+			popNode(p)
 			return handleChar(dataStateHandler), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
+			if i == len(n.data) {
+				return nil, NewParseError(
+					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
+					n.data, tag)
+			}
 			tag[i] = lc
 			if n.data[i] != lc {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
 					n.data, tag)
-			} else {
-				popNode(p)
 			}
-			return handleChar(dataStateHandler), nil
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
-			tag[i] = c
-			if n.data[i] != c {
+			if i == len(n.data) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
 					n.data, tag)
-			} else {
-				popNode(p)
 			}
-			return handleChar(dataStateHandler), nil
+			tag[i] = c
 		default: // Bogus Comment state
-			return bogusCommentHandler, nil
+			tag[i] = c
+			return bogusCommentHandler, NewParseError(n,
+				"Strange characters in end tag: [%s] switching to BogusCommentState", tag)
 		}
 	}
-	panic("unreachable")
+	panic("Unreachable")
 }
 
 // Section 11.2.4.44
