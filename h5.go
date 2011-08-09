@@ -92,15 +92,21 @@ func textConsumer(p *Parser, chars... int) {
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
+var memoized = make(map[func(*Parser, int) stateHandler]stateHandler)
+
 // TODO(jwall): UNITTESTS!!!!
 func handleChar(h func(*Parser, int) stateHandler) stateHandler {
-	return func(p *Parser) (stateHandler, os.Error) {
-			c, err := p.nextInput()
-			if err != nil {
-				return nil, err
-			}
-			return h(p, c), nil
+	if f, ok := memoized[h]; ok {
+		return f
+	}
+	memoized[h] = func(p *Parser) (stateHandler, os.Error) {
+		c, err := p.nextInput()
+		if err != nil {
+			return nil, err
 		}
+		return h(p, c), nil
+	}
+	return memoized[h]
 }
 
 // TODO(jwall): UNITTESTS!!!!
