@@ -184,7 +184,6 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
-// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.9
 func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
@@ -193,11 +192,9 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	for i := 0; i <= len(n.data); i++ {
 		c, err := p.nextInput()
 		if err == os.EOF { // Parse Error
-			// TODO
 			return nil, err
 		}
 		if err != nil {
-			// TODO
 			return nil, err
 		}
 		if i > len(n.data) {
