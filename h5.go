@@ -175,9 +175,9 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
 	switch c {
 	case '\t', '\n', '\f', ' ':
-		// TODO beforeAttributeNameHandler
+		return handleChar(beforeAttributeNameHandler)
 	case '/':
-		// TODO selfClosingTagStartHandler
+		return handleChar(selfClosingStartTagHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -188,6 +188,195 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	default:
 		n.data = append(n.data, c)
 		return handleChar(tagNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.34
+func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// ignore
+		return handleChar(beforeAttributeNameHandler)
+	case '/':
+		return handleChar(selfClosingStartTagHandler)
+	case '>':
+		return handleChar(dataStateHandler)
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		newAttr := new(Attribute)
+		newAttr.Name = string(lc)
+		n.Attr = append(n.Attr, newAttr)
+		return handleChar(attributeNameHandler)
+	case '=', '"', '\'', '<':
+		// TODO parse error
+		fallthrough
+	default:
+		newAttr := new(Attribute)
+		newAttr.Name = string(c)
+		n.Attr = append(n.Attr, newAttr)
+		return handleChar(attributeNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.35
+func attributeNameHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(afterAttributeNameHandler)
+	case '/':
+		return handleChar(selfClosingStartTagHandler)
+	case '>':
+		return handleChar(dataStateHandler)
+	case '=':
+		return handleChar(beforeAttributeValueHandler)
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		currAttr := n.Attr[len(n.Attr)-1]
+		currAttr.Name += string(lc)
+		return handleChar(attributeNameHandler)
+	case '"', '\'', '<':
+		// TODO parse error
+		fallthrough
+	default:	
+		currAttr := n.Attr[len(n.Attr)-1]
+		currAttr.Name += string(c)
+		return handleChar(attributeNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.37
+func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(beforeAttributeValueHandler)
+	case '"', '\'':
+		return handleChar(makeAttributeValueQuotedHandler(c))
+	// case '&':
+		// TODO do we even care for this parser?
+	case '>':
+		return handleChar(dataStateHandler)
+	case '<', '=', '`':
+		// todo parse error
+		fallthrough
+	default:
+		currAttr := n.Attr[len(n.Attr)-1]
+		currAttr.Value += string(c)
+		return handleChar(attributeValueUnquotedHandler)
+	}	
+	panic("Unreachable")
+}
+
+var memoizedQuotedAttributeHandlers = make(map[int]func(p *Parser, c int) stateHandler)
+// Section 11.2.4.3{8,9}
+func makeAttributeValueQuotedHandler(c int) (func(p *Parser, c int) stateHandler) {
+	if memoizedQuotedAttributeHandlers[c] != nil {
+		return memoizedQuotedAttributeHandlers[c]
+	}
+	f := func(p *Parser, c2 int) stateHandler {
+		n := p.curr
+		switch c2 {
+		case '"', '\'':
+			if c2 == c {
+				return handleChar(afterAttributeValueQuotedHandler)
+			}
+			fallthrough
+		//case '&':
+			// TODO do we even care for this parser?
+		default:
+			currAttr := n.Attr[len(n.Attr)-1]
+			currAttr.Value += string(c2)
+			return handleChar(makeAttributeValueQuotedHandler(c))
+		}
+		panic("Unreachable")
+	}
+	memoizedQuotedAttributeHandlers[c] = f
+	return f
+}
+
+// Section 11.2.4.40
+func attributeValueUnquotedHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(beforeAttributeNameHandler)
+	//case '&':
+		// TODO do we even care for this parser?
+	case '>':
+		return handleChar(dataStateHandler)
+	case '"', '\'', '<', '=', '`':
+		// TODO parse error
+		fallthrough
+	default:
+		currAttr := n.Attr[len(n.Attr)-1]
+		currAttr.Value += string(c)
+		return handleChar(attributeValueUnquotedHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.42
+func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(beforeAttributeNameHandler)
+	case '/':
+		return handleChar(selfClosingStartTagHandler)
+	case '>':
+		return handleChar(dataStateHandler)
+	default:
+		// TODO Parse error Reconsume the Character in the before attribute name state
+		return handleChar(beforeAttributeNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.36
+func afterAttributeNameHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(afterAttributeNameHandler)
+	case '/':
+		return handleChar(selfClosingStartTagHandler)
+	case '>':
+		return handleChar(dataStateHandler)
+	case '=':
+		return handleChar(beforeAttributeValueHandler)
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		newAttr := new(Attribute)
+		newAttr.Name = string(lc)
+		n.Attr = append(n.Attr, newAttr)
+		return handleChar(attributeNameHandler)
+	case '"', '\'', '<':
+		// TODO parse error
+		fallthrough
+	default:
+		newAttr := new(Attribute)
+		newAttr.Name = string(c)
+		n.Attr = append(n.Attr, newAttr)
+		return handleChar(attributeNameHandler)
+	}
+	panic("Unreachable")
+}
+
+// Section 11.2.4.43
+func selfClosingStartTagHandler(p *Parser, c int) stateHandler {
+	switch c {
+		case '>':
+			return handleChar(dataStateHandler)
+		default:
+			// TODO parse error reconsume as before attribute handler
+			return handleChar(beforeAttributeNameHandler)
 	}
 	panic("Unreachable")
 }
