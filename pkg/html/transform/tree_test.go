@@ -156,7 +156,7 @@ func TestHtmlString(t *testing.T) {
 }
 
 func TestNodeString(t *testing.T) {
-	str := "<html><body class=\"foo\"><hr id=\"line\" /></body></html>"
+	str := "<html><body class=\"foo\"><hr id=\"line\"></hr></body></html>"
 	node, _ := parseHtml(str)
 	html := toString(node)
 	assertEqual(t, str, html)

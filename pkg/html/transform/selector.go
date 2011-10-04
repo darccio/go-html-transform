@@ -117,7 +117,7 @@ func splitAttrs(str string) []string {
 }
 
 func newAnyTagAttrSelector(str string) *Selector {
-	parts := s.SplitAfter(str, "]", -1)
+	parts := s.SplitAfter(str, "]")
 	sel := Selector{
 		TagName: "*",
 		Attr:    map[string]string{},
