@@ -30,6 +30,8 @@ type NodeType int
 const (
 	TextNode NodeType = iota // zero value so the default
 	ElementNode NodeType = iota
+	DoctypeNode NodeType = iota
+	CommentNode NodeType = iota
 )
 
 type Node struct {
@@ -46,11 +48,97 @@ func (n *Node) Data() string {
 
 type TokenConsumer func(*Parser, []int)
 
+type InsertionMode int
+
+const (
+	IM_initial InsertionMode = iota
+	IM_beforeHtml InsertionMode = iota
+	IM_beforeHead InsertionMode = iota
+	IM_inHead InsertionMode = iota
+	IM_inHeadNoScript InsertionMode = iota
+	IM_afterHead InsertionMode = iota
+	IM_inBody InsertionMode = iota
+	IM_text InsertionMode = iota
+	IM_inTable InsertionMode = iota
+	IM_inTableText InsertionMode = iota
+	IM_inCaption InsertionMode = iota
+	IM_inColumnGroup InsertionMode = iota
+	IM_inTableBody InsertionMode = iota
+	IM_inRow InsertionMode = iota
+	IM_inCell InsertionMode = iota
+	IM_inSelect InsertionMode = iota
+	IM_inSelectInTable InsertionMode = iota
+	IM_afterBody InsertionMode = iota
+	IM_afterFrameset InsertionMode = iota
+	IM_afterAfterBody InsertionMode = iota
+	IM_afterAfterFrameset InsertionMode = iota
+)
+
+func insertionModeSwitch(p *Parser, n *Node) stateHandler {
+	currMode := p.Mode
+	switch currMode {
+	case IM_initial:
+	case IM_beforeHtml:
+	case IM_beforeHead:
+		switch n.Type {
+		case DoctypeNode:
+			// TODO(jwall): parse error
+		case CommentNode:
+		case ElementNode:
+			switch n.Data() {
+			case "head":
+				p.Mode = IM_inHead
+			default:
+				// TODO(jwall): parse error
+			}
+		default:
+			// TODO(jwall): parse error
+		}
+	case IM_inHead:
+		switch n.Type {
+		case DoctypeNode:
+			// TODO(jwall): parse error
+		case CommentNode:
+		case ElementNode:
+			switch n.Data() {
+			case "script":
+				p.Mode = IM_text
+				// TODO return scriptDataStateHandler
+			default:
+				// TODO(jwall): parse error
+			}
+		default:
+			// TODO(jwall): parse error
+		}
+	case IM_inHeadNoScript:
+	case IM_afterHead:
+	case IM_inBody:
+	case IM_inTable:
+	case IM_inTableText:
+	case IM_inCaption:
+	case IM_inColumnGroup:
+	case IM_inTableBody:
+	case IM_inRow:
+	case IM_inCell:
+	case IM_inSelect:
+	case IM_inSelectInTable:
+	case IM_afterBody:
+	case IM_afterFrameset:
+	case IM_afterAfterBody:
+	case IM_afterAfterFrameset:
+	case IM_text:
+	}
+	return handleChar(dataStateHandler)
+}
+
+// TODO(jwall): Use Insertion Modes to govern parsing state transitions.
 type Parser struct {
 	In *bufio.Reader
 	Top *Node
 	curr *Node
 	consumer TokenConsumer
+	Mode InsertionMode
+	buf []int // temporary buffer
 }
 
 // Handles the various tokenization states
@@ -69,10 +157,10 @@ func (p *Parser) nextInput() (int, os.Error) {
 	return r, err
 }
 
-// TODO(jwall): UNITTESTS!!!!
 func (p *Parser) Parse() os.Error {
 	// we start in the data state
-	h := handleChar(dataStateHandler)
+	// and in the Initial InsertionMode
+	h := handleChar(doctypeStateHandler)
 	for h != nil {
 		h2, err := h(p)
 		if err == os.EOF {
@@ -110,6 +198,255 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 		return h(p, c), nil
 	}
 	return memoized[h]
+}
+
+// Section 11.2.4.52
+func doctypeStateHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(beforeDoctypeHandler)
+	default:
+		// TODO parse error
+		return handleChar(beforeDoctypeHandler)
+	}
+	panic("unreachable")
+}
+
+// Section 11.2.4.53
+func beforeDoctypeHandler(p *Parser, c int) stateHandler {
+	curr := pushNode(p)
+	curr.Type = DoctypeNode
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// ignore
+		return handleChar(beforeDoctypeHandler)
+	case '>':
+		// TODO parse error, quirks mode
+		return dataStateHandlerSwitch(p)
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		curr.data = append(curr.data, lc)
+		return handleChar(doctypeNameState)
+	default:
+		curr.data = append(curr.data, c)
+		return handleChar(doctypeNameState)
+	}
+	panic("unreachable")
+}
+
+// Section 11.2.4.54
+func doctypeNameState(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// ignore
+		return afterDoctypeNameHandler
+	case '>':
+		return afterDoctypeNameHandler
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		n.data = append(n.data, lc)
+		return handleChar(doctypeNameState)
+	default:
+		n.data = append(n.data, c)
+		return handleChar(doctypeNameState)
+	}
+	panic("unreachable")
+}
+
+var (
+	PUBLIC = "public"
+	SYSTEM = "system"
+)
+
+// Section 11.2.4.55
+func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
+	firstSix := make([]int, 0, 6)
+	//n := p.curr
+	for {
+		c, err := p.nextInput()
+		if err == os.EOF {
+			// TODO parse error
+			return dataStateHandlerSwitch(p), nil
+		}
+		switch c {
+		case '\t', '\n', '\f', ' ':
+			// ignore
+			return afterDoctypeNameHandler, nil
+		case '>':
+			return dataStateHandlerSwitch(p), nil
+		default:
+			if len(firstSix) == cap(firstSix) {
+				switch string(firstSix) {
+				case PUBLIC:
+					// TODO afterDoctypeTypeHandler
+				case SYSTEM:
+					// TODO afterDoctypeTypeHandler
+				}
+			} else {
+				lc := c + 0x0020 // lowercase it
+				firstSix = append(firstSix, lc)
+			}
+		}
+	}
+	panic("unreachable")
+}
+
+// Section 11.2.4.56
+func afterDoctypeTypeHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// ignore
+		return handleChar(beforeDoctypeIdentHandler)
+	case '"', '\'':
+		// TODO parse error
+		return handleChar(makeIdentQuotedHandler(c))
+	case '>':
+		// TODO parse error
+		return dataStateHandlerSwitch(p)
+	default:
+		// TODO parse error
+		// TODO bogusDoctypeState
+	}
+	panic("unreachable")
+}
+
+// Section 11.2.4.57
+func beforeDoctypeIdentHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		// ignore
+		return handleChar(beforeDoctypeIdentHandler)
+	case '"', '\'':
+		return handleChar(makeIdentQuotedHandler(c))
+	case '>':
+		 // TODO parse error
+		 return dataStateHandlerSwitch(p)
+	default:
+		// TODO parse error
+		// TODO bogusDoctypeState
+	}
+	panic("unreachable")
+}
+
+// Section 11.2.4.58
+func makeIdentQuotedHandler(q int) (func(*Parser, int) stateHandler) {
+	return func(p *Parser, c int) stateHandler {
+		if q == c {
+			return handleChar(afterDoctypeIdentifierHandler)
+		}
+		if c == '>' {
+			// TODO parse error
+			return dataStateHandlerSwitch(p)
+		}
+		// TODO Doctype token? p.curr.data
+		panic("unreachable")
+	}
+	panic("unreachable")
+}
+
+// section 11.2.4.59
+func afterDoctypeIdentifierHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '\t', '\n', '\f', ' ':
+		return handleChar(afterDoctypeIdentifierHandler)
+    case '>':
+		p.Mode = IM_beforeHtml
+		return dataStateHandlerSwitch(p)
+	default:
+		// TODO parse error
+		// TODO switch to bogus Doctype state
+	}
+	panic("unreachable")
+}
+
+func dataStateHandlerSwitch(p *Parser) stateHandler {
+	n := p.curr
+	return insertionModeSwitch(p, n)
+}
+
+func scriptDataStateHandler(p *Parser, c int) stateHandler {
+	pushNode(p) // push a text node onto the stack
+	switch c {
+	case '<':
+		return handleChar(scriptDataLessThanHandler)
+	default:
+		// consume the token
+		textConsumer(p, c)
+		return handleChar(dataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
+	switch c {
+	case '/':
+		p.buf = make([]int, 1)
+		return handleChar(scriptDataEndTagOpenHandler)
+	case '!':
+	default:
+		textConsumer(p, '<')
+		return handleChar(scriptDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
+	switch c {	
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		p.buf = append(p.buf, lc)
+		return handleChar(scriptDataEndTagNameHandler)
+	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+		p.buf = append(p.buf, c)
+		return handleChar(scriptDataEndTagNameHandler)
+	default:
+		textConsumer(p, '<', '/')
+		return handleChar(scriptDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
+	n := p.curr
+	switch c {
+	case '\t', '\f', '\n', ' ':
+		if n.Data() == string(p.buf) {
+			return handleChar(beforeAttributeNameHandler)
+		} else {
+			return handleChar(scriptDataStateHandler)
+		}
+	case '/':
+		if n.Data() == string(p.buf) {
+			return handleChar(selfClosingTagStartHandler)
+		} else {
+			return handleChar(scriptDataStateHandler)
+		}
+	case '>':
+		if n.Data() == string(p.buf) {
+			return dataStateHandlerSwitch(p)
+		} else {
+			return handleChar(scriptDataStateHandler)
+		}
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		lc := c + 0x0020 // lowercase it
+		p.buf = append(p.buf, lc)
+		return handleChar(scriptDataEndTagNameHandler)
+	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+		p.buf = append(p.buf, c)
+		return handleChar(scriptDataEndTagNameHandler)
+	default:
+		textConsumer(p, '<', '/')
+		textConsumer(p, p.buf...)
+		return handleChar(scriptDataStateHandler)
+	}
+	panic("unreachable")
 }
 
 // TODO(jwall): UNITTESTS!!!!
@@ -175,9 +512,11 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
 	switch c {
 	case '\t', '\n', '\f', ' ':
+		// TODO handle IM_beforeHTML case
 		return handleChar(beforeAttributeNameHandler)
 	case '/':
-		return handleChar(selfClosingStartTagHandler)
+		// TODO handle IM_beforeHTML case
+		return handleChar(selfClosingTagStartHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -200,7 +539,7 @@ func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
 		// ignore
 		return handleChar(beforeAttributeNameHandler)
 	case '/':
-		return handleChar(selfClosingStartTagHandler)
+		return handleChar(selfClosingTagStartHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -229,7 +568,7 @@ func attributeNameHandler(p *Parser, c int) stateHandler {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(afterAttributeNameHandler)
 	case '/':
-		return handleChar(selfClosingStartTagHandler)
+		return handleChar(selfClosingTagStartHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	case '=':
@@ -328,7 +667,7 @@ func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeAttributeNameHandler)
 	case '/':
-		return handleChar(selfClosingStartTagHandler)
+		return handleChar(selfClosingTagStartHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	default:
@@ -345,7 +684,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(afterAttributeNameHandler)
 	case '/':
-		return handleChar(selfClosingStartTagHandler)
+		return handleChar(selfClosingTagStartHandler)
 	case '>':
 		return handleChar(dataStateHandler)
 	case '=':
@@ -370,7 +709,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.43
-func selfClosingStartTagHandler(p *Parser, c int) stateHandler {
+func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
 	switch c {
 		case '>':
 			return handleChar(dataStateHandler)
