@@ -332,9 +332,9 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
 			if len(firstSix) == cap(firstSix) {
 				switch string(firstSix) {
 				case PUBLIC:
-					return handleChar(afterDocTypeHandler)
+					return handleChar(afterDoctypeHandler), nil
 				case SYSTEM:
-					return handleChar(afterDocTypeHandler)
+					return handleChar(afterDoctypeHandler), nil
 				}
 			} else {
 				lc := c + 0x0020 // lowercase it
@@ -346,7 +346,7 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 // Section 11.2.4.56
-func afterDoctypeTypeHandler(p *Parser, c int) stateHandler {
+func afterDoctypeHandler(p *Parser, c int) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		// ignore
