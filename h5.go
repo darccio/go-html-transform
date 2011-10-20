@@ -180,7 +180,10 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 
 func dataStateHandlerSwitch(p *Parser) stateHandler {
 	n := p.curr
-	return insertionModeSwitch(p, n)
+	if n != nil {
+		return insertionModeSwitch(p, n)
+	}
+	return handleChar(dataStateHandler)
 }
 
 type Parser struct {
@@ -211,7 +214,7 @@ func (p *Parser) nextInput() (int, os.Error) {
 func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
 	// and in the Initial InsertionMode
-	h := handleChar(doctypeStateHandler)
+	h := dataStateHandlerSwitch(p)
 	for h != nil {
 		h2, err := h(p)
 		if err == os.EOF {

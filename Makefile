@@ -1,7 +1,7 @@
 # defines $GC) (compiler), $(LD) (linker) and $(O) (architecture)
 include $(GOROOT)/src/Make.inc
 
-TARG=html/parse
+TARG=h5
 GOFILES=\
 	h5.go\
 

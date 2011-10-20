@@ -70,9 +70,6 @@ func TestBogusCommentHandlerEOF(t *testing.T) {
 	util.AssertTrue(t, err != nil, "err is nil")
 }
 
-// TODO the tag name too short case
-// TODO the tag name too long case
-// TODO the tag name different
 func TestEndTagOpenHandlerOk(t *testing.T) {
 	p := NewParserFromString("FoO>")
 	curr := pushNode(p)
@@ -185,4 +182,10 @@ func TestDataStateHandler(t *testing.T) {
 	util.AssertTrue(t, p.curr != nil, "curr is currently nil")
 	util.AssertTrue(t, p.Top != nil, "Top is currently nil")
 	util.AssertEqual(t, p.curr.data, []int{'f'})
+}
+
+func TestSimpledoc(t *testing.T) {
+	p := NewParserFromString("<html><body>foo</body></html>")
+	err := p.Parse()
+	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
 }
