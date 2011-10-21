@@ -26,6 +26,10 @@ type Attribute struct {
 	Value string
 }
 
+func (a *Attribute) String() string {
+	return " " + a.Name + "='" + a.Value + "'"
+}
+
 type NodeType int
 const (
 	TextNode NodeType = iota // zero value so the default
@@ -40,6 +44,34 @@ type Node struct {
 	Attr []*Attribute
 	Parent *Node
 	Children []*Node
+}
+
+func attrString(attrs []*Attribute) string {
+	if attrs == nil {
+		return ""
+	}
+	s := ""
+	for _, a := range attrs {
+		s += fmt.Sprintf(" %s", a)
+	}
+	return s
+}
+
+func (n *Node) String() string {
+	switch n.Type {
+	case TextNode:
+		return n.Data()
+	case ElementNode, DoctypeNode:
+		s :="<" + n.Data() + attrString(n.Attr) + ">"
+		for _, n := range n.Children {
+			s += n.String()
+		}
+		s += "</" + n.Data() + ">"
+		return s
+	case CommentNode:
+		// TODO
+	}
+	return ""
 }
 
 func (n *Node) Data() string {

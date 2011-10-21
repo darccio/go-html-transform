@@ -3,6 +3,7 @@ package h5
 import (
 	"testing"
 	"testing/util"
+	"fmt"
 )
 
 func TestPushNode(t *testing.T) {
@@ -190,6 +191,7 @@ func TestSimpledoc(t *testing.T) {
 	p := NewParserFromString("<html><body>foo</body></html>")
 	err := p.Parse()
 	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
+	fmt.Printf("XXX doc: %s\n", p.Top)
 	util.AssertEqual(t, p.Top.Data(), "html")
 	util.AssertEqual(t, len(p.Top.Children), 1)
 	util.AssertEqual(t, len(p.Top.Children[0].Children), 1)
