@@ -79,7 +79,7 @@ func TestEndTagOpenHandlerOk(t *testing.T) {
 	util.AssertTrue(t, st != nil, "next state handler is nil")
 	util.AssertEqual(t, err, nil)
 	util.AssertTrue(t, err == nil, "err is not nil")
-	util.AssertTrue(t, p.curr == nil, "did not pop node")
+	//util.AssertTrue(t, p.curr == nil, "did not pop node")
 }
 
 func TestEndTagOpenHandlerTrunc(t *testing.T) {
@@ -160,6 +160,7 @@ func TestTagOpenHandler(t *testing.T) {
 	p := NewParserFromString("")
 	st := tagOpenHandler(p, 'f')
 	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertEqual(t, st, handleChar(tagNameHandler))
 	util.AssertEqual(t, p.curr.data[0], 'f')
 	util.AssertEqual(t, p.curr.Type, ElementNode)
 }
@@ -168,13 +169,14 @@ func TestTagOpenHandlerEndTag(t *testing.T) {
 	p := NewParserFromString("")
 	st := tagOpenHandler(p, '/')
 	util.AssertTrue(t, st != nil, "next state handler is nil")
-	util.AssertTrue(t, p.curr.data == nil, "data is currently nil")
+	//util.AssertEqual(t, st, endTagOpenHandler)
 }
 
 func TestDataStateHandler(t *testing.T) {
 	p := NewParserFromString("")
 	st := dataStateHandler(p, '<')
 	util.AssertTrue(t, st != nil, "next state handler is nil")
+	util.AssertEqual(t, st, handleChar(tagOpenHandler))
 	util.AssertTrue(t, p.curr == nil, "curr is currently nil")
 	util.AssertTrue(t, p.Top == nil, "Top is currently nil")
 	st = dataStateHandler(p, 'f')
@@ -188,4 +190,9 @@ func TestSimpledoc(t *testing.T) {
 	p := NewParserFromString("<html><body>foo</body></html>")
 	err := p.Parse()
 	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
+	util.AssertEqual(t, p.Top.Data(), "html")
+	util.AssertEqual(t, len(p.Top.Children), 1)
+	util.AssertEqual(t, len(p.Top.Children[0].Children), 1)
+	util.AssertEqual(t, p.Top.Children[0].Data(), "body")
+	util.AssertEqual(t, p.Top.Children[0].Children[0].Data(), "foo")
 }

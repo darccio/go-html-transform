@@ -43,7 +43,10 @@ type Node struct {
 }
 
 func (n *Node) Data() string {
-	return string(n.data)
+	if n.data != nil {
+		return string(n.data)
+	}
+	return ""
 }
 
 type TokenConsumer func(*Parser, []int)
@@ -216,6 +219,9 @@ func (p *Parser) Parse() os.Error {
 	// and in the Initial InsertionMode
 	h := dataStateHandlerSwitch(p)
 	for h != nil {
+		//if p.curr != nil && p.curr.data != nil {
+			//fmt.Printf("YYY: %v\n", p.curr.Data())
+		//}
 		h2, err := h(p)
 		if err == os.EOF {
 			return nil
@@ -249,6 +255,7 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 		if err != nil {
 			return nil, err
 		}
+		//fmt.Printf("YYY: char %c\n", c)
 		return h(p, c), nil
 	}
 	return memoized[h]
@@ -441,7 +448,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
-	switch c {	
+	switch c {
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 		lc := c + 0x0020 // lowercase it
@@ -512,22 +519,27 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
-	curr := pushNode(p)
 	switch c {
 	case '!': // markup declaration state
 		// TODO
 	case '/': // end tag open state
+		//fmt.Printf("ZZZ: closing a tag\n")
+		popNode(p)
 		return endTagOpenHandler
 	case '?': // TODO parse error // bogus comment state
 		return bogusCommentHandler
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		//fmt.Printf("ZZZ: opening a new tag\n")
+		curr := pushNode(p)
 		curr.Type = ElementNode
 		lc := c + 0x0020 // lowercase it
 		curr.data = []int{lc}
 		return handleChar(tagNameHandler)
 	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+		//fmt.Printf("ZZZ: opening a new tag\n")
+		curr := pushNode(p)
 		curr.Type = ElementNode
 		curr.data = []int{c}
 		return handleChar(tagNameHandler)
@@ -546,6 +558,7 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
+		pushNode(p)
 		return handleChar(dataStateHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -843,6 +856,8 @@ func pushNode(p *Parser) *Node {
 }
 
 func popNode(p *Parser) *Node {
-	p.curr = p.curr.Parent
+	if p.curr != nil && p.curr.Parent != nil {
+		p.curr = p.curr.Parent
+	}
 	return p.curr
 }
