@@ -543,7 +543,21 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 		return handleChar(tagOpenHandler)
 	default:
 		// consume the token
+		// TODO(jwall): need a for loop here and
+		// need to push a text node onto the stack.
+		pushNode(p)
 		textConsumer(p, c)
+		for {
+			c2, err := p.nextInput()
+			if err != nil {
+				// TODO parseError
+				return nil
+			}
+			if c2 == '<' { // for loop end condition
+				return dataStateHandler(p, c2)
+			}
+			textConsumer(p, c2)
+		}
 		return handleChar(dataStateHandler)
 	}
 	panic("Unreachable")
@@ -590,7 +604,7 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		pushNode(p)
+		//pushNode(p)
 		return handleChar(dataStateHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -655,7 +669,7 @@ func attributeNameHandler(p *Parser, c int) stateHandler {
 	case '"', '\'', '<':
 		// TODO parse error
 		fallthrough
-	default:	
+	default:
 		currAttr := n.Attr[len(n.Attr)-1]
 		currAttr.Name += string(c)
 		return handleChar(attributeNameHandler)
