@@ -110,6 +110,7 @@ const (
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
+	//fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
 	case IM_initial:
@@ -125,6 +126,8 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			switch n.Data() {
 			case "head":
 				p.Mode = IM_inHead
+			case "body":
+				p.Mode = IM_inBody
 			default:
 				// TODO(jwall): parse error
 			}
@@ -139,8 +142,11 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "script":
+				//fmt.Println("In a script tag")
 				p.Mode = IM_text
-				return handleChar(scriptDataStateHandler)
+				return handleChar(startScriptDataState)
+			case "body":
+				p.Mode = IM_inBody
 			default:
 				// TODO(jwall): parse error
 			}
@@ -192,12 +198,20 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "script":
+				//fmt.Println("In a script tag")
 				p.Mode = IM_text
-				return handleChar(scriptDataStateHandler)
+				return handleChar(startScriptDataState)
 			default:
 				// TODO(jwall): parse error
 			}
 		}
+	case IM_text:
+		//fmt.Println("parsing script contents.")
+		if n.Data() == "script" {
+			p.Mode = IM_inBody
+			return handleChar(dataStateHandler)
+		}
+		return handleChar(scriptDataStateHandler)
 	case IM_afterFrameset:
 		fallthrough
 	case IM_afterAfterFrameset:
@@ -205,19 +219,19 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	case IM_afterAfterBody:
 		fallthrough
 			// TODO(jwall): parse error
-	case IM_text:
-			if n.Data() == "script" {
-				p.Mode = IM_inBody
-			}
 	}
 	return handleChar(dataStateHandler)
 }
 
 func dataStateHandlerSwitch(p *Parser) stateHandler {
 	n := p.curr
+	//fmt.Printf(
+	//	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
+	//	p.Mode, n)
 	if n != nil {
 		return insertionModeSwitch(p, n)
 	}
+	// TODO is this the right thing here?
 	return handleChar(dataStateHandler)
 }
 
@@ -454,23 +468,38 @@ func afterDoctypeIdentifierHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
+func startScriptDataState(p *Parser, c int) stateHandler {
+		//fmt.Println("Adding TextNode")
+		pushNode(p) // push a text node onto the stack
+		return scriptDataStateHandler(p, c)
+}
+
 func scriptDataStateHandler(p *Parser, c int) stateHandler {
-	pushNode(p) // push a text node onto the stack
 	switch c {
 	case '<':
 		return handleChar(scriptDataLessThanHandler)
 	default:
-		// consume the token
 		textConsumer(p, c)
-		return handleChar(dataStateHandler)
+		for {
+			c2, err := p.nextInput()
+			if err != nil {
+				// TODO parseError
+				return nil
+			}
+			if c2 == '<' {
+				return handleChar(scriptDataLessThanHandler)
+			}
+			textConsumer(p, c2)
+		}
 	}
 	panic("unreachable")
 }
 
 func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
+	//fmt.Printf("handling a '<' in script data c: %c\n", c)
 	switch c {
 	case '/':
-		p.buf = make([]int, 1)
+		p.buf = make([]int, 0, 1)
 		return handleChar(scriptDataEndTagOpenHandler)
 	default:
 		textConsumer(p, '<')
@@ -480,6 +509,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
+	//fmt.Printf("trying to close script tag c: %c\n", c)
 	switch c {
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -499,6 +529,10 @@ func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 
 func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
+	//fmt.Printf("parent: [%s], p.buf: [%s], c: %c\n",
+	//	n.Parent.Data(), string(p.buf), c)
+	//fmt.Printf("len(parent): %d, len(p.buf): %d\n",
+	//	len(n.Parent.Data()), len(p.buf))
 	switch c {
 	case '\t', '\f', '\n', ' ':
 		if n.Data() == string(p.buf) {
@@ -507,15 +541,21 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 			return handleChar(scriptDataStateHandler)
 		}
 	case '/':
-		if n.Data() == string(p.buf) {
+		if n.Parent.Data() == string(p.buf) {
+			//fmt.Println("we match!! lets pop the node")
+			popNode(p)
 			return handleChar(selfClosingTagStartHandler)
 		} else {
+			//fmt.Println("we don't match :-( keep going")
 			return handleChar(scriptDataStateHandler)
 		}
 	case '>':
-		if n.Data() == string(p.buf) {
+		if n.Parent.Data() == string(p.buf) {
+			//fmt.Println("we match!! lets pop the node")
+			popNode(p)
 			return dataStateHandlerSwitch(p)
 		} else {
+			//fmt.Println("we don't match :-( keep going")
 			return handleChar(scriptDataStateHandler)
 		}
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -558,13 +598,13 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 			}
 			textConsumer(p, c2)
 		}
-		return handleChar(dataStateHandler)
 	}
 	panic("Unreachable")
 }
 
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
+	//fmt.Printf("opening a tag\n")
 	switch c {
 	case '!': // markup declaration state
 		// TODO
@@ -604,8 +644,7 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		//pushNode(p)
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 		lc := c + 0x0020 // lowercase it
@@ -628,7 +667,7 @@ func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 		lc := c + 0x0020 // lowercase it
@@ -657,7 +696,7 @@ func attributeNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case '=':
 		return handleChar(beforeAttributeValueHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -686,7 +725,7 @@ func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
 	case '"', '\'':
 		return handleChar(makeAttributeValueQuotedHandler(c))
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case '<', '=', '`':
 		// todo parse error
 		fallthrough
@@ -694,7 +733,7 @@ func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
 		currAttr := n.Attr[len(n.Attr)-1]
 		currAttr.Value += string(c)
 		return handleChar(attributeValueUnquotedHandler)
-	}	
+	}
 	panic("Unreachable")
 }
 
@@ -730,7 +769,7 @@ func attributeValueUnquotedHandler(p *Parser, c int) stateHandler {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeAttributeNameHandler)
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case '"', '\'', '<', '=', '`':
 		// TODO parse error
 		fallthrough
@@ -750,7 +789,7 @@ func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	default:
 		// TODO Parse error Reconsume the Character in the before attribute name state
 		return handleChar(beforeAttributeNameHandler)
@@ -767,7 +806,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		return handleChar(dataStateHandler)
+		return dataStateHandlerSwitch(p)
 	case '=':
 		return handleChar(beforeAttributeValueHandler)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -793,7 +832,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
 	switch c {
 		case '>':
-			return handleChar(dataStateHandler)
+			return dataStateHandlerSwitch(p)
 		default:
 			// TODO parse error reconsume as before attribute handler
 			return handleChar(beforeAttributeNameHandler)
@@ -817,7 +856,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		if i > len(n.data) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.data, tag)
+					n.Data(), string(tag))
 		}
 		switch c {
 		case '>':
@@ -827,30 +866,30 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 			if string(n.data) != string(tag) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.data, tag)
+					n.Data(), string(tag))
 			}
 			popNode(p)
-			return handleChar(dataStateHandler), nil
+			return dataStateHandlerSwitch(p), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
 			if i == len(n.data) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.data, tag)
+					n.Data(), string(tag))
 			}
 			tag[i] = lc
 			if n.data[i] != lc {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.data, tag)
+					n.Data(), string(tag))
 			}
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
 			if i == len(n.data) {
 				return nil, NewParseError(
 					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.data, tag)
+					n.Data(), string(tag))
 			}
 			tag[i] = c
 		default: // Bogus Comment state
@@ -872,7 +911,7 @@ func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 		}
 		switch c {
 		case '>':
-			return handleChar(dataStateHandler), nil
+			return dataStateHandlerSwitch(p), nil
 		default:
 			n.data = append(n.data, c)
 		}
@@ -881,8 +920,10 @@ func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 func addSibling(p *Parser) *Node {
+	//fmt.Printf("adding sibling to: %s\n", p.curr.Data())
 	n := new(Node)
 	p.curr.Parent.Children = append(p.curr.Parent.Children, n)
+	p.curr = n
 	return n
 }
 
@@ -894,16 +935,20 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
+		//fmt.Printf("pushing child onto: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
 	}
+	//fmt.Printf("curr node: %s\n", p.curr.Data())
 	return n
 }
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
+		//fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
+		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }
