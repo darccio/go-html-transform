@@ -116,7 +116,7 @@ const (
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
-	//fmt.Println("In insertionModeSwitch")
+	fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
 	case IM_initial:
@@ -151,7 +151,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "script":
-				//fmt.Println("In a script tag")
+				fmt.Println("In a script tag")
 				p.Mode = IM_text
 				return handleChar(startScriptDataState)
 			case "body":
@@ -215,10 +215,11 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			}
 		}
 	case IM_text:
-		//fmt.Println("parsing script contents.")
+		fmt.Println("parsing script contents. data:", n.Data())
 		if n.Data() == "script" {
-			//fmt.Println("setting insertionMode to inBody")
+			fmt.Println("setting insertionMode to inBody")
 			p.Mode = IM_inBody
+			popNode(p)
 			return handleChar(dataStateHandler)
 		}
 		return handleChar(scriptDataStateHandler)
@@ -289,9 +290,11 @@ func (p *Parser) Parse() os.Error {
 		//}
 		h2, err := h(p)
 		if err == os.EOF {
+			fmt.Println("End of file:")
 			return nil
 		}
 		if err != nil {
+			fmt.Println("End of file: ", err)
 			// TODO parse error
 			return os.NewError(fmt.Sprintf("Parse error: %s", err))
 		}
@@ -541,7 +544,7 @@ func scriptDataStateHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
-	//fmt.Printf("handling a '<' in script data c: %c\n", c)
+	fmt.Printf("handling a '<' in script data c: %c\n", c)
 	switch c {
 	case '/':
 		p.buf = make([]int, 0, 1)
@@ -554,7 +557,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
-	//fmt.Printf("trying to close script tag c: %c\n", c)
+	fmt.Printf("trying to close script tag c: %c\n", c)
 	switch c {
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -573,11 +576,8 @@ func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
+	fmt.Printf("script tag name handler c:%c\n", c)
 	n := p.curr
-	//fmt.Printf("parent: [%s], p.buf: [%s], c: %c\n",
-	//	n.Parent.Data(), string(p.buf), c)
-	//fmt.Printf("len(parent): %d, len(p.buf): %d\n",
-	//	len(n.Parent.Data()), len(p.buf))
 	switch c {
 	case '\t', '\f', '\n', ' ':
 		if n.Data() == string(p.buf) {
@@ -595,6 +595,8 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 		}
 	case '>':
 		if n.Parent.Data() == string(p.buf) {
+			fmt.Printf("time to see about closing it :-)")
+			popNode(p)
 			return dataStateHandlerSwitch(p)
 		} else {
 			//fmt.Println("we don't match :-( keep going")
@@ -936,7 +938,8 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 				return nil, newEndTagError("UCTagStoppedMatching", n, tag)
 			}
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+			'1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
 			if i == len(n.data) {
 				return nil, newEndTagError("LCTagDidNotStop", n, tag)
 			}
@@ -947,7 +950,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		default: // Bogus Comment state
 			tag[i] = c
 			return bogusCommentHandler, NewParseError(n,
-				"Strange characters in end tag: [%s] switching to BogusCommentState", tag)
+				"Strange characters in end tag: [%c] switching to BogusCommentState", c)
 		}
 	}
 	panic("Unreachable")
