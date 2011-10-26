@@ -27,6 +27,7 @@ type Attribute struct {
 }
 
 func (a *Attribute) String() string {
+	// TODO handle differnt quoting styles.
 	return " " + a.Name + "='" + a.Value + "'"
 }
 
@@ -44,6 +45,9 @@ type Node struct {
 	Attr []*Attribute
 	Parent *Node
 	Children []*Node
+	Public bool
+	System bool
+	Identifier string
 }
 
 func attrString(attrs []*Attribute) string {
@@ -55,6 +59,20 @@ func attrString(attrs []*Attribute) string {
 		s += fmt.Sprintf(" %s", a)
 	}
 	return s
+}
+
+func doctypeString(n *Node) string {
+	keyword := ""
+	identifier := n.Identifier
+	switch {
+	case n.Public:
+		keyword = "PUBLIC"
+	case n.System:
+		keyword = "SYSTEM"
+	default:
+		return "<!DOCTYPE html>"
+	}
+	return fmt.Sprintf("<!DOCTYPE %s=\"%s\">", keyword, identifier)
 }
 
 func (n *Node) String() string {
@@ -70,10 +88,11 @@ func (n *Node) String() string {
 		return s
 	case DoctypeNode:
 		// TODO Doctype stringification
-		s := ""
+		s := doctypeString(n)
 		for _, n := range n.Children {
 			s += n.String()
 		}
+		return s
 	case CommentNode:
 		// TODO
 	}
