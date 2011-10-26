@@ -116,13 +116,13 @@ const (
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
-	fmt.Println("In insertionModeSwitch")
+	//fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
 	case IM_initial:
 		fallthrough
 	case IM_beforeHtml:
-		fmt.Println("starting doctypeStateHandler")
+		//fmt.Println("starting doctypeStateHandler")
 		p.Mode = IM_beforeHead
 		return handleChar(startDoctypeStateHandler)
 		//fallthrough
@@ -151,7 +151,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "script":
-				fmt.Println("In a script tag")
+				//fmt.Println("In a script tag")
 				p.Mode = IM_text
 				return handleChar(startScriptDataState)
 			case "body":
@@ -215,9 +215,9 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			}
 		}
 	case IM_text:
-		fmt.Println("parsing script contents. data:", n.Data())
+		//fmt.Println("parsing script contents. data:", n.Data())
 		if n.Data() == "script" {
-			fmt.Println("setting insertionMode to inBody")
+			//fmt.Println("setting insertionMode to inBody")
 			p.Mode = IM_inBody
 			popNode(p)
 			return handleChar(dataStateHandler)
@@ -267,11 +267,11 @@ func (p *Parser) nextInput() (int, os.Error) {
 	if p.c != nil {
 		c := p.c
 		p.c = nil
-		fmt.Printf("reread rune: %c\n", *c)
+		//fmt.Printf("reread rune: %c\n", *c)
 		return *c, nil
 	}
 	r, _, err := p.In.ReadRune()
-	fmt.Printf("rune: %c\n", r)
+	//fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
@@ -290,11 +290,11 @@ func (p *Parser) Parse() os.Error {
 		//}
 		h2, err := h(p)
 		if err == os.EOF {
-			fmt.Println("End of file:")
+			//fmt.Println("End of file:")
 			return nil
 		}
 		if err != nil {
-			fmt.Println("End of file: ", err)
+			//fmt.Println("End of file: ", err)
 			// TODO parse error
 			return os.NewError(fmt.Sprintf("Parse error: %s", err))
 		}
@@ -330,7 +330,7 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 }
 
 func startDoctypeStateHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("Starting Doctype handler c:%c\n", c)
+	//fmt.Printf("Starting Doctype handler c:%c\n", c)
 	switch c {
 	case '<':
 		c2, err := p.nextInput()
@@ -355,7 +355,7 @@ func startDoctypeStateHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.52
 func doctypeStateHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("Parsing Doctype c:%c\n", c)
+	//fmt.Printf("Parsing Doctype c:%c\n", c)
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeDoctypeHandler)
@@ -544,7 +544,7 @@ func scriptDataStateHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("handling a '<' in script data c: %c\n", c)
+	//fmt.Printf("handling a '<' in script data c: %c\n", c)
 	switch c {
 	case '/':
 		p.buf = make([]int, 0, 1)
@@ -557,7 +557,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("trying to close script tag c: %c\n", c)
+	//fmt.Printf("trying to close script tag c: %c\n", c)
 	switch c {
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
@@ -576,7 +576,7 @@ func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 }
 
 func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("script tag name handler c:%c\n", c)
+	//fmt.Printf("script tag name handler c:%c\n", c)
 	n := p.curr
 	switch c {
 	case '\t', '\f', '\n', ' ':
@@ -595,7 +595,7 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 		}
 	case '>':
 		if n.Parent.Data() == string(p.buf) {
-			fmt.Printf("time to see about closing it :-)")
+			//fmt.Printf("time to see about closing it :-)")
 			popNode(p)
 			return dataStateHandlerSwitch(p)
 		} else {
@@ -622,7 +622,7 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 // TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("In dataStateHandler c:%c\n", c)
+	//fmt.Printf("In dataStateHandler c:%c\n", c)
 	//if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
 	//fmt.Println("curr node textNode?",
 	//	(p.curr != nil) && (p.curr.Type == TextNode))
@@ -879,7 +879,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.43
 func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
-	fmt.Println("starting self closing tag handler")
+	//fmt.Println("starting self closing tag handler")
 	switch c {
 		case '>':
 		    popNode(p)
@@ -990,7 +990,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -1000,9 +1000,9 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		fmt.Printf("popping node: %s\n", p.curr.Data())
+		//fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
-		fmt.Printf("curr node: %s\n", p.curr.Data())
+		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }
