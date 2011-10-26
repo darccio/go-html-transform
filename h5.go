@@ -110,7 +110,7 @@ const (
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
-	fmt.Println("In insertionModeSwitch")
+	//fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
 	case IM_initial:
@@ -208,9 +208,9 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			}
 		}
 	case IM_text:
-		fmt.Println("parsing script contents.")
+		//fmt.Println("parsing script contents.")
 		if n.Data() == "script" {
-			fmt.Println("setting insertionMode to inBody")
+			//fmt.Println("setting insertionMode to inBody")
 			p.Mode = IM_inBody
 			return handleChar(dataStateHandler)
 		}
@@ -260,7 +260,7 @@ func NewParser(r io.Reader) *Parser {
 
 func (p *Parser) nextInput() (int, os.Error) {
 	r, _, err := p.In.ReadRune()
-	fmt.Printf("rune: %c\n", r)
+	//fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
@@ -508,7 +508,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 		p.buf = make([]int, 0, 1)
 		return handleChar(scriptDataEndTagOpenHandler)
 	default:
-		textConsumer(p, '<')
+		textConsumer(p, '<', c)
 		return handleChar(scriptDataStateHandler)
 	}
 	panic("unreachable")
@@ -581,13 +581,13 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 // TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
-	if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
-	fmt.Println("curr node textNode?",
-		(p.curr != nil) && (p.curr.Type == TextNode))
+	//if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
+	//fmt.Println("curr node textNode?",
+	//	(p.curr != nil) && (p.curr.Type == TextNode))
 	// consume the token
 	if (p.curr != nil) && (p.curr.Type == TextNode) {
 		// this is the end of the textNode so pop it from stack
-		fmt.Println("TTT: popping textNode from stack")
+		//fmt.Println("TTT: popping textNode from stack")
 		popNode(p)
 	}
 	switch c {
@@ -613,7 +613,7 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
-	fmt.Printf("opening a tag\n")
+	//fmt.Printf("opening a tag\n")
 	switch c {
 	case '!': // markup declaration state
 		// TODO
@@ -858,7 +858,7 @@ func newEndTagError(problem string, n *Node, tag []int)  os.Error {
 // Section 11.2.4.9
 func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
-	fmt.Println("YYY: attempting to close a node")
+	//fmt.Println("YYY: attempting to close a node")
 	n := p.curr
 	tag := make([]int, len(n.data))
 	for i := 0; i <= len(n.data); i++ {
@@ -880,7 +880,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 			if string(n.data) != string(tag) {
 				return nil, newEndTagError("NotSameTag", n, tag)
 			}
-			fmt.Println("YYY: closing a tag")
+			//fmt.Println("YYY: closing a tag")
 			popNode(p)
 			return dataStateHandlerSwitch(p), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -955,9 +955,9 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		fmt.Printf("popping node: %s\n", p.curr.Data())
+		//fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
-		fmt.Printf("curr node: %s\n", p.curr.Data())
+		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }
