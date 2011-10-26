@@ -47,7 +47,7 @@ type Node struct {
 	Children []*Node
 	Public bool
 	System bool
-	Identifier string
+	Identifier []int
 }
 
 func attrString(attrs []*Attribute) string {
@@ -63,7 +63,7 @@ func attrString(attrs []*Attribute) string {
 
 func doctypeString(n *Node) string {
 	keyword := ""
-	identifier := n.Identifier
+	identifier := string(n.Identifier)
 	switch {
 	case n.Public:
 		keyword = "PUBLIC"
@@ -455,8 +455,10 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
 			if len(firstSix) == cap(firstSix) {
 				switch string(firstSix) {
 				case PUBLIC:
+					p.curr.Public = true
 					return handleChar(afterDoctypeHandler), nil
 				case SYSTEM:
+					p.curr.System = true
 					return handleChar(afterDoctypeHandler), nil
 				}
 			} else {
@@ -508,16 +510,25 @@ func beforeDoctypeIdentHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.58
 func makeIdentQuotedHandler(q int) (func(*Parser, int) stateHandler) {
 	return func(p *Parser, c int) stateHandler {
-		if q == c {
-			return handleChar(afterDoctypeIdentifierHandler)
-		}
-		if c == '>' {
-			// TODO parse error
-			return dataStateHandlerSwitch(p)
+		c2 := c
+		for {
+			if q == c2 {
+				return handleChar(afterDoctypeIdentifierHandler)
+			}
+			if c2 == '>' {
+				// TODO parse error
+				return dataStateHandlerSwitch(p)
+			}
+			p.curr.Identifier = append(p.curr.Identifier, c2)
+			next, err := p.nextInput()
+			if err != nil {
+				// TODO parse error
+				return nil
+			}
+			c2 = next
 		}
 		panic("unreachable")
 	}
-	panic("unreachable")
 }
 
 // section 11.2.4.59
