@@ -202,13 +202,27 @@ func TestSimpledoc(t *testing.T) {
 
 func TestScriptDoc(t *testing.T) {
 	p := NewParserFromString(
-		"<html><body>foo<script> if (foo < 10) { }</script></body></html>")
+		"<html><body><script> if (foo < 10) { }</script></body></html>")
 	err := p.Parse()
 	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
 	fmt.Printf("XXX doc: %s\n", p.Top)
 	util.AssertEqual(t, p.Top.Data(), "html")
 	util.AssertEqual(t, len(p.Top.Children), 1)
 	util.AssertEqual(t, p.Top.Children[0].Data(), "body")
+	util.AssertEqual(t, len(p.Top.Children[0].Children), 1)
+	util.AssertEqual(t, p.Top.Children[0].Children[0].Data(), "script")
+	util.AssertEqual(t, p.Top.Children[0].Children[0].Children[0].Data(),
+		" if (foo < 10) { }")
+}
+
+func TestSimpledocSiblings(t *testing.T) {
+	p := NewParserFromString("<html><body><a>foo</a><div>bar</div></body></html>")
+	err := p.Parse()
+	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
+	fmt.Printf("XXX doc: %s\n", p.Top)
+	util.AssertEqual(t, p.Top.Data(), "html")
+	util.AssertEqual(t, len(p.Top.Children), 1)
 	util.AssertEqual(t, len(p.Top.Children[0].Children), 2)
-	util.AssertEqual(t, p.Top.Children[0].Children[0].Data(), "foo")
+	util.AssertEqual(t, p.Top.Children[0].Data(), "body")
+	util.AssertEqual(t, p.Top.Children[0].Children[0].Data(), "a")
 }

@@ -110,12 +110,14 @@ const (
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
-	//fmt.Println("In insertionModeSwitch")
+	fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
 	case IM_initial:
 		fallthrough
 	case IM_beforeHtml:
+		p.Mode = IM_beforeHtml
+		//return handleChar(doctypeStateHandler)
 		fallthrough
 	case IM_beforeHead:
 		switch n.Type {
@@ -206,8 +208,9 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			}
 		}
 	case IM_text:
-		//fmt.Println("parsing script contents.")
+		fmt.Println("parsing script contents.")
 		if n.Data() == "script" {
+			fmt.Println("setting insertionMode to inBody")
 			p.Mode = IM_inBody
 			return handleChar(dataStateHandler)
 		}
@@ -257,12 +260,15 @@ func NewParser(r io.Reader) *Parser {
 
 func (p *Parser) nextInput() (int, os.Error) {
 	r, _, err := p.In.ReadRune()
+	fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
 func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
 	// and in the Initial InsertionMode
+	//n := pushNode(p)
+	//n.Type = DoctypeNode
 	h := dataStateHandlerSwitch(p)
 	for h != nil {
 		//if p.curr != nil && p.curr.data != nil {
@@ -538,12 +544,11 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 		if n.Data() == string(p.buf) {
 			return handleChar(beforeAttributeNameHandler)
 		} else {
+			p.buf = append(p.buf, c)
 			return handleChar(scriptDataStateHandler)
 		}
 	case '/':
 		if n.Parent.Data() == string(p.buf) {
-			//fmt.Println("we match!! lets pop the node")
-			popNode(p)
 			return handleChar(selfClosingTagStartHandler)
 		} else {
 			//fmt.Println("we don't match :-( keep going")
@@ -551,8 +556,6 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 		}
 	case '>':
 		if n.Parent.Data() == string(p.buf) {
-			//fmt.Println("we match!! lets pop the node")
-			popNode(p)
 			return dataStateHandlerSwitch(p)
 		} else {
 			//fmt.Println("we don't match :-( keep going")
@@ -578,13 +581,19 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 // TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
+	if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
+	fmt.Println("curr node textNode?",
+		(p.curr != nil) && (p.curr.Type == TextNode))
+	// consume the token
+	if (p.curr != nil) && (p.curr.Type == TextNode) {
+		// this is the end of the textNode so pop it from stack
+		fmt.Println("TTT: popping textNode from stack")
+		popNode(p)
+	}
 	switch c {
 	case '<':
 		return handleChar(tagOpenHandler)
 	default:
-		// consume the token
-		// TODO(jwall): need a for loop here and
-		// need to push a text node onto the stack.
 		pushNode(p)
 		textConsumer(p, c)
 		for {
@@ -604,13 +613,11 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
-	//fmt.Printf("opening a tag\n")
+	fmt.Printf("opening a tag\n")
 	switch c {
 	case '!': // markup declaration state
 		// TODO
 	case '/': // end tag open state
-		//fmt.Printf("ZZZ: closing a tag\n")
-		popNode(p)
 		return endTagOpenHandler
 	case '?': // TODO parse error // bogus comment state
 		return bogusCommentHandler
@@ -840,9 +847,18 @@ func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
+func newEndTagError(problem string, n *Node, tag []int)  os.Error {
+	msg := fmt.Sprintf(
+		"%s: End Tag does not match Start Tag start:[%s] end:[%s]",
+		problem, n.Data(), string(tag))
+	//fmt.Println(msg)
+	return NewParseError(n, msg)
+}
+
 // Section 11.2.4.9
 func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
+	fmt.Println("YYY: attempting to close a node")
 	n := p.curr
 	tag := make([]int, len(n.data))
 	for i := 0; i <= len(n.data); i++ {
@@ -854,44 +870,38 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 			return nil, err
 		}
 		if i > len(n.data) {
-				return nil, NewParseError(
-					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.Data(), string(tag))
+				return nil, newEndTagError("TagTooLarge", n, tag)
 		}
 		switch c {
 		case '>':
 			if i != len(n.data) {
-				return nil, NewParseError(n, "End Tag Truncated: [%s]", tag)
+				return nil, newEndTagError("EndTagTruncated", n, tag)
 			}
 			if string(n.data) != string(tag) {
-				return nil, NewParseError(
-					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.Data(), string(tag))
+				return nil, newEndTagError("NotSameTag", n, tag)
 			}
+			fmt.Println("YYY: closing a tag")
 			popNode(p)
 			return dataStateHandlerSwitch(p), nil
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
 			if i == len(n.data) {
-				return nil, NewParseError(
-					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.Data(), string(tag))
+				return nil, newEndTagError("UCTagDidNotStop", n, tag)
 			}
 			tag[i] = lc
 			if n.data[i] != lc {
-				return nil, NewParseError(
-					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.Data(), string(tag))
+				return nil, newEndTagError("UCTagStoppedMatching", n, tag)
 			}
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
 			if i == len(n.data) {
-				return nil, NewParseError(
-					n, "End Tag does not match Start Tag start:[%s] end:[%s]",
-					n.Data(), string(tag))
+				return nil, newEndTagError("LCTagDidNotStop", n, tag)
 			}
 			tag[i] = c
+			if n.data[i] != c {
+				return nil, newEndTagError("LCTagStoppedMatching", n, tag)
+			}
 		default: // Bogus Comment state
 			tag[i] = c
 			return bogusCommentHandler, NewParseError(n,
@@ -935,20 +945,19 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		//fmt.Printf("pushing child onto: %s\n", p.curr.Data())
+		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
 	}
-	//fmt.Printf("curr node: %s\n", p.curr.Data())
 	return n
 }
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		//fmt.Printf("popping node: %s\n", p.curr.Data())
+		fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
-		//fmt.Printf("curr node: %s\n", p.curr.Data())
+		fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }
