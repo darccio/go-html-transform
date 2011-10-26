@@ -1036,3 +1036,7 @@ func popNode(p *Parser) *Node {
 	}
 	return p.curr
 }
+
+// TODO Clone
+// TODO Walk
+// TODO html snippets?
