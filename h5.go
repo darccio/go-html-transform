@@ -245,6 +245,7 @@ type Parser struct {
 	In *bufio.Reader
 	Top *Node
 	curr *Node
+	c *int
 	consumer TokenConsumer
 	Mode InsertionMode
 	buf []int // temporary buffer
@@ -262,9 +263,19 @@ func NewParser(r io.Reader) *Parser {
 }
 
 func (p *Parser) nextInput() (int, os.Error) {
+	if p.c != nil {
+		c := p.c
+		p.c = nil
+		fmt.Printf("reread rune: %c\n", *c)
+		return *c, nil
+	}
 	r, _, err := p.In.ReadRune()
 	fmt.Printf("rune: %c\n", r)
 	return r, err
+}
+
+func (p *Parser) pushBack(c int) {
+	p.c = &c
 }
 
 func (p *Parser) Parse() os.Error {
@@ -328,10 +339,13 @@ func startDoctypeStateHandler(p *Parser, c int) stateHandler {
 			return handleChar(doctypeStateHandler)
 		} else { // whoops not a doctype tag
 			// TODO setup a default doctype
+			// TODO we need a way to reconsume two characters :-(
+			p.pushBack(c2)
+			return dataStateHandler(p, c)
 		}
 	default:
 			// TODO setup a default doctype
-		return dataStateHandlerSwitch(p)
+			return dataStateHandler(p, c)
 	}
 	panic("unreachable")
 }
@@ -606,6 +620,7 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 // TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
+	fmt.Printf("In dataStateHandler c:%c\n", c)
 	//if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
 	//fmt.Println("curr node textNode?",
 	//	(p.curr != nil) && (p.curr.Type == TextNode))
@@ -862,8 +877,10 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 
 // Section 11.2.4.43
 func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
+	fmt.Println("starting self closing tag handler")
 	switch c {
 		case '>':
+		    popNode(p)
 			return dataStateHandlerSwitch(p)
 		default:
 			// TODO parse error reconsume as before attribute handler
