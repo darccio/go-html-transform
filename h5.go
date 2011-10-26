@@ -61,13 +61,19 @@ func (n *Node) String() string {
 	switch n.Type {
 	case TextNode:
 		return n.Data()
-	case ElementNode, DoctypeNode:
+	case ElementNode:
 		s :="<" + n.Data() + attrString(n.Attr) + ">"
 		for _, n := range n.Children {
 			s += n.String()
 		}
 		s += "</" + n.Data() + ">"
 		return s
+	case DoctypeNode:
+		// TODO Doctype stringification
+		s := ""
+		for _, n := range n.Children {
+			s += n.String()
+		}
 	case CommentNode:
 		// TODO
 	}
@@ -117,8 +123,8 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		fallthrough
 	case IM_beforeHtml:
 		p.Mode = IM_beforeHtml
-		//return handleChar(doctypeStateHandler)
-		fallthrough
+		return handleChar(doctypeStateHandler)
+		//fallthrough
 	case IM_beforeHead:
 		switch n.Type {
 		case DoctypeNode:
@@ -260,15 +266,16 @@ func NewParser(r io.Reader) *Parser {
 
 func (p *Parser) nextInput() (int, os.Error) {
 	r, _, err := p.In.ReadRune()
-	fmt.Printf("rune: %c\n", r)
+	//fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
 func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
 	// and in the Initial InsertionMode
-	//n := pushNode(p)
-	//n.Type = DoctypeNode
+	// start with a docType
+	n := pushNode(p)
+	n.Type = DoctypeNode
 	h := dataStateHandlerSwitch(p)
 	first := true
 	for h != nil {
@@ -947,7 +954,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -957,7 +964,7 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		fmt.Printf("popping node: %s\n", p.curr.Data())
+		//fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
 		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
