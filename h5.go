@@ -122,8 +122,9 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	case IM_initial:
 		fallthrough
 	case IM_beforeHtml:
-		p.Mode = IM_beforeHtml
-		return handleChar(doctypeStateHandler)
+		fmt.Println("starting doctypeStateHandler")
+		p.Mode = IM_beforeHead
+		return handleChar(startDoctypeStateHandler)
 		//fallthrough
 	case IM_beforeHead:
 		switch n.Type {
@@ -234,14 +235,10 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 
 func dataStateHandlerSwitch(p *Parser) stateHandler {
 	n := p.curr
-	//fmt.Printf(
-	//	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
-	//	p.Mode, n)
-	if n != nil {
-		return insertionModeSwitch(p, n)
-	}
-	// TODO is this the right thing here?
-	return handleChar(dataStateHandler)
+	/*fmt.Printf(
+		"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
+		p.Mode, n)*/
+	return insertionModeSwitch(p, n)
 }
 
 type Parser struct {
@@ -266,7 +263,7 @@ func NewParser(r io.Reader) *Parser {
 
 func (p *Parser) nextInput() (int, os.Error) {
 	r, _, err := p.In.ReadRune()
-	//fmt.Printf("rune: %c\n", r)
+	fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
@@ -274,12 +271,8 @@ func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
 	// and in the Initial InsertionMode
 	// start with a docType
-	n := pushNode(p)
-	n.Type = DoctypeNode
 	h := dataStateHandlerSwitch(p)
-	first := true
 	for h != nil {
-		if first { first = false }
 		//if p.curr != nil && p.curr.data != nil {
 			//fmt.Printf("YYY: %v\n", p.curr.Data())
 		//}
@@ -322,14 +315,37 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 	return memoized[h]
 }
 
+func startDoctypeStateHandler(p *Parser, c int) stateHandler {
+	fmt.Printf("Starting Doctype handler c:%c\n", c)
+	switch c {
+	case '<':
+		c2, err := p.nextInput()
+		if err != nil {
+			// correctly handle EOF
+			return nil
+		}
+		if c2 == '!' { // its a doc type tag yay
+			return handleChar(doctypeStateHandler)
+		} else { // whoops not a doctype tag
+			// TODO setup a default doctype
+		}
+	default:
+			// TODO setup a default doctype
+		return dataStateHandlerSwitch(p)
+	}
+	panic("unreachable")
+}
+
 // Section 11.2.4.52
 func doctypeStateHandler(p *Parser, c int) stateHandler {
+	fmt.Printf("Parsing Doctype c:%c\n", c)
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeDoctypeHandler)
 	default:
 		// TODO parse error
-		return handleChar(beforeDoctypeHandler)
+		// reconsume in BeforeDoctypeState
+		return beforeDoctypeHandler(p, c)
 	}
 	panic("unreachable")
 }
@@ -954,7 +970,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -964,9 +980,9 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		//fmt.Printf("popping node: %s\n", p.curr.Data())
+		fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
-		//fmt.Printf("curr node: %s\n", p.curr.Data())
+		fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }

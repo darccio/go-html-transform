@@ -241,4 +241,5 @@ func TestParseFromReader(t *testing.T) {
 		util.AssertTrue(t, false, "Failed to parse")
 	}
 	util.AssertTrue(t, p.Top != nil, "We got a parse tree back")
+	fmt.Println("Doc: ", p.Top.String())
 }
