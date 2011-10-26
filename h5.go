@@ -260,7 +260,7 @@ func NewParser(r io.Reader) *Parser {
 
 func (p *Parser) nextInput() (int, os.Error) {
 	r, _, err := p.In.ReadRune()
-	//fmt.Printf("rune: %c\n", r)
+	fmt.Printf("rune: %c\n", r)
 	return r, err
 }
 
@@ -270,7 +270,9 @@ func (p *Parser) Parse() os.Error {
 	//n := pushNode(p)
 	//n.Type = DoctypeNode
 	h := dataStateHandlerSwitch(p)
+	first := true
 	for h != nil {
+		if first { first = false }
 		//if p.curr != nil && p.curr.data != nil {
 			//fmt.Printf("YYY: %v\n", p.curr.Data())
 		//}
@@ -945,7 +947,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -955,7 +957,7 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		//fmt.Printf("popping node: %s\n", p.curr.Data())
+		fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
 		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}

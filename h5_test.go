@@ -4,6 +4,7 @@ import (
 	"testing"
 	"testing/util"
 	"fmt"
+	"os"
 )
 
 func TestPushNode(t *testing.T) {
@@ -226,4 +227,18 @@ func TestSimpledocSiblings(t *testing.T) {
 	util.AssertEqual(t, len(p.Top.Children[0].Children), 2)
 	util.AssertEqual(t, p.Top.Children[0].Data(), "body")
 	util.AssertEqual(t, p.Top.Children[0].Children[0].Data(), "a")
+}
+
+func TestParseFromReader(t *testing.T) {
+	rdr, err := os.Open("test_data/page.html")
+	if err != nil {
+		fmt.Println("Error: ", err)
+		os.Exit(1)
+	}
+	p := NewParser(rdr)
+	err = p.Parse()
+	if err != nil {
+		util.AssertTrue(t, false, "Failed to parse")
+	}
+	util.AssertTrue(t, p.Top != nil, "We got a parse tree back")
 }
