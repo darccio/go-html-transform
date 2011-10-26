@@ -193,7 +193,7 @@ func TestSimpledoc(t *testing.T) {
 	p := NewParserFromString("<html><body>foo</body></html>")
 	err := p.Parse()
 	util.AssertTrue(t, err == nil, "err is not nil: %v", err)
-	fmt.Printf("XXX doc: %s\n", p.Top)
+	//fmt.Printf("XXX doc: %s\n", p.Top)
 	util.AssertEqual(t, p.Top.Data(), "html")
 	util.AssertEqual(t, len(p.Top.Children), 1)
 	util.AssertEqual(t, len(p.Top.Children[0].Children), 1)
@@ -241,5 +241,5 @@ func TestParseFromReader(t *testing.T) {
 		util.AssertTrue(t, false, "Failed to parse")
 	}
 	util.AssertTrue(t, p.Top != nil, "We got a parse tree back")
-	fmt.Println("Doc: ", p.Top.String())
+	//fmt.Println("Doc: ", p.Top.String())
 }
