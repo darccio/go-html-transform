@@ -243,3 +243,31 @@ func TestParseFromReader(t *testing.T) {
 	util.AssertTrue(t, p.Top != nil, "We got a parse tree back")
 	//fmt.Println("Doc: ", p.Top.String())
 }
+
+func TestNodeClone(t *testing.T) {
+	p := NewParserFromString(
+		"<html><body><a>foo</a><div>bar</div></body></html>")
+	p.Parse()
+	n := p.Top.Clone()
+	util.AssertTrue(t, n != nil, "n is nil")
+	util.AssertEqual(t, n.Data(), "html")
+	util.AssertEqual(t, len(n.Children), 1)
+	util.AssertEqual(t, len(n.Children[0].Children), 2)
+	util.AssertEqual(t, n.Children[0].Data(), "body")
+	util.AssertEqual(t, n.Children[0].Children[0].Data(), "a")
+}
+
+func TestNodeWalk(t *testing.T) {
+	p := NewParserFromString(
+		"<html><body><a>foo</a><div>bar</div></body></html>")
+	p.Parse()
+	i := 0
+	ns := make([]string, 6)
+	f := func(n *Node) {
+		ns[i] = n.Data()
+		i++
+	}
+	p.Top.Walk(f)
+	util.AssertEqual(t, i, 6)
+	util.AssertEqual(t, ns, []string{"html", "body", "a", "foo", "div", "bar"})
+}

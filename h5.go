@@ -99,6 +99,38 @@ func (n *Node) String() string {
 	return ""
 }
 
+func (n *Node) Walk(f func(*Node)) {
+	f(n)
+	if len(n.Children) > 0 {
+		for _, c := range n.Children {
+			c.Walk(f)
+		}
+	}
+}
+
+func cloneNode(n, p *Node) *Node {
+	clone := new(Node)
+	clone.data = make([]int, len(n.data))
+	clone.Attr = make([]*Attribute, len(n.Attr))
+	clone.Children = make([]*Node, len(n.Children))
+	clone.Parent = p
+	clone.Type = n.Type
+	clone.Public = n.Public
+	clone.System = n.System
+	clone.Identifier = n.Identifier
+	copy(clone.data, n.data)
+	if len(n.Children) > 0 {
+		for i, c := range n.Children {
+			clone.Children[i] = cloneNode(c, n)
+		}
+	}
+	return clone
+}
+
+func (n *Node) Clone() *Node {
+	return cloneNode(n, n.Parent)
+}
+
 func (n *Node) Data() string {
 	if n.data != nil {
 		return string(n.data)
