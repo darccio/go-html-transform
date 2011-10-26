@@ -106,8 +106,6 @@ func (n *Node) Data() string {
 	return ""
 }
 
-type TokenConsumer func(*Parser, []int)
-
 type InsertionMode int
 
 const (
@@ -266,7 +264,6 @@ type Parser struct {
 	Top *Node
 	curr *Node
 	c *int
-	consumer TokenConsumer
 	Mode InsertionMode
 	buf []int // temporary buffer
 }
