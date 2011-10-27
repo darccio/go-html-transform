@@ -31,6 +31,10 @@ func (a *Attribute) String() string {
 	return " " + a.Name + "='" + a.Value + "'"
 }
 
+func (a *Attribute) Clone() *Attribute {
+	return &Attribute{Name: a.Name, Value: a.Value}
+}
+
 type NodeType int
 const (
 	TextNode NodeType = iota // zero value so the default
@@ -48,6 +52,10 @@ type Node struct {
 	Public bool
 	System bool
 	Identifier []int
+}
+
+func (n *Node) SetData(rs []int) {
+	n.data = rs
 }
 
 func attrString(attrs []*Attribute) string {
@@ -119,6 +127,9 @@ func cloneNode(n, p *Node) *Node {
 	clone.System = n.System
 	clone.Identifier = n.Identifier
 	copy(clone.data, n.data)
+	for i, a := range n.Attr {
+		clone.Attr[i] = a.Clone()
+	}
 	if len(n.Children) > 0 {
 		for i, c := range n.Children {
 			clone.Children[i] = cloneNode(c, n)
@@ -1065,6 +1076,11 @@ func popNode(p *Parser) *Node {
 	}
 	return p.curr
 }
+
+func Text(str string) *Node {
+	return &Node{data:[]int(str)}
+}
+
 
 // TODO Clone
 // TODO Walk
