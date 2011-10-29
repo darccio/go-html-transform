@@ -7,25 +7,25 @@ package transform
 
 import (
 	"testing"
-	. "html"
+	. "h5"
 )
 
 func TestNewTransform(t *testing.T) {
-	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
 	tf := NewTransform(doc)
 	// hacky way of comparing an uncomparable type
-	assertEqual(t, (*tf.doc.top).Type, (*doc.top).Type)
+	assertEqual(t, (*tf.doc).Type, (*doc).Type)
 }
 
 func TestTransformApply(t *testing.T) {
-	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
 	tf := NewTransform(doc)
 	newDoc := tf.Apply(AppendChildren(new(Node)), "body").Doc()
-	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
+	assertEqual(t, len(newDoc.Children[0].Children), 2)
 }
 
 func TestTransformApplyMulti(t *testing.T) {
-	doc := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
 	tf := NewTransform(doc)
 	tf.Apply(AppendChildren(new(Node)), "body")
 	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
@@ -33,47 +33,40 @@ func TestTransformApplyMulti(t *testing.T) {
 		return "bar"
 	}),
 		"div").Doc()
-	assertEqual(t, len(newDoc.top.Child[0].Child[0].Child), 2)
-	assertEqual(t, newDoc.top.Child[0].Child[0].Child[0].Attr[0].Val,
+	assertEqual(t, len(newDoc.Children[0].Children), 2)
+	assertEqual(t, newDoc.Children[0].Children[0].Attr[0].Value,
 		"bar")
 }
 
 func TestAppendChildren(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\"></div><")
-	node := doc.top
+	node, _ := NewDoc("<div id=\"foo\"></div><")
 	child := new(Node)
 	child2 := new(Node)
 	f := AppendChildren(child, child2)
 	f(node)
-	assertEqual(t, len(node.Child), 3)
-	assertEqual(t, node.Child[1], child)
-	assertEqual(t, node.Child[2], child2)
-}
-
-func TestDocStringification(t *testing.T) {
-	str := "<selfclosed /><div id=\"foo\">foo<a href=\"bar\"> bar</a></div>"
-	doc := NewDoc(str)
-	assertEqual(t, str, doc.String())
+	assertEqual(t, len(node.Children), 2)
+	assertEqual(t, node.Children[0], child)
+	assertEqual(t, node.Children[1], child2)
 }
 
 func TestRemoveChildren(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div>")
-	node := doc.top.Child[0]
+	doc, _ := NewDoc("<div id=\"foo\">foo</div>")
+	node := doc.Children[0]
 	f := RemoveChildren()
 	f(node)
-	assertEqual(t, len(node.Child), 0)
+	assertEqual(t, len(node.Children), 0)
 }
 
 func TestReplaceChildren(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div>")
-	node := doc.top.Child[0]
+	doc, _ := NewDoc("<div id=\"foo\">foo</div>")
+	node := doc.Children[0]
 	child := new(Node)
 	child2 := new(Node)
 	f := ReplaceChildren(child, child2)
 	f(node)
-	assertEqual(t, len(node.Child), 2)
-	assertEqual(t, node.Child[0], child)
-	assertEqual(t, node.Child[1], child2)
+	assertEqual(t, len(node.Children), 2)
+	assertEqual(t, node.Children[0], child)
+	assertEqual(t, node.Children[1], child2)
 }
 
 func TestReplace(t *testing.T) {
@@ -82,13 +75,13 @@ func TestReplace(t *testing.T) {
 			t.Error("TestReplace paniced")
 		}
 	}()
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
-	ns := HtmlString("<span>foo</span>")
-	f := Replace(ns...)
+	doc, _ := NewDoc("<div id=\"foo\">foo</div><")
+	node := doc.Children[0]
+	ns, _ := NewDoc("<span>foo</span>")
+	f := Replace(ns)
 	f(node)
-	assertEqual(t, len(doc.top.Child), 1)
-	assertEqual(t, doc.top.Child[0].Data, "span")
+	assertEqual(t, len(doc.Children), 1)
+	assertEqual(t, doc.Children[0].Data(), "span")
 }
 
 func TestReplaceSplice(t *testing.T) {
@@ -97,69 +90,62 @@ func TestReplaceSplice(t *testing.T) {
 			t.Error("TestReplaceSplice paniced")
 		}
 	}()
-	doc := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
-	node := doc.top.Child[0].Child[0]
-	ns := HtmlString("<span>foo</span>")
-	f := Replace(ns...)
+	doc, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	node := doc.Children[0]
+	ns, _ := NewDoc("<span>foo</span>")
+	f := Replace(ns)
 	f(node)
-	assertEqual(t, len(doc.top.Child[0].Child), 2)
-	assertEqual(t, doc.top.Child[0].Child[0].Data, "span")
-	assertEqual(t, doc.top.Child[0].Child[0].Child[0].Data, "foo")
-	assertEqual(t, doc.top.Child[0].Child[1].Child[0].Data, "bar")
+	assertEqual(t, len(doc.Children), 2)
+	assertEqual(t, doc.Children[0].Data(), "span")
+	assertEqual(t, doc.Children[0].Children[0].Data(), "foo")
+	assertEqual(t, doc.Children[1].Children[0].Data(), "bar")
 }
 
 func TestModifyAttrib(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
-	assertEqual(t, node.Attr[0].Val, "foo")
+	node, _ := NewDoc("<div id=\"foo\">foo</div><")
+	assertEqual(t, node.Attr[0].Value, "foo")
 	f := ModifyAttrib("id", "bar")
 	f(node)
-	assertEqual(t, node.Attr[0].Val, "bar")
+	assertEqual(t, node.Attr[0].Value, "bar")
 	f = ModifyAttrib("class", "baz")
 	f(node)
-	assertEqual(t, node.Attr[1].Key, "class")
-	assertEqual(t, node.Attr[1].Val, "baz")
+	assertEqual(t, node.Attr[1].Name, "class")
+	assertEqual(t, node.Attr[1].Value, "baz")
 }
 
 func TestTransformAttrib(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
-	assertEqual(t, node.Attr[0].Val, "foo")
+	node, _ := NewDoc("<div id=\"foo\">foo</div><")
+	assertEqual(t, node.Attr[0].Value, "foo")
 	f := TransformAttrib("id", func(s string) string { return "bar" })
 	f(node)
-	assertEqual(t, node.Attr[0].Val, "bar")
+	assertEqual(t, node.Attr[0].Value, "bar")
 }
 
 func TestDoAll(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
-	preNode := new(Node)
-	preNode.Data = "pre node"
-	postNode := new(Node)
-	postNode.Data = "post node"
+	node, _ := NewDoc("<div id=\"foo\">foo</div><")
+	preNode := Text("pre node")
+	postNode := Text("post node")
 	f := DoAll(AppendChildren(postNode),
 		PrependChildren(preNode))
 	f(node)
-	assertEqual(t, len(node.Child), 3)
-	assertEqual(t, node.Child[0].Data, preNode.Data)
-	assertEqual(t, node.Child[len(node.Child)-1].Data, postNode.Data)
+	assertEqual(t, len(node.Children), 3)
+	assertEqual(t, node.Children[0].Data(), preNode.Data())
+	assertEqual(t, node.Children[len(node.Children)-1].Data(), postNode.Data())
 }
 
 func TestForEach(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<div id=\"foo\">foo</div><")
 	txtNode1 := Text(" bar")
 	txtNode2 := Text(" baz")
 	f := ForEach(AppendChildren, txtNode1, txtNode2)
 	f(node)
-	assertEqual(t, len(node.Child), 3)
-	assertEqual(t, node.Child[1].Data, txtNode1.Data)
-	assertEqual(t, node.Child[2].Data, txtNode2.Data)
+	assertEqual(t, len(node.Children), 3)
+	assertEqual(t, node.Children[1].Data(), txtNode1.Data())
+	assertEqual(t, node.Children[2].Data(), txtNode2.Data())
 }
 
 func TestForEachSingleArgFuncs(t *testing.T) {
-	doc := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<div id=\"foo\">foo</div><")
 	txtNode1 := Text(" bar")
 	txtNode2 := Text(" baz")
 	singleArgFun := func(n *Node) TransformFunc {
@@ -167,9 +153,9 @@ func TestForEachSingleArgFuncs(t *testing.T) {
 	}
 	f := ForEach(singleArgFun, txtNode1, txtNode2)
 	f(node)
-	assertEqual(t, len(node.Child), 3)
-	assertEqual(t, node.Child[1].Data, txtNode1.Data)
-	assertEqual(t, node.Child[2].Data, txtNode2.Data)
+	assertEqual(t, len(node.Children), 3)
+	assertEqual(t, node.Children[1].Data(), txtNode1.Data())
+	assertEqual(t, node.Children[2].Data(), txtNode2.Data())
 }
 
 func TestForEachPanic(t *testing.T) {
@@ -189,29 +175,28 @@ func TestCopyAnd(t *testing.T) {
 			t.Error("TestCopyAnd paniced %s", err)
 		}
 	}()
-	doc := NewDoc("<ul><li class=\"item\">item1</li></ul>")
-	ul := doc.top.Child[0]
-	node := ul.Child[0]
+	ul, _ := NewDoc("<ul><li class=\"item\">item1</li></ul>")
+	node := ul.Children[0]
 	fn1 := func(n *Node) {
-		n.Child[0].Data = "foo"
+		n.Children[0].SetData([]int("foo"))
 	}
 	fn2 := func(n *Node) {
-		n.Child[0].Data = "bar"
+		n.Children[0].SetData([]int("bar"))
 	}
 	f := CopyAnd(fn1, fn2)
 
-	assertEqual(t, len(ul.Child), 1)
+	assertEqual(t, len(ul.Children), 1)
 	f(node)
-	assertEqual(t, len(ul.Child), 2)
-	assertEqual(t, ul.Child[0].Data, "li")
-	assertEqual(t, ul.Child[0].Attr[0].Key, "class")
-	assertEqual(t, ul.Child[0].Attr[0].Val, "item")
-	assertEqual(t, ul.Child[0].Child[0].Data, "foo")
+	assertEqual(t, len(ul.Children), 2)
+	assertEqual(t, ul.Children[0].Data(), "li")
+	assertEqual(t, ul.Children[0].Attr[0].Name, "class")
+	assertEqual(t, ul.Children[0].Attr[0].Value, "item")
+	assertEqual(t, ul.Children[0].Children[0].Data(), "foo")
 
-	assertEqual(t, ul.Child[1].Data, "li")
-	assertEqual(t, ul.Child[1].Attr[0].Key, "class")
-	assertEqual(t, ul.Child[1].Attr[0].Val, "item")
-	assertEqual(t, ul.Child[1].Child[0].Data, "bar")
+	assertEqual(t, ul.Children[1].Data(), "li")
+	assertEqual(t, ul.Children[1].Attr[0].Name, "class")
+	assertEqual(t, ul.Children[1].Attr[0].Value, "item")
+	assertEqual(t, ul.Children[1].Children[0].Data(), "bar")
 }
 
 // TODO(jwall): benchmarking tests

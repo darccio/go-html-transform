@@ -61,30 +61,27 @@ func assertVal(t *testing.T, sel *Selector, val string, msg string) {
 }
 
 func TestSelectorTagNameMatchSucceed(t *testing.T) {
-	doc := NewDoc("<a></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a></a>")
 	sel := NewSelector("a")
 	if !sel.Match(node) {
 		t.Logf("node tree: %s", node)
 		t.Errorf("Node did not match. nodes name: %s",
-			node.Data)
+			node.Data())
 	}
 }
 
 func TestSelectorTagNameFail(t *testing.T) {
-	doc := NewDoc("<a></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a></a>")
 	sel := NewSelector("hr")
 	if sel.Match(node) {
 		t.Logf("node tree: %s", node)
 		t.Errorf("Node did not match. nodes name: %s",
-			node.Data)
+			node.Data())
 	}
 }
 
 func TestSelectorSingleAttribMatchSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\"></a>")
 	sel := NewSelector("[href=foo/bar]")
 	if !sel.Match(node) {
 		t.Errorf("Node did not match. node: %s sel: %s",
@@ -93,8 +90,7 @@ func TestSelectorSingleAttribMatchSucceed(t *testing.T) {
 }
 
 func TestSelectorMultiAttribMatchFail(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\"></a>")
 	sel := NewSelector("[href=foo/bar][class=foo]")
 	if sel.Match(node) {
 		t.Errorf("Node matched incorrectly. node: %s sel: %s",
@@ -103,8 +99,7 @@ func TestSelectorMultiAttribMatchFail(t *testing.T) {
 }
 
 func TestSelectorMultiAttribMatchSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	sel := NewSelector("[href=foo/bar][class=foo]")
 	if !sel.Match(node) {
 		t.Errorf("Node did not match. node: %s sel: %s",
@@ -113,8 +108,7 @@ func TestSelectorMultiAttribMatchSucceed(t *testing.T) {
 }
 
 func TestSelectorMultiAttribWithTagNameMatchSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	sel := NewSelector("a[href=foo/bar][class=foo]")
 	if !sel.Match(node) {
 		t.Errorf("Node did not match. node: %s sel: %s",
@@ -123,8 +117,7 @@ func TestSelectorMultiAttribWithTagNameMatchSucceed(t *testing.T) {
 }
 
 func TestSelectorPartMatchClassSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" class=\"foo\"></a>")
 	sel := NewSelector(".foo")
 	if !sel.Parts[0].match(node) {
 		t.Error("Class selector did not match")
@@ -132,8 +125,7 @@ func TestSelectorPartMatchClassSucceed(t *testing.T) {
 }
 
 func TestSelectorPartMatchIdSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" id=\"foo\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" id=\"foo\"></a>")
 	sel := NewSelector("#foo")
 	if !sel.Parts[0].match(node) {
 		t.Error("id selector did not match")
@@ -141,8 +133,7 @@ func TestSelectorPartMatchIdSucceed(t *testing.T) {
 }
 
 func TestSelectorMatchingForPartsFail(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" class=\"bar\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" class=\"bar\"></a>")
 	sel := NewSelector("a#foo.bar")
 	if sel.Match(node) {
 		t.Error("Selector did match")
@@ -150,8 +141,7 @@ func TestSelectorMatchingForPartsFail(t *testing.T) {
 }
 
 func TestSelectorMatchingForPartsSucceed(t *testing.T) {
-	doc := NewDoc("<a href=\"foo/bar\" class=\"bar\" id=\"foo\"></a>")
-	node := doc.top.Child[0]
+	node, _ := NewDoc("<a href=\"foo/bar\" class=\"bar\" id=\"foo\"></a>")
 	sel := NewSelector("a#foo.bar")
 	if !sel.Match(node) {
 		t.Error("Selector did not match")
@@ -404,9 +394,9 @@ func TestSelectorQueryApply(t *testing.T) {
 		}
 	}()
 	docStr := "<html><head /><body><div id=\"content\">foo</div></body></html>"
-	doc := NewDoc(docStr)
+	doc, _ := NewDoc(docStr)
 	//                      html     body     div
-	expectedNode := doc.top.Child[0].Child[1].Child[0]
+	expectedNode := doc.Children[1].Children[0]
 	selQuery := NewSelectorQuery("div#content")
 	nodes := selQuery.Apply(doc)
 	assertEqual(t, len(nodes), 1)
@@ -421,10 +411,10 @@ func TestSelectorQueryApplyMulti(t *testing.T) {
 	}()
 	docStr := "<html><head /><body><div class=\"content\">foo</div>" +
 		"<div class=\"content\">bar</div></body></html>"
-	doc := NewDoc(docStr)
+	doc, _ := NewDoc(docStr)
 	//                       html     body     div
-	expectedNode1 := doc.top.Child[0].Child[1].Child[0]
-	expectedNode2 := doc.top.Child[0].Child[1].Child[1]
+	expectedNode1 := doc.Children[1].Children[0]
+	expectedNode2 := doc.Children[1].Children[1]
 	selQuery := NewSelectorQuery("div.content")
 	nodes := selQuery.Apply(doc)
 	assertEqual(t, len(nodes), 2)
@@ -440,8 +430,8 @@ func TestSelectorQueryMultipleSelectors(t *testing.T) {
 	}()
 	docStr := "<html><head /><body><div class=\"content\"><a>foo</a></div>" +
 		"<div class=\"content\">bar</div></body></html>"
-	doc := NewDoc(docStr)
-	expectedNode := doc.top.Child[0].Child[1].Child[0].Child[0]
+	doc, _ := NewDoc(docStr)
+	expectedNode := doc.Children[1].Children[0].Children[0]
 	selQuery := NewSelectorQuery("div.content", "a") // descendent a's of div.content
 
 	nodes := selQuery.Apply(doc)

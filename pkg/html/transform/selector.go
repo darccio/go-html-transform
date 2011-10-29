@@ -1,7 +1,7 @@
 package transform
 
 import (
-	. "html"
+	. "h5"
 	"log"
 	s "strings"
 )
@@ -14,7 +14,7 @@ type SelectorQuery []*Selector
 
 // SelectorPart is the type of a single Selector's Class, ID or Pseudo part.
 type SelectorPart struct {
-	Type byte   // a bitmask of the selector types 
+	Type byte   // a bitmask of the selector types
 	Val  string // the value we are matching against
 }
 
@@ -30,7 +30,7 @@ const (
 	TAGNAME byte = iota // Tagname Selector Type
 	CLASS   byte = '.'  // Class SelectorPart Type
 	ID      byte = '#'  // Id  SelectorPart Type
-	PSEUDO  byte = ':'  // Pseudo SelectoPart Type 
+	PSEUDO  byte = ':'  // Pseudo SelectoPart Type
 	ANY     byte = '*'  // Any tag Selector Type
 	ATTR    byte = '['  // Attr Selector Type
 )
@@ -40,15 +40,15 @@ const (
 	SELECTOR_CHARS string = ".:#["
 )
 
-func matchAttrib(nodeAttr []Attribute, matchAttr map[string]string) bool {
+func matchAttrib(nodeAttr []*Attribute, matchAttr map[string]string) bool {
 	attribResult := true
 	for key, val := range matchAttr {
 		exists := false
 		matched := false
 		for _, attr := range nodeAttr {
-			if key == attr.Key {
+			if key == attr.Name {
 				exists = true
-				if val == attr.Val {
+				if val == attr.Value {
 					matched = true
 				}
 				attribResult = attribResult && exists && matched
@@ -78,7 +78,7 @@ func (part SelectorPart) match(node *Node) bool {
 // Returns true for a match false otherwise.
 func (sel *Selector) Match(node *Node) bool {
 	tagNameResult := true
-	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data {
+	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data() {
 		tagNameResult = tagNameResult && false
 	}
 	attribResult := matchAttrib(node.Attr, sel.Attr)
@@ -251,7 +251,7 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 		if len(sel) == 1 {
 			nodes = []*Node{n}
 		} else {
-			for _, c := range n.Child {
+			for _, c := range n.Children {
 				if len(sel) > 1 {
 					ns := applyToNode(sel[1:], c)
 					if len(ns) > 0 {
@@ -268,7 +268,7 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 
 // Apply the css selector to a document.
 // Returns a Vector of nodes that the selector matched.
-func (sel SelectorQuery) Apply(doc *Document) []*Node {
+func (sel SelectorQuery) Apply(doc *Node) []*Node {
 	interesting := []*Node{}
 	f := func(n *Node) {
 		found := applyToNode(sel, n)

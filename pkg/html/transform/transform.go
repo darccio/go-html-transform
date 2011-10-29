@@ -20,7 +20,7 @@ package transform
 
 // TODO(jwall): Documentation...
 import (
-	. "html"
+	. "h5"
 	"log"
 )
 
@@ -29,17 +29,17 @@ type TransformFunc func(*Node)
 
 // Transformer encapsulates a document under transformation.
 type Transformer struct {
-	doc *Document
+	doc *Node
 }
 
 // Constructor for a Transformer. It makes a copy of the document
 // and transforms that instead of the original.
-func NewTransform(d *Document) *Transformer {
+func NewTransform(d *Node) *Transformer {
 	return &Transformer{doc: d.Clone()}
 }
 
 // The Doc method returns the document under transformation.
-func (t *Transformer) Doc() *Document {
+func (t *Transformer) Doc() *Node {
 	return t.doc
 }
 
@@ -61,23 +61,23 @@ func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 // AppendChildren creates a TransformFunc that appends the Children passed in.
 func AppendChildren(cs ...*Node) TransformFunc {
 	return func(n *Node) {
-		sz := len(n.Child)
+		sz := len(n.Children)
 		newChild := make([]*Node, sz+len(cs))
-		copy(newChild, n.Child)
+		copy(newChild, n.Children)
 		copy(newChild[sz:], cs)
-		n.Child = newChild
+		n.Children = newChild
 	}
 }
 
 // PrependChildren creates a TransformFunc that prepends the Children passed in.
 func PrependChildren(cs ...*Node) TransformFunc {
 	return func(n *Node) {
-		sz := len(n.Child)
+		sz := len(n.Children)
 		sz2 := len(cs)
 		newChild := make([]*Node, sz+len(cs))
-		copy(newChild[sz2:], n.Child)
+		copy(newChild[sz2:], n.Children)
 		copy(newChild[0:sz2], cs)
-		n.Child = newChild
+		n.Children = newChild
 	}
 }
 
@@ -85,7 +85,7 @@ func PrependChildren(cs ...*Node) TransformFunc {
 // it operates on.
 func RemoveChildren() TransformFunc {
 	return func(n *Node) {
-		n.Child = make([]*Node, 0)
+		n.Children = make([]*Node, 0)
 	}
 }
 
@@ -93,7 +93,7 @@ func RemoveChildren() TransformFunc {
 // node it operates on with the Children passed in.
 func ReplaceChildren(ns ...*Node) TransformFunc {
 	return func(n *Node) {
-		n.Child = ns
+		n.Children = ns
 	}
 }
 
@@ -101,17 +101,17 @@ func Replace(ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		p := n.Parent
 		// TODO(jwall): splice the new nodes into the spot the current node is
-		for i, c := range p.Child {
+		for i, c := range p.Children {
 			if c == n {
 				n := i - 1
 				if n < 0 {
 					n = 0
 				}
 				var newChild []*Node
-				pre := p.Child[:n]
-				post := p.Child[i+1:]
+				pre := p.Children[:n]
+				post := p.Children[i+1:]
 				newChild = append(pre, ns...)
-				p.Child = append(newChild, post...)
+				p.Children = append(newChild, post...)
 			}
 		}
 	}
@@ -123,14 +123,14 @@ func ModifyAttrib(key string, val string) TransformFunc {
 	return func(n *Node) {
 		found := false
 		for i, attr := range n.Attr {
-			if attr.Key == key {
-				n.Attr[i].Val = val
+			if attr.Name == key {
+				n.Attr[i].Value = val
 				found = true
 			}
 		}
 		if !found {
-			newAttr := make([]Attribute, len(n.Attr)+1)
-			newAttr[len(n.Attr)] = Attribute{Key: key, Val: val}
+			newAttr := make([]*Attribute, len(n.Attr)+1)
+			newAttr[len(n.Attr)] = &Attribute{Name: key, Value: val}
 			n.Attr = newAttr
 		}
 	}
@@ -139,8 +139,8 @@ func ModifyAttrib(key string, val string) TransformFunc {
 func TransformAttrib(key string, f func(string) string) TransformFunc {
 	return func(n *Node) {
 		for i, attr := range n.Attr {
-			if attr.Key == key {
-				n.Attr[i].Val = f(n.Attr[i].Val)
+			if attr.Name == key {
+				n.Attr[i].Value = f(n.Attr[i].Value)
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func CopyAnd(fns ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		newNodes := make([]*Node, len(fns))
 		for i, fn := range fns {
-			node := cloneNode(n, n.Parent)
+			node := n.Clone()
 			fn(node)
 			newNodes[i] = node
 		}
