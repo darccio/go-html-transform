@@ -3,10 +3,17 @@ package transform
 import (
 	. "h5"
 	"os"
+	"io"
 )
 
 func NewDoc(str string) (*Node, os.Error) {
 	p := NewParserFromString(str)
+	err := p.Parse()
+	return p.Top, err
+}
+
+func NewDocFromReader(rdr io.Reader) (*Node, os.Error) {
+	p := NewParser(rdr)
 	err := p.Parse()
 	return p.Top, err
 }
