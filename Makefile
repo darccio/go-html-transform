@@ -9,10 +9,6 @@ default:
 test:
 	(cd ${SRCDIR} && gotest -test.v)
 
-bench: install
-	(cd bench && gotest -x -test.v -test.cpuprofile=cpu.out \
-	-test.timeout 30 -test.memprofile=mem.out -test.bench "Benchmark")
-
 install:
 	(cd ${SRCDIR} && make install)
 
