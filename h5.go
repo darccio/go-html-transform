@@ -1082,6 +1082,4 @@ func Text(str string) *Node {
 }
 
 
-// TODO Clone
-// TODO Walk
 // TODO html snippets?

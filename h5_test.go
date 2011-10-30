@@ -271,3 +271,12 @@ func TestNodeWalk(t *testing.T) {
 	util.AssertEqual(t, i, 6)
 	util.AssertEqual(t, ns, []string{"html", "body", "a", "foo", "div", "bar"})
 }
+
+func TestSnippet(t *testing.T) {
+	p := NewParserFromString("<a></a>")
+	err := p.Parse()
+	util.AssertTrue(t, err == nil, "we errored while parsing snippet %s", err)
+	util.AssertTrue(
+		t, p.Top != nil, "We didn't get a node tree back while parsing snippet")
+	util.AssertEqual(t, p.Top.Data(), "a")
+}
