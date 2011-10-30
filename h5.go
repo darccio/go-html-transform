@@ -757,12 +757,24 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.10
 func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
+	// TODO(jwall): make this more efficient with a for loop
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeAttributeNameHandler)
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
+		if n.Parent != nil && n.Parent.Data() == "head" {
+			switch n.Data() {
+			case "meta":
+					popNode(p)
+			}
+		} else {
+			switch n.Data() {
+			case "base", "bgsound", "command", "link", "meta":
+				popNode(p)
+			}
+		}
 		return dataStateHandlerSwitch(p)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':

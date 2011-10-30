@@ -280,3 +280,20 @@ func TestSnippet(t *testing.T) {
 		t, p.Top != nil, "We didn't get a node tree back while parsing snippet")
 	util.AssertEqual(t, p.Top.Data(), "a")
 }
+
+func TestMeta(t *testing.T) {
+	p := NewParserFromString(
+		"<html><head><meta></head><body><div>foo</div></body></html>")
+	err := p.Parse()
+	util.AssertTrue(t, err == nil, "err was not nil, %s", err)
+	n := p.Top
+	util.AssertTrue(t, n != nil, "n is nil")
+	util.AssertEqual(t, n.Data(), "html")
+	util.AssertEqual(t, len(n.Children), 2)
+	util.AssertEqual(t, len(n.Children[0].Children), 1)
+	util.AssertEqual(t, n.Children[0].Data(), "head")
+	util.AssertEqual(t, n.Children[0].Children[0].Data(), "meta")
+	util.AssertEqual(t, n.Children[1].Data(), "body")
+	util.AssertEqual(t, n.Children[1].Children[0].Data(), "div")
+	util.AssertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
+}
