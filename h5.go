@@ -704,7 +704,9 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 	// consume the token
 	if (p.curr != nil) {
 		switch p.curr.Data() {
-		case "base", "bgsound", "command", "link", "meta":
+		case "base", "bgsound", "command", "link", "meta",
+			"area", "br", "embed", "img", "keygen", "wbr",
+			"param", "source", "track", "hr", "image":
 			popNode(p)
 		}
 		// this is the end of the textNode so pop it from stack
