@@ -88,12 +88,17 @@ func (n *Node) String() string {
 	case TextNode:
 		return n.Data()
 	case ElementNode:
-		s :="<" + n.Data() + attrString(n.Attr) + ">"
-		for _, n := range n.Children {
-			s += n.String()
+		// TODO handle the strange self close tags
+		if n.Children == nil || len(n.Children) == 0 {
+			return "<" + n.Data() + attrString(n.Attr) + "/>"
+		} else {
+			s :="<" + n.Data() + attrString(n.Attr) + ">"
+			for _, n := range n.Children {
+				s += n.String()
+			}
+			s += "</" + n.Data() + ">"
+			return s
 		}
-		s += "</" + n.Data() + ">"
-		return s
 	case DoctypeNode:
 		// TODO Doctype stringification
 		s := doctypeString(n)
@@ -764,16 +769,9 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		if n.Parent != nil && n.Parent.Data() == "head" {
-			switch n.Data() {
-			case "meta":
-					popNode(p)
-			}
-		} else {
-			switch n.Data() {
-			case "base", "bgsound", "command", "link", "meta":
-				popNode(p)
-			}
+		switch n.Data() {
+		case "base", "bgsound", "command", "link", "meta":
+			popNode(p)
 		}
 		return dataStateHandlerSwitch(p)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
