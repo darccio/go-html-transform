@@ -283,7 +283,7 @@ func TestSnippet(t *testing.T) {
 
 func TestMeta(t *testing.T) {
 	p := NewParserFromString(
-		"<html><head><meta><link></head><body><div>foo</div></body></html>")
+		"<html><head><meta><link href='foo'></head><body><div>foo</div></body></html>")
 	err := p.Parse()
 	util.AssertTrue(t, err == nil, "err was not nil, %s", err)
 	n := p.Top
@@ -295,7 +295,7 @@ func TestMeta(t *testing.T) {
 	util.AssertEqual(t, n.Children[0].Data(), "head")
 	util.AssertEqual(t, n.Children[0].Children[0].Data(), "meta")
 	util.AssertEqual(t, n.Children[0].Children[1].Data(), "link")
-	//util.AssertEqual(t, n.Children[1].Data(), "body")
-	//util.AssertEqual(t, n.Children[1].Children[0].Data(), "div")
-	//util.AssertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
+	util.AssertEqual(t, n.Children[1].Data(), "body")
+	util.AssertEqual(t, n.Children[1].Children[0].Data(), "div")
+	util.AssertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
 }

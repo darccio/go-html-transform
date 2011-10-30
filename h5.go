@@ -702,10 +702,14 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 	//fmt.Println("curr node textNode?",
 	//	(p.curr != nil) && (p.curr.Type == TextNode))
 	// consume the token
-	if (p.curr != nil) && (p.curr.Type == TextNode) {
+	if (p.curr != nil) {
+		switch p.curr.Data() {
+		case "base", "bgsound", "command", "link", "meta":
+			popNode(p)
+		}
 		// this is the end of the textNode so pop it from stack
 		//fmt.Println("TTT: popping textNode from stack")
-		popNode(p)
+		if (p.curr.Type == TextNode) { popNode(p) }
 	}
 	switch c {
 	case '<':
@@ -769,10 +773,6 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 	case '/':
 		return handleChar(selfClosingTagStartHandler)
 	case '>':
-		switch n.Data() {
-		case "base", "bgsound", "command", "link", "meta":
-			popNode(p)
-		}
 		return dataStateHandlerSwitch(p)
 	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
