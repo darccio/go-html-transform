@@ -21,139 +21,6 @@ func (e ParseError) String() string {
 	return e.msg
 }
 
-type Attribute struct {
-	Name string
-	Value string
-}
-
-func (a *Attribute) String() string {
-	// TODO handle differnt quoting styles.
-	return " " + a.Name + "='" + a.Value + "'"
-}
-
-func (a *Attribute) Clone() *Attribute {
-	return &Attribute{Name: a.Name, Value: a.Value}
-}
-
-type NodeType int
-const (
-	TextNode NodeType = iota // zero value so the default
-	ElementNode NodeType = iota
-	DoctypeNode NodeType = iota
-	CommentNode NodeType = iota
-)
-
-type Node struct {
-	Type NodeType
-	data []int
-	Attr []*Attribute
-	Parent *Node
-	Children []*Node
-	Public bool
-	System bool
-	Identifier []int
-}
-
-func (n *Node) SetData(rs []int) {
-	n.data = rs
-}
-
-func attrString(attrs []*Attribute) string {
-	if attrs == nil {
-		return ""
-	}
-	s := ""
-	for _, a := range attrs {
-		s += fmt.Sprintf(" %s", a)
-	}
-	return s
-}
-
-func doctypeString(n *Node) string {
-	keyword := ""
-	identifier := string(n.Identifier)
-	switch {
-	case n.Public:
-		keyword = "PUBLIC"
-	case n.System:
-		keyword = "SYSTEM"
-	default:
-		return "<!DOCTYPE html>"
-	}
-	return fmt.Sprintf("<!DOCTYPE %s=\"%s\">", keyword, identifier)
-}
-
-func (n *Node) String() string {
-	switch n.Type {
-	case TextNode:
-		return n.Data()
-	case ElementNode:
-		// TODO handle the strange self close tags
-		if n.Children == nil || len(n.Children) == 0 {
-			return "<" + n.Data() + attrString(n.Attr) + "/>"
-		} else {
-			s :="<" + n.Data() + attrString(n.Attr) + ">"
-			for _, n := range n.Children {
-				s += n.String()
-			}
-			s += "</" + n.Data() + ">"
-			return s
-		}
-	case DoctypeNode:
-		// TODO Doctype stringification
-		s := doctypeString(n)
-		for _, n := range n.Children {
-			s += n.String()
-		}
-		return s
-	case CommentNode:
-		// TODO
-	}
-	return ""
-}
-
-func (n *Node) Walk(f func(*Node)) {
-	f(n)
-	if len(n.Children) > 0 {
-		for _, c := range n.Children {
-			c.Walk(f)
-		}
-	}
-}
-
-func cloneNode(n, p *Node) *Node {
-	clone := new(Node)
-	clone.data = make([]int, len(n.data))
-	clone.Attr = make([]*Attribute, len(n.Attr))
-	clone.Children = make([]*Node, len(n.Children))
-	clone.Parent = p
-	clone.Type = n.Type
-	clone.Public = n.Public
-	clone.System = n.System
-	clone.Identifier = n.Identifier
-	copy(clone.data, n.data)
-	for i, a := range n.Attr {
-		clone.Attr[i] = a.Clone()
-	}
-	if len(n.Children) > 0 {
-		for i, c := range n.Children {
-			clone.Children[i] = cloneNode(c, n)
-		}
-	}
-	return clone
-}
-
-func (n *Node) Clone() *Node {
-	return cloneNode(n, n.Parent)
-}
-
-func (n *Node) Data() string {
-	if n.data != nil {
-		return string(n.data)
-	}
-	return ""
-}
-
 type InsertionMode int
 
 const (
@@ -435,15 +302,14 @@ func doctypeStateHandler(p *Parser, c int) stateHandler {
 func beforeDoctypeHandler(p *Parser, c int) stateHandler {
 	curr := pushNode(p)
 	curr.Type = DoctypeNode
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t', c == '\n', c == '\f', c == ' ':
 		// ignore
 		return handleChar(beforeDoctypeHandler)
-	case '>':
+	case c == '>':
 		// TODO parse error, quirks mode
 		return dataStateHandlerSwitch(p)
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		curr.data = append(curr.data, lc)
 		return handleChar(doctypeNameState)
@@ -457,14 +323,13 @@ func beforeDoctypeHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.54
 func doctypeNameState(p *Parser, c int) stateHandler {
 	n := p.curr
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t', c == '\n', c == '\f', c == ' ':
 		// ignore
 		return afterDoctypeNameHandler
-	case '>':
+	case c == '>':
 		return afterDoctypeNameHandler
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		n.data = append(n.data, lc)
 		return handleChar(doctypeNameState)
@@ -633,14 +498,12 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 
 func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 	//fmt.Printf("trying to close script tag c: %c\n", c)
-	switch c {
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	switch {
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		p.buf = append(p.buf, lc)
 		return handleChar(scriptDataEndTagNameHandler)
-	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+	case 'a' <= c && c <= 'z':
 		p.buf = append(p.buf, c)
 		return handleChar(scriptDataEndTagNameHandler)
 	default:
@@ -653,22 +516,22 @@ func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 	//fmt.Printf("script tag name handler c:%c\n", c)
 	n := p.curr
-	switch c {
-	case '\t', '\f', '\n', ' ':
+	switch {
+	case c == '\t', c == '\f', c == '\n', c == ' ':
 		if n.Data() == string(p.buf) {
 			return handleChar(beforeAttributeNameHandler)
 		} else {
 			p.buf = append(p.buf, c)
 			return handleChar(scriptDataStateHandler)
 		}
-	case '/':
+	case c == '/':
 		if n.Parent.Data() == string(p.buf) {
 			return handleChar(selfClosingTagStartHandler)
 		} else {
 			//fmt.Println("we don't match :-( keep going")
 			return handleChar(scriptDataStateHandler)
 		}
-	case '>':
+	case c == '>':
 		if n.Parent.Data() == string(p.buf) {
 			//fmt.Printf("time to see about closing it :-)")
 			popNode(p)
@@ -677,13 +540,11 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 			//fmt.Println("we don't match :-( keep going")
 			return handleChar(scriptDataStateHandler)
 		}
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		p.buf = append(p.buf, lc)
 		return handleChar(scriptDataEndTagNameHandler)
-	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+	case 'a' <= c && c <= 'z':
 		p.buf = append(p.buf, c)
 		return handleChar(scriptDataEndTagNameHandler)
 	default:
@@ -706,7 +567,7 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 		switch p.curr.Data() {
 		case "base", "bgsound", "command", "link", "meta",
 			"area", "br", "embed", "img", "keygen", "wbr",
-			"param", "source", "track", "hr", "image":
+			"param", "source", "track", "hr", "input", "image":
 			popNode(p)
 		}
 		// this is the end of the textNode so pop it from stack
@@ -737,23 +598,21 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
 	//fmt.Printf("opening a tag\n")
-	switch c {
-	case '!': // markup declaration state
+	switch {
+	case c == '!': // markup declaration state
 		// TODO
-	case '/': // end tag open state
+	case c == '/': // end tag open state
 		return endTagOpenHandler
-	case '?': // TODO parse error // bogus comment state
+	case c == '?': // TODO parse error // bogus comment state
 		return bogusCommentHandler
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		//fmt.Printf("ZZZ: opening a new tag\n")
 		curr := pushNode(p)
 		curr.Type = ElementNode
 		lc := c + 0x0020 // lowercase it
 		curr.data = []int{lc}
 		return handleChar(tagNameHandler)
-	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z':
+	case 'a' <= c && c <= 'z':
 		//fmt.Printf("ZZZ: opening a new tag\n")
 		curr := pushNode(p)
 		curr.Type = ElementNode
@@ -769,15 +628,14 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 func tagNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
 	// TODO(jwall): make this more efficient with a for loop
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t', c == '\n', c == '\f', c == ' ':
 		return handleChar(beforeAttributeNameHandler)
-	case '/':
+	case c == '/':
 		return handleChar(selfClosingTagStartHandler)
-	case '>':
+	case c == '>':
 		return dataStateHandlerSwitch(p)
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		n.data = append(n.data, lc)
 		return handleChar(tagNameHandler)
@@ -791,22 +649,21 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.34
 func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t' || c == '\n' || c == '\f', c == ' ':
 		// ignore
 		return handleChar(beforeAttributeNameHandler)
-	case '/':
+	case c == '/':
 		return handleChar(selfClosingTagStartHandler)
-	case '>':
+	case c == '>':
 		return dataStateHandlerSwitch(p)
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		newAttr := new(Attribute)
 		newAttr.Name = string(lc)
 		n.Attr = append(n.Attr, newAttr)
 		return handleChar(attributeNameHandler)
-	case '=', '"', '\'', '<':
+	case c == '=', c == '"', c == '\'', c == '<':
 		// TODO parse error
 		fallthrough
 	default:
@@ -821,22 +678,21 @@ func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.35
 func attributeNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t', c == '\n', c == '\f', c == ' ':
 		return handleChar(afterAttributeNameHandler)
-	case '/':
+	case c == '/':
 		return handleChar(selfClosingTagStartHandler)
-	case '>':
+	case c == '>':
 		return dataStateHandlerSwitch(p)
-	case '=':
+	case c == '=':
 		return handleChar(beforeAttributeValueHandler)
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		currAttr := n.Attr[len(n.Attr)-1]
 		currAttr.Name += string(lc)
 		return handleChar(attributeNameHandler)
-	case '"', '\'', '<':
+	case c == '"', c == '\'', c == '<':
 		// TODO parse error
 		fallthrough
 	default:
@@ -931,23 +787,22 @@ func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.36
 func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 	n := p.curr
-	switch c {
-	case '\t', '\n', '\f', ' ':
+	switch {
+	case c == '\t', c == '\n', c == '\f', c == ' ':
 		return handleChar(afterAttributeNameHandler)
-	case '/':
+	case c == '/':
 		return handleChar(selfClosingTagStartHandler)
-	case '>':
+	case c == '>':
 		return dataStateHandlerSwitch(p)
-	case '=':
+	case c == '=':
 		return handleChar(beforeAttributeValueHandler)
-	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+	case 'A' <= c && c <= 'Z':
 		lc := c + 0x0020 // lowercase it
 		newAttr := new(Attribute)
 		newAttr.Name = string(lc)
 		n.Attr = append(n.Attr, newAttr)
 		return handleChar(attributeNameHandler)
-	case '"', '\'', '<':
+	case c == '"', c == '\'', c == '<':
 		// TODO parse error
 		fallthrough
 	default:
@@ -995,11 +850,13 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		if err != nil {
 			return nil, err
 		}
-		switch c {
-		case '>':
-			switch string(tag) {
-			case "img", "image":
-				// technically a parse error but pretend it didn't happen
+		switch {
+		case c == '>':
+			// TODO tests for this
+			switch string(tag) { // quirks mode case
+			case "base", "bgsound", "command", "link", "meta",
+				"area", "br", "embed", "img", "keygen", "wbr",
+				"param", "source", "track", "hr", "input", "image":
 				return dataStateHandlerSwitch(p), nil
 			}
 			if string(n.data) != string(tag) {
@@ -1008,13 +865,10 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 			//fmt.Println("YYY: closing a tag")
 			popNode(p)
 			return dataStateHandlerSwitch(p), nil
-		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
+		case 'A' <= c && c <= 'Z':
 			lc := c + 0x0020 // lowercase it
 			tag = append(tag, lc)
-		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-			'1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
+		case 'a' <= c && c <= 'z', '0' <= c && c <= '9':
 			tag = append(tag, c)
 		default: // Bogus Comment state
 			tag = append(tag, c)
@@ -1059,7 +913,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -1069,16 +923,11 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		fmt.Printf("popping node: %s\n", p.curr.Data())
+		//fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
 		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
 	return p.curr
 }
-
-func Text(str string) *Node {
-	return &Node{data:[]int(str)}
-}
-
 
 // TODO html snippets?
