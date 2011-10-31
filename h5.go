@@ -986,8 +986,8 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
 	//fmt.Println("YYY: attempting to close a node")
 	n := p.curr
-	tag := make([]int, len(n.data))
-	for i := 0; i <= len(n.data); i++ {
+	tag := make([]int, 0, len(n.data))
+	for {
 		c, err := p.nextInput()
 		if err == os.EOF { // Parse Error
 			return nil, err
@@ -995,13 +995,12 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		if err != nil {
 			return nil, err
 		}
-		if i > len(n.data) {
-				return nil, newEndTagError("TagTooLarge", n, tag)
-		}
 		switch c {
 		case '>':
-			if i != len(n.data) {
-				return nil, newEndTagError("EndTagTruncated", n, tag)
+			switch string(tag) {
+			case "img", "image":
+				// technically a parse error but pretend it didn't happen
+				return dataStateHandlerSwitch(p), nil
 			}
 			if string(n.data) != string(tag) {
 				return nil, newEndTagError("NotSameTag", n, tag)
@@ -1012,25 +1011,13 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 		case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 			'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
 			lc := c + 0x0020 // lowercase it
-			if i == len(n.data) {
-				return nil, newEndTagError("UCTagDidNotStop", n, tag)
-			}
-			tag[i] = lc
-			if n.data[i] != lc {
-				return nil, newEndTagError("UCTagStoppedMatching", n, tag)
-			}
+			tag = append(tag, lc)
 		case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 			'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 			'1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
-			if i == len(n.data) {
-				return nil, newEndTagError("LCTagDidNotStop", n, tag)
-			}
-			tag[i] = c
-			if n.data[i] != c {
-				return nil, newEndTagError("LCTagStoppedMatching", n, tag)
-			}
+			tag = append(tag, c)
 		default: // Bogus Comment state
-			tag[i] = c
+			tag = append(tag, c)
 			return bogusCommentHandler, NewParseError(n,
 				"Strange characters in end tag: [%c] switching to BogusCommentState", c)
 		}
@@ -1072,7 +1059,7 @@ func pushNode(p *Parser) *Node {
 	if p.curr == nil {
 		p.curr = n
 	} else {
-		//fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
+		fmt.Printf("pushing child onto curr node: %s\n", p.curr.Data())
 		n.Parent = p.curr
 		n.Parent.Children = append(n.Parent.Children, n)
 		p.curr = n
@@ -1082,7 +1069,7 @@ func pushNode(p *Parser) *Node {
 
 func popNode(p *Parser) *Node {
 	if p.curr != nil && p.curr.Parent != nil {
-		//fmt.Printf("popping node: %s\n", p.curr.Data())
+		fmt.Printf("popping node: %s\n", p.curr.Data())
 		p.curr = p.curr.Parent
 		//fmt.Printf("curr node: %s\n", p.curr.Data())
 	}
