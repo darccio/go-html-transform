@@ -1,4 +1,4 @@
-SRCDIR := pkg/html/transform
+SRCDIR := html/transform
 GOSRCS := $(shell ls ${SRCDIR}/*.go)
 GOTESTSRCS := $(shell ls ${SRCDIR}/*_test.go)
 GOFMTARGS := ${GOSRCS:%.go=%.fmt}

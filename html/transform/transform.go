@@ -50,12 +50,22 @@ func (t *Transformer) String() string {
 // The Apply method applies a TransformFunc to the nodes returned from
 // the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
+	// TODO come up with a way to walk tree once?
 	sq := NewSelectorQuery(sel...)
 	nodes := sq.Apply(t.doc)
 	for _, n := range nodes {
 		f(n)
 	}
 	return t
+}
+
+// Compose a set of TransformFuncs into a single TransformFunc
+func Compose(fs ...TransformFunc) TransformFunc {
+	return func (n *Node) {
+		for _, f := range fs {
+			f(n)
+		}
+	}
 }
 
 // AppendChildren creates a TransformFunc that appends the Children passed in.
