@@ -12,13 +12,13 @@ func TestPushNode(t *testing.T) {
 	util.AssertTrue(t, p.Top == nil, "Top is not nil")
 	util.AssertTrue(t, p.curr == nil, "curr is not nil")
 	top := pushNode(p)
-	top.data = append(top.data, []int("foo")...)
+	top.data = append(top.data, []rune("foo")...)
 	util.AssertTrue(t, p.Top != nil, "Top is still nil")
 	util.AssertTrue(t, p.curr != nil, "curr is stil nil")
 	util.AssertEqual(t, p.Top, top)
 	util.AssertEqual(t, p.curr, top)
 	next := pushNode(p)
-	next.data = append(next.data, []int("bar")...)
+	next.data = append(next.data, []rune("bar")...)
 	util.AssertEqual(t, len(top.Children), 1)
 	util.AssertEqual(t, p.Top, top)
 	util.AssertEqual(t, p.curr, next)
@@ -28,9 +28,9 @@ func TestPushNode(t *testing.T) {
 func TestPopNode(t *testing.T) {
 	p := new(Parser)
 	top := pushNode(p)
-	top.data = append(top.data, []int("foo")...)
+	top.data = append(top.data, []rune("foo")...)
 	next := pushNode(p)
-	next.data = append(next.data, []int("bar")...)
+	next.data = append(next.data, []rune("bar")...)
 	popped := popNode(p)
 	util.AssertEqual(t, popped, top)
 	util.AssertEqual(t, p.Top, p.curr)
@@ -39,11 +39,11 @@ func TestPopNode(t *testing.T) {
 func TestAddSibling(t *testing.T) {
 	p := new(Parser)
 	top := pushNode(p)
-	top.data = append(top.data, []int("foo")...)
+	top.data = append(top.data, []rune("foo")...)
 	next := pushNode(p)
-	next.data = append(next.data, []int("bar")...)
+	next.data = append(next.data, []rune("bar")...)
 	sib := addSibling(p)
-	sib.data = append(sib.data, []int("baz")...)
+	sib.data = append(sib.data, []rune("baz")...)
 	util.AssertEqual(t, len(top.Children), 2)
 	util.AssertEqual(t, top.Children[0], next)
 	util.AssertEqual(t, top.Children[1], sib)
@@ -75,7 +75,7 @@ func TestBogusCommentHandlerEOF(t *testing.T) {
 func TestEndTagOpenHandlerOk(t *testing.T) {
 	p := NewParserFromString("FoO>")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st != nil, "next state handler is nil")
@@ -87,7 +87,7 @@ func TestEndTagOpenHandlerOk(t *testing.T) {
 func TestEndTagOpenHandlerTrunc(t *testing.T) {
 	p := NewParserFromString("fo>")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st == nil, "next state handler is not nil")
@@ -98,7 +98,7 @@ func TestEndTagOpenHandlerTrunc(t *testing.T) {
 func TestEndTagOpenHandlerLong(t *testing.T) {
 	p := NewParserFromString("fooo>")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st == nil, "next state handler is not nil")
@@ -109,7 +109,7 @@ func TestEndTagOpenHandlerLong(t *testing.T) {
 func TestEndTagOpenHandlerWrong(t *testing.T) {
 	p := NewParserFromString("bar>")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st == nil, "next state handler is not nil")
@@ -120,7 +120,7 @@ func TestEndTagOpenHandlerWrong(t *testing.T) {
 func TestEndTagOpenHandlerBogusComment(t *testing.T) {
 	p := NewParserFromString("f\no>")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st != nil, "next state handler is not nil")
@@ -131,7 +131,7 @@ func TestEndTagOpenHandlerBogusComment(t *testing.T) {
 func TestEndTagOpenHandlerEOF(t *testing.T) {
 	p := NewParserFromString("foo")
 	curr := pushNode(p)
-	curr.data = []int("foo")
+	curr.data = []rune("foo")
 	util.AssertTrue(t, p.curr != nil, "curr is not nil")
 	st, err := endTagOpenHandler(p)
 	util.AssertTrue(t, st == nil, "next state handler is nil")
@@ -186,7 +186,7 @@ func TestDataStateHandler(t *testing.T) {
 	util.AssertTrue(t, st != nil, "next state handler is nil")
 	util.AssertTrue(t, p.curr != nil, "curr is currently nil")
 	util.AssertTrue(t, p.Top != nil, "Top is currently nil")
-	util.AssertEqual(t, p.curr.data, []int("foo"))
+	util.AssertEqual(t, p.curr.data, []rune("foo"))
 }
 
 func TestSimpledoc(t *testing.T) {

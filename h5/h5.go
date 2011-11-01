@@ -198,9 +198,9 @@ type Parser struct {
 	In *bufio.Reader
 	Top *Node
 	curr *Node
-	c *int
+	c *rune
 	Mode InsertionMode
-	buf []int // temporary buffer
+	buf []rune // temporary buffer
 }
 
 type stateHandler func(p *Parser) (stateHandler, os.Error)
@@ -215,7 +215,7 @@ func NewParser(r io.Reader) *Parser {
 	return &Parser{In: bufio.NewReader(r)}
 }
 
-func (p *Parser) nextInput() (int, os.Error) {
+func (p *Parser) nextInput() (rune, os.Error) {
 	if p.c != nil {
 		c := p.c
 		p.c = nil
@@ -227,7 +227,7 @@ func (p *Parser) nextInput() (int, os.Error) {
 	return r, err
 }
 
-func (p *Parser) pushBack(c int) {
+func (p *Parser) pushBack(c rune) {
 	p.c = &c
 }
 
@@ -264,17 +264,17 @@ func (p *Parser) Tree() *Node {
 }
 
 // TODO(jwall): UNITTESTS!!!!
-func textConsumer(p *Parser, chars... int) {
+func textConsumer(p *Parser, chars... rune) {
 	if p.curr == nil {
 		pushNode(p)
 	}
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
-var memoized = make(map[func(*Parser, int) stateHandler]stateHandler)
+var memoized = make(map[func(*Parser, rune) stateHandler]stateHandler)
 
 // TODO(jwall): UNITTESTS!!!!
-func handleChar(h func(*Parser, int) stateHandler) stateHandler {
+func handleChar(h func(*Parser, rune) stateHandler) stateHandler {
 	if f, ok := memoized[h]; ok {
 		return f
 	}
@@ -289,7 +289,7 @@ func handleChar(h func(*Parser, int) stateHandler) stateHandler {
 	return memoized[h]
 }
 
-func startDoctypeStateHandler(p *Parser, c int) stateHandler {
+func startDoctypeStateHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("Starting Doctype handler c:%c\n", c)
 	switch c {
 	case '<':
@@ -314,7 +314,7 @@ func startDoctypeStateHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.52
-func doctypeStateHandler(p *Parser, c int) stateHandler {
+func doctypeStateHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("Parsing Doctype c:%c\n", c)
 	switch c {
 	case '\t', '\n', '\f', ' ':
@@ -328,7 +328,7 @@ func doctypeStateHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.53
-func beforeDoctypeHandler(p *Parser, c int) stateHandler {
+func beforeDoctypeHandler(p *Parser, c rune) stateHandler {
 	curr := pushNode(p)
 	curr.Type = DoctypeNode
 	switch {
@@ -350,7 +350,7 @@ func beforeDoctypeHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.54
-func doctypeNameState(p *Parser, c int) stateHandler {
+func doctypeNameState(p *Parser, c rune) stateHandler {
 	n := p.curr
 	switch {
 	case c == '\t', c == '\n', c == '\f', c == ' ':
@@ -378,7 +378,7 @@ var (
 
 // Section 11.2.4.55
 func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
-	firstSix := make([]int, 0, 6)
+	firstSix := make([]rune, 0, 6)
 	//n := p.curr
 	for {
 		c, err := p.nextInput()
@@ -412,7 +412,7 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 // Section 11.2.4.56
-func afterDoctypeHandler(p *Parser, c int) stateHandler {
+func afterDoctypeHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		// ignore
@@ -431,7 +431,7 @@ func afterDoctypeHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.57
-func beforeDoctypeIdentHandler(p *Parser, c int) stateHandler {
+func beforeDoctypeIdentHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		// ignore
@@ -449,8 +449,8 @@ func beforeDoctypeIdentHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.58
-func makeIdentQuotedHandler(q int) (func(*Parser, int) stateHandler) {
-	return func(p *Parser, c int) stateHandler {
+func makeIdentQuotedHandler(q rune) (func(*Parser, rune) stateHandler) {
+	return func(p *Parser, c rune) stateHandler {
 		c2 := c
 		for {
 			if q == c2 {
@@ -473,7 +473,7 @@ func makeIdentQuotedHandler(q int) (func(*Parser, int) stateHandler) {
 }
 
 // section 11.2.4.59
-func afterDoctypeIdentifierHandler(p *Parser, c int) stateHandler {
+func afterDoctypeIdentifierHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(afterDoctypeIdentifierHandler)
@@ -487,13 +487,13 @@ func afterDoctypeIdentifierHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
-func startScriptDataState(p *Parser, c int) stateHandler {
+func startScriptDataState(p *Parser, c rune) stateHandler {
 		//fmt.Println("Adding TextNode")
 		pushNode(p) // push a text node onto the stack
 		return scriptDataStateHandler(p, c)
 }
 
-func scriptDataStateHandler(p *Parser, c int) stateHandler {
+func scriptDataStateHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '<':
 		return handleChar(scriptDataLessThanHandler)
@@ -514,11 +514,11 @@ func scriptDataStateHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
-func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
+func scriptDataLessThanHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("handling a '<' in script data c: %c\n", c)
 	switch c {
 	case '/':
-		p.buf = make([]int, 0, 1)
+		p.buf = make([]rune, 0, 1)
 		return handleChar(scriptDataEndTagOpenHandler)
 	default:
 		textConsumer(p, '<', c)
@@ -527,7 +527,7 @@ func scriptDataLessThanHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
-func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
+func scriptDataEndTagOpenHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("trying to close script tag c: %c\n", c)
 	switch {
 	case 'A' <= c && c <= 'Z':
@@ -544,7 +544,7 @@ func scriptDataEndTagOpenHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
-func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
+func scriptDataEndTagNameHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("script tag name handler c:%c\n", c)
 	n := p.curr
 	switch {
@@ -587,7 +587,7 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.1
-func dataStateHandler(p *Parser, c int) stateHandler {
+func dataStateHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("In dataStateHandler c:%c\n", c)
 	//if p.curr != nil { fmt.Println("curr node: ", p.curr.Data()) }
 	//fmt.Println("curr node textNode?",
@@ -683,7 +683,7 @@ func endHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 // Section 11.2.4.8
-func tagOpenHandler(p *Parser, c int) stateHandler {
+func tagOpenHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("opening a tag\n")
 	switch {
 	case c == '!': // markup declaration state
@@ -697,13 +697,13 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 		curr := pushNode(p)
 		curr.Type = ElementNode
 		lc := c + 0x0020 // lowercase it
-		curr.data = []int{lc}
+		curr.data = []rune{lc}
 		return handleChar(tagNameHandler)
 	case 'a' <= c && c <= 'z':
 		//fmt.Printf("ZZZ: opening a new tag\n")
 		curr := pushNode(p)
 		curr.Type = ElementNode
-		curr.data = []int{c}
+		curr.data = []rune{c}
 		return handleChar(tagNameHandler)
 	default: // parse error // recover using Section 11.2.4.8 rules
 		// TODO
@@ -712,7 +712,7 @@ func tagOpenHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.10
-func tagNameHandler(p *Parser, c int) stateHandler {
+func tagNameHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	// TODO(jwall): make this more efficient with a for loop
 	switch {
@@ -734,7 +734,7 @@ func tagNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.34
-func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
+func beforeAttributeNameHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	switch {
 	case c == '\t' || c == '\n' || c == '\f', c == ' ':
@@ -763,7 +763,7 @@ func beforeAttributeNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.35
-func attributeNameHandler(p *Parser, c int) stateHandler {
+func attributeNameHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	switch {
 	case c == '\t', c == '\n', c == '\f', c == ' ':
@@ -791,7 +791,7 @@ func attributeNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.37
-func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
+func beforeAttributeValueHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	currAttr := n.Attr[len(n.Attr)-1]
 	switch c {
@@ -812,13 +812,13 @@ func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
-var memoizedQuotedAttributeHandlers = make(map[int]func(p *Parser, c int) stateHandler)
+var memoizedQuotedAttributeHandlers = make(map[rune]func(p *Parser, c rune) stateHandler)
 // Section 11.2.4.3{8,9}
-func makeAttributeValueQuotedHandler(c int) (func(p *Parser, c int) stateHandler) {
+func makeAttributeValueQuotedHandler(c rune) (func(p *Parser, c rune) stateHandler) {
 	if memoizedQuotedAttributeHandlers[c] != nil {
 		return memoizedQuotedAttributeHandlers[c]
 	}
-	f := func(p *Parser, c2 int) stateHandler {
+	f := func(p *Parser, c2 rune) stateHandler {
 		n := p.curr
 		switch c2 {
 		case '"', '\'':
@@ -838,7 +838,7 @@ func makeAttributeValueQuotedHandler(c int) (func(p *Parser, c int) stateHandler
 }
 
 // Section 11.2.4.40
-func attributeValueUnquotedHandler(p *Parser, c int) stateHandler {
+func attributeValueUnquotedHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	switch c {
 	case '\t', '\n', '\f', ' ':
@@ -857,7 +857,7 @@ func attributeValueUnquotedHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.42
-func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
+func afterAttributeValueQuotedHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeAttributeNameHandler)
@@ -873,7 +873,7 @@ func afterAttributeValueQuotedHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.36
-func afterAttributeNameHandler(p *Parser, c int) stateHandler {
+func afterAttributeNameHandler(p *Parser, c rune) stateHandler {
 	n := p.curr
 	switch {
 	case c == '\t', c == '\n', c == '\f', c == ' ':
@@ -903,7 +903,7 @@ func afterAttributeNameHandler(p *Parser, c int) stateHandler {
 }
 
 // Section 11.2.4.43
-func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
+func selfClosingTagStartHandler(p *Parser, c rune) stateHandler {
 	//fmt.Println("starting self closing tag handler")
 	switch c {
 		case '>':
@@ -916,7 +916,7 @@ func selfClosingTagStartHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
-func newEndTagError(problem string, n *Node, tag []int)  os.Error {
+func newEndTagError(problem string, n *Node, tag []rune)  os.Error {
 	msg := fmt.Sprintf(
 		"%s: End Tag does not match Start Tag start:[%s] end:[%s]",
 		problem, n.Data(), string(tag))
@@ -942,7 +942,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
 	//fmt.Println("YYY: attempting to close a node")
 	n := p.curr
-	tag := make([]int, 0, len(n.data))
+	tag := make([]rune, 0, len(n.data))
 	for {
 		c, err := p.nextInput()
 		if err == os.EOF { // Parse Error
