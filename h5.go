@@ -1,3 +1,11 @@
+/*
+	Package h5 implements an html5 parser for the go language.
+
+    import "h5"
+ 	p := h5.NewParser(rdr)
+    err := p.Parse()
+    tree := p.Tree()
+ */
 package h5
 
 import (
@@ -8,19 +16,24 @@ import (
 	"strings"
 )
 
+// Represents an html5 parsing error. holds a message and the current html5 node
+// when the error occured.
 type ParseError struct {
 	msg string
 	node *Node
 }
 
+// Constructor for an html5 parsing error
 func NewParseError(n *Node, msg string, args... interface{}) *ParseError {
 	return &ParseError{node:n, msg:fmt.Sprintf(msg, args...)}
 }
 
+// Represent the parse error as a string
 func (e ParseError) String() string {
 	return e.msg
 }
 
+// The html5 insertion mode for parsing
 type InsertionMode int
 
 const (
@@ -174,6 +187,8 @@ func dataStateHandlerSwitch(p *Parser) stateHandler {
 	return insertionModeSwitch(p, n)
 }
 
+// An html5 parsing struct. It holds the parsing state for the html5 parsing
+// state machine.
 type Parser struct {
 	In *bufio.Reader
 	Top *Node
@@ -183,13 +198,14 @@ type Parser struct {
 	buf []int // temporary buffer
 }
 
-// Handles the various tokenization states
 type stateHandler func(p *Parser) (stateHandler, os.Error)
 
+// Construct a new h5 parser from a string
 func NewParserFromString(s string) *Parser {
 	return NewParser(strings.NewReader(s))
 }
 
+// Construct a new h5 parser from a io.Reader
 func NewParser(r io.Reader) *Parser {
 	return &Parser{In: bufio.NewReader(r)}
 }
@@ -210,6 +226,9 @@ func (p *Parser) pushBack(c int) {
 	p.c = &c
 }
 
+// Parse an html stream.
+// Returns an os.Error if there was problem parsing the stream.
+// The result of parsing can be retrieved with p.Tree()
 func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
 	// and in the Initial InsertionMode
@@ -232,6 +251,11 @@ func (p *Parser) Parse() os.Error {
 		h = h2
 	}
 	return nil
+}
+
+// Return the parsed html5 tree or nil if parsing hasn't occured yet
+func (p *Parser) Tree() *Node {
+	return p.Top
 }
 
 // TODO(jwall): UNITTESTS!!!!
@@ -341,7 +365,9 @@ func doctypeNameState(p *Parser, c int) stateHandler {
 }
 
 var (
+	// The public doctype keyword constant
 	PUBLIC = "public"
+	// The system doctype keyword constant
 	SYSTEM = "system"
 )
 
@@ -555,7 +581,6 @@ func scriptDataEndTagNameHandler(p *Parser, c int) stateHandler {
 	panic("unreachable")
 }
 
-// TODO(jwall): UNITTESTS!!!!
 // Section 11.2.4.1
 func dataStateHandler(p *Parser, c int) stateHandler {
 	//fmt.Printf("In dataStateHandler c:%c\n", c)
@@ -952,4 +977,6 @@ func popNode(p *Parser) *Node {
 	return p.curr
 }
 
-// TODO html snippets?
+// Copyright 2011 Jeremy Wall (jeremy@marzhillstudios.com)
+// Use of this source code is governed by the Artistic License 2.0.
+// That License is included in the LICENSE file.

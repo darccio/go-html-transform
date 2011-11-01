@@ -4,20 +4,24 @@ import (
 	"fmt"
 )
 
+// The type of a html5 nodes attributes
 type Attribute struct {
 	Name string
 	Value string
 }
 
+// Serialize an html5 attribute to a string
 func (a *Attribute) String() string {
 	// TODO handle differnt quoting styles.
 	return " " + a.Name + "='" + a.Value + "'"
 }
 
+// Clone an html5 attribute
 func (a *Attribute) Clone() *Attribute {
 	return &Attribute{Name: a.Name, Value: a.Value}
 }
 
+// Represents the type of an html5 node
 type NodeType int
 const (
 	TextNode NodeType = iota // zero value so the default
@@ -26,17 +30,19 @@ const (
 	CommentNode NodeType = iota
 )
 
+// The type of an html5 node
 type Node struct {
-	Type NodeType
+	Type NodeType  // The type of node this is.
 	data []int
-	Attr []*Attribute
-	Parent *Node
-	Children []*Node
-	Public bool
-	System bool
-	Identifier []int
+	Attr []*Attribute // The attributes of the html5 node
+ 	Parent *Node // The parent of the html5 node if it has one, nil otherwise
+	Children []*Node // The children of the html5 node if it has any.
+	Public bool // True if this is a PUBLIC doctype node
+	System bool // True if this is a SYSTEM doctype node
+	Identifier []int // The identifier if this is a doctype node
 }
 
+// Sets a Nodes data. (eg Tagname for ElementNodes or text for TextNodes)
 func (n *Node) SetData(rs []int) {
 	n.data = rs
 }
@@ -66,6 +72,7 @@ func doctypeString(n *Node) string {
 	return fmt.Sprintf("<!DOCTYPE %s=\"%s\">", keyword, identifier)
 }
 
+// Serialize an html5 node to a string.
 func (n *Node) String() string {
 	switch n.Type {
 	case TextNode:
@@ -100,6 +107,7 @@ func (n *Node) String() string {
 	return ""
 }
 
+// Walk a Node tree with a given function.
 func (n *Node) Walk(f func(*Node)) {
 	f(n)
 	if len(n.Children) > 0 {
@@ -131,10 +139,12 @@ func cloneNode(n, p *Node) *Node {
 	return clone
 }
 
+// Clone an html5 nodetree to get a copy.
 func (n *Node) Clone() *Node {
 	return cloneNode(n, n.Parent)
 }
 
+// String form of an html nodes data.
 func (n *Node) Data() string {
 	if n.data != nil {
 		return string(n.data)
@@ -142,6 +152,13 @@ func (n *Node) Data() string {
 	return ""
 }
 
+// Construct a TextNode
 func Text(str string) *Node {
 	return &Node{data:[]int(str)}
 }
+
+// TODO Constructors for other html node types.
+
+// Copyright 2011 Jeremy Wall (jeremy@marzhillstudios.com)
+// Use of this source code is governed by the Artistic License 2.0.
+// That License is included in the LICENSE file.
