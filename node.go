@@ -8,12 +8,18 @@ import (
 type Attribute struct {
 	Name string
 	Value string
+	quote int
 }
 
 // Serialize an html5 attribute to a string
 func (a *Attribute) String() string {
-	// TODO handle differnt quoting styles.
-	return " " + a.Name + "='" + a.Value + "'"
+	// TODO handle different quoting styles.
+	c := '"'
+	if a.quote != 0 {
+		c = a.quote
+	}
+	return fmt.Sprintf(
+		"%s=%c%s%c", a.Name, c, a.Value, c)
 }
 
 // Clone an html5 attribute
@@ -42,7 +48,7 @@ type Node struct {
 	Identifier []int // The identifier if this is a doctype node
 }
 
-// Sets a Nodes data. (eg Tagname for ElementNodes or text for TextNodes)
+// Sets a Nodes data. (eg: The Tagname for ElementNodes or text for TextNodes)
 func (n *Node) SetData(rs []int) {
 	n.data = rs
 }
@@ -145,6 +151,7 @@ func (n *Node) Clone() *Node {
 }
 
 // String form of an html nodes data.
+// (eg: The Tagname for ElementNodes or text for TextNodes)
 func (n *Node) Data() string {
 	if n.data != nil {
 		return string(n.data)

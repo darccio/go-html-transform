@@ -731,10 +731,12 @@ func attributeNameHandler(p *Parser, c int) stateHandler {
 // Section 11.2.4.37
 func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
 	n := p.curr
+	currAttr := n.Attr[len(n.Attr)-1]
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(beforeAttributeValueHandler)
 	case '"', '\'':
+		currAttr.quote = c
 		return handleChar(makeAttributeValueQuotedHandler(c))
 	case '>':
 		return dataStateHandlerSwitch(p)
@@ -742,7 +744,6 @@ func beforeAttributeValueHandler(p *Parser, c int) stateHandler {
 		// todo parse error
 		fallthrough
 	default:
-		currAttr := n.Attr[len(n.Attr)-1]
 		currAttr.Value += string(c)
 		return handleChar(attributeValueUnquotedHandler)
 	}
