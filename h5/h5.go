@@ -371,9 +371,9 @@ func doctypeNameState(p *Parser, c int) stateHandler {
 
 var (
 	// The public doctype keyword constant
-	PUBLIC = "public"
+	public = "public"
 	// The system doctype keyword constant
-	SYSTEM = "system"
+	system = "system"
 )
 
 // Section 11.2.4.55
@@ -395,10 +395,10 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
 		default:
 			if len(firstSix) == cap(firstSix) {
 				switch string(firstSix) {
-				case PUBLIC:
+				case public:
 					p.curr.Public = true
 					return handleChar(afterDoctypeHandler), nil
-				case SYSTEM:
+				case system:
 					p.curr.System = true
 					return handleChar(afterDoctypeHandler), nil
 				}
@@ -625,12 +625,69 @@ func dataStateHandler(p *Parser, c int) stateHandler {
 	panic("Unreachable")
 }
 
+func startHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+	//fmt.Println("handling an html comment")
+	d1, err := p.nextInput()
+	if err != nil {
+		// TODO parse error
+		return nil, err
+	}
+	d2, err := p.nextInput()
+	if err != nil {
+		// TODO parse error
+		return nil, err
+	}
+	if d1 == '-' && d2 == '-' {
+		n := pushNode(p)
+		n.Type = CommentNode
+		return htmlCommentHandler, nil
+	}
+	return dataStateHandlerSwitch(p), nil
+}
+
+func htmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+	n := p.curr
+	for {
+		c, err := p.nextInput()
+		if err != nil {
+			return nil, err
+		}
+		if c == '-' {
+			return endHtmlCommentHandler, nil
+		} else {
+			n.data = append(n.data, c)
+		}
+	}
+	return dataStateHandlerSwitch(p), nil
+}
+
+func endHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+	c, err := p.nextInput()
+	if err != nil {
+		return nil, err
+	}
+	if c == '-' {
+		c2, err := p.nextInput()
+		if err != nil {
+			return nil, err
+		}
+		if c2 == '>' { // close the comment
+			popNode(p)
+			return dataStateHandlerSwitch(p), nil
+		} else { // still in comment
+			return htmlCommentHandler, nil
+		}
+	}
+	// still in a comment
+	return htmlCommentHandler, nil
+}
+
 // Section 11.2.4.8
 func tagOpenHandler(p *Parser, c int) stateHandler {
 	//fmt.Printf("opening a tag\n")
 	switch {
 	case c == '!': // markup declaration state
-		// TODO
+		return startHtmlCommentHandler
 	case c == '/': // end tag open state
 		return endTagOpenHandler
 	case c == '?': // TODO parse error // bogus comment state

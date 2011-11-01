@@ -78,6 +78,10 @@ func doctypeString(n *Node) string {
 	return fmt.Sprintf("<!DOCTYPE %s=\"%s\">", keyword, identifier)
 }
 
+func commentString(n *Node) string {
+		return fmt.Sprintf("<!--%s-->", n.Data())
+}
+
 // Serialize an html5 node to a string.
 func (n *Node) String() string {
 	switch n.Type {
@@ -108,7 +112,7 @@ func (n *Node) String() string {
 		}
 		return s
 	case CommentNode:
-		// TODO
+		return commentString(n)
 	}
 	return ""
 }

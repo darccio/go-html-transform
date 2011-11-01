@@ -299,3 +299,22 @@ func TestMeta(t *testing.T) {
 	util.AssertEqual(t, n.Children[1].Children[0].Data(), "div")
 	util.AssertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
 }
+
+func TestComment(t *testing.T) {
+	p := NewParserFromString(
+		"<html><head><!-- comment --></head><body><div>foo</div></body></html>")
+	err := p.Parse()
+	util.AssertTrue(t, err == nil, "err was not nil, %s", err)
+	n := p.Top
+	fmt.Println(p.Top)
+	util.AssertTrue(t, n != nil, "n is nil")
+	util.AssertEqual(t, n.Data(), "html")
+	util.AssertEqual(t, len(n.Children), 2)
+	util.AssertEqual(t, len(n.Children[0].Children), 1)
+	util.AssertEqual(t, n.Children[0].Data(), "head")
+	util.AssertEqual(t, n.Children[0].Children[0].Data(), " comment ")
+	util.AssertEqual(t, n.Children[0].Children[0].Type, CommentNode)
+	util.AssertEqual(t, n.Children[1].Data(), "body")
+	util.AssertEqual(t, n.Children[1].Children[0].Data(), "div")
+	util.AssertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
+}
