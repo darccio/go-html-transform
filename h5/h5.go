@@ -1,7 +1,7 @@
 /*
-	Package h5 implements an html5 parser for the go language.
+    Package h5 implements an html5 parser for the go language.
 
- 	p := h5.NewParser(rdr)
+    p := h5.NewParser(rdr)
     err := p.Parse()
     tree := p.Tree()
 
