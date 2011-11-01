@@ -8,7 +8,8 @@ import (
 type Attribute struct {
 	Name string
 	Value string
-	quote int
+	// TODO for gob this should be public field
+	quote rune
 }
 
 // Serialize an html5 attribute to a string
@@ -39,6 +40,7 @@ const (
 // The type of an html5 node
 type Node struct {
 	Type NodeType  // The type of node this is.
+	// TODO for gob this should be a public field
 	data []int
 	Attr []*Attribute // The attributes of the html5 node
  	Parent *Node // The parent of the html5 node if it has one, nil otherwise
