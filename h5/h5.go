@@ -1,10 +1,16 @@
 /*
 	Package h5 implements an html5 parser for the go language.
 
-    import "h5"
  	p := h5.NewParser(rdr)
     err := p.Parse()
     tree := p.Tree()
+
+    ...
+    tree.Walk(func(n *Node) {
+       // do something with the node
+    })
+
+   tree2 := tree.Clone()
  */
 package h5
 
