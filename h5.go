@@ -836,6 +836,19 @@ func newEndTagError(problem string, n *Node, tag []int)  os.Error {
 	return NewParseError(n, msg)
 }
 
+func genImpliedEndTags(p *Parser) {
+	for {
+		switch p.curr.Data() {
+		case "dd", "dt", "li", "option", "optgroup", "p", "rp", "rt":
+			//fmt.Println("Found an implied end tag", p.curr.Data())
+			popNode(p)
+		default:
+			return
+		}
+	}
+	return
+}
+
 // Section 11.2.4.9
 func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 	// compare to current tags name
@@ -858,6 +871,15 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 				"area", "br", "embed", "img", "keygen", "wbr",
 				"param", "source", "track", "hr", "input", "image":
 				return dataStateHandlerSwitch(p), nil
+			case "address", "article", "aside", "blockquote", "button",
+				"center", "details", "dir", "div", "dl", "fieldset",
+				"figcaption", "figure", "footer", "header", "hgroup",
+				"listing", "menu", "nav", "ol", "pre", "section", "summary",
+				"ul", "td", "th", "font":
+				// generate implied end tags
+				genImpliedEndTags(p)
+				// reset the current node
+				n = p.curr
 			}
 			if string(n.data) != string(tag) {
 				return nil, newEndTagError("NotSameTag", n, tag)
