@@ -46,8 +46,10 @@ transinstall: h5install
 transclean:
 	(cd ${TRANS_SRCDIR} && make clean)
 
-${TRANS_SRCDIR}/%.fmt: ${SRCDIR}/%.go
+${TRANS_SRCDIR}/%.fmt: ${TRANS_SRCDIR}/%.go
 	gofmt -spaces -w $<
 
+${H5_SRCDIR}/%.fmt: ${H5_SRCDIR}/%.go
+	gofmt -spaces -w $<
 #common to both
 format: ${GOFMTARGS}
