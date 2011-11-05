@@ -1,20 +1,49 @@
-SRCDIR := html/transform
-GOSRCS := $(shell ls ${SRCDIR}/*.go)
-GOTESTSRCS := $(shell ls ${SRCDIR}/*_test.go)
-GOFMTARGS := ${GOSRCS:%.go=%.fmt}
+TRANS_SRCDIR := html/transform
+TRANS_GOSRCS := $(shell ls ${TRANS_SRCDIR}/*.go)
+TRANS_GOTESTSRCS := $(shell ls ${TRANS_SRCDIR}/*_test.go)
+H5_SRCDIR := h5
+H5_GOSRCS := $(shell ls ${H5_SRCDIR}/*.go)
+H5_GOTESTSRCS := $(shell ls ${H5_SRCDIR}/*_test.go)
+GOFMTARGS := ${TRANS_GOSRCS:%.go=%.fmt}
+GOFMTARGS += ${H5_GOSRCS:%.go=%.fmt}
 
-default:
-	(cd ${SRCDIR} && gomake)
+default: trans
 
-test:
-	(cd ${SRCDIR} && gotest -test.v)
+test: h5test transtest
 
-install:
-	(cd ${SRCDIR} && make install)
+install: transinstall
 
-clean:
-	(cd ${SRCDIR} && make clean)
+clean: h5clean transclean
 
+# h5
+h5:
+	(cd ${H5_SRCDIR} && gomake)
+
+h5test:
+	(cd ${H5_SRCDIR} && gotest -test.v)
+
+h5install: h5
+	(cd ${H5_SRCDIR} && make install)
+
+h5clean:
+	(cd ${H5_SRCDIR} && make clean)
+
+
+# html/trans
+trans: h5install
+	(cd ${TRANS_SRCDIR} && gomake)
+
+transtest: h5install
+	(cd ${TRANS_SRCDIR} && gotest -test.v)
+
+transinstall: h5install
+	(cd ${TRANS_SRCDIR} && make install)
+
+transclean:
+	(cd ${TRANS_SRCDIR} && make clean)
+
+
+#common to both
 format: ${GOFMTARGS}
 
 ${SRCDIR}/%.fmt: ${SRCDIR}/%.go
