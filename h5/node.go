@@ -6,7 +6,7 @@ import (
 
 // The type of a html5 nodes attributes
 type Attribute struct {
-	Name string
+	Name  string
 	Value string
 	// TODO for gob this should be public field
 	quote rune
@@ -30,8 +30,9 @@ func (a *Attribute) Clone() *Attribute {
 
 // Represents the type of an html5 node
 type NodeType int
+
 const (
-	TextNode NodeType = iota // zero value so the default
+	TextNode    NodeType = iota // zero value so the default
 	ElementNode NodeType = iota
 	DoctypeNode NodeType = iota
 	CommentNode NodeType = iota
@@ -39,15 +40,15 @@ const (
 
 // The type of an html5 node
 type Node struct {
-	Type NodeType  // The type of node this is.
+	Type NodeType // The type of node this is.
 	// TODO for gob this should be a public field
-	data []int
-	Attr []*Attribute // The attributes of the html5 node
- 	Parent *Node // The parent of the html5 node if it has one, nil otherwise
-	Children []*Node // The children of the html5 node if it has any.
-	Public bool // True if this is a PUBLIC doctype node
-	System bool // True if this is a SYSTEM doctype node
-	Identifier []int // The identifier if this is a doctype node
+	data       []int
+	Attr       []*Attribute // The attributes of the html5 node
+	Parent     *Node        // The parent of the html5 node if it has one, nil otherwise
+	Children   []*Node      // The children of the html5 node if it has any.
+	Public     bool         // True if this is a PUBLIC doctype node
+	System     bool         // True if this is a SYSTEM doctype node
+	Identifier []int        // The identifier if this is a doctype node
 }
 
 // Sets a Nodes data. (eg: The Tagname for ElementNodes or text for TextNodes)
@@ -81,7 +82,7 @@ func doctypeString(n *Node) string {
 }
 
 func commentString(n *Node) string {
-		return fmt.Sprintf("<!--%s-->", n.Data())
+	return fmt.Sprintf("<!--%s-->", n.Data())
 }
 
 // Serialize an html5 node to a string.
@@ -99,7 +100,7 @@ func (n *Node) String() string {
 			}
 			return "<" + n.Data() + attrString(n.Attr) + "/>"
 		} else {
-			s :="<" + n.Data() + attrString(n.Attr) + ">"
+			s := "<" + n.Data() + attrString(n.Attr) + ">"
 			for _, n := range n.Children {
 				s += n.String()
 			}
@@ -167,7 +168,7 @@ func (n *Node) Data() string {
 
 // Construct a TextNode
 func Text(str string) *Node {
-	return &Node{data:[]int(str)}
+	return &Node{data: []int(str)}
 }
 
 // TODO Constructors for other html node types.

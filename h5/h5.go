@@ -10,7 +10,7 @@ Package h5 implements an html5 parser for the go language.
     })
 
     tree2 := tree.Clone()
- */
+*/
 package h5
 
 import (
@@ -24,13 +24,13 @@ import (
 // Represents an html5 parsing error. holds a message and the current html5 node
 // when the error occured.
 type ParseError struct {
-	msg string
+	msg  string
 	node *Node
 }
 
 // Constructor for an html5 parsing error
-func NewParseError(n *Node, msg string, args... interface{}) *ParseError {
-	return &ParseError{node:n, msg:fmt.Sprintf(msg, args...)}
+func NewParseError(n *Node, msg string, args ...interface{}) *ParseError {
+	return &ParseError{node: n, msg: fmt.Sprintf(msg, args...)}
 }
 
 // Represent the parse error as a string
@@ -42,26 +42,26 @@ func (e ParseError) String() string {
 type InsertionMode int
 
 const (
-	IM_initial InsertionMode = iota
-	IM_beforeHtml InsertionMode = iota
-	IM_beforeHead InsertionMode = iota
-	IM_inHead InsertionMode = iota
-	IM_inHeadNoScript InsertionMode = iota
-	IM_afterHead InsertionMode = iota
-	IM_inBody InsertionMode = iota
-	IM_text InsertionMode = iota
-	IM_inTable InsertionMode = iota
-	IM_inTableText InsertionMode = iota
-	IM_inCaption InsertionMode = iota
-	IM_inColumnGroup InsertionMode = iota
-	IM_inTableBody InsertionMode = iota
-	IM_inRow InsertionMode = iota
-	IM_inCell InsertionMode = iota
-	IM_inSelect InsertionMode = iota
-	IM_inSelectInTable InsertionMode = iota
-	IM_afterBody InsertionMode = iota
-	IM_afterFrameset InsertionMode = iota
-	IM_afterAfterBody InsertionMode = iota
+	IM_initial            InsertionMode = iota
+	IM_beforeHtml         InsertionMode = iota
+	IM_beforeHead         InsertionMode = iota
+	IM_inHead             InsertionMode = iota
+	IM_inHeadNoScript     InsertionMode = iota
+	IM_afterHead          InsertionMode = iota
+	IM_inBody             InsertionMode = iota
+	IM_text               InsertionMode = iota
+	IM_inTable            InsertionMode = iota
+	IM_inTableText        InsertionMode = iota
+	IM_inCaption          InsertionMode = iota
+	IM_inColumnGroup      InsertionMode = iota
+	IM_inTableBody        InsertionMode = iota
+	IM_inRow              InsertionMode = iota
+	IM_inCell             InsertionMode = iota
+	IM_inSelect           InsertionMode = iota
+	IM_inSelectInTable    InsertionMode = iota
+	IM_afterBody          InsertionMode = iota
+	IM_afterFrameset      InsertionMode = iota
+	IM_afterAfterBody     InsertionMode = iota
 	IM_afterAfterFrameset InsertionMode = iota
 )
 
@@ -179,7 +179,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		fallthrough
 	case IM_afterAfterBody:
 		fallthrough
-			// TODO(jwall): parse error
+		// TODO(jwall): parse error
 	}
 	return handleChar(dataStateHandler)
 }
@@ -187,20 +187,20 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 func dataStateHandlerSwitch(p *Parser) stateHandler {
 	n := p.curr
 	/*fmt.Printf(
-		"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
-		p.Mode, n)*/
+	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
+	p.Mode, n)*/
 	return insertionModeSwitch(p, n)
 }
 
 // An html5 parsing struct. It holds the parsing state for the html5 parsing
 // state machine.
 type Parser struct {
-	In *bufio.Reader
-	Top *Node
+	In   *bufio.Reader
+	Top  *Node
 	curr *Node
-	c *rune
+	c    *rune
 	Mode InsertionMode
-	buf []rune // temporary buffer
+	buf  []rune // temporary buffer
 }
 
 type stateHandler func(p *Parser) (stateHandler, os.Error)
@@ -241,7 +241,7 @@ func (p *Parser) Parse() os.Error {
 	h := dataStateHandlerSwitch(p)
 	for h != nil {
 		//if p.curr != nil && p.curr.data != nil {
-			//fmt.Printf("YYY: %v\n", p.curr.Data())
+		//fmt.Printf("YYY: %v\n", p.curr.Data())
 		//}
 		h2, err := h(p)
 		if err == os.EOF {
@@ -264,7 +264,7 @@ func (p *Parser) Tree() *Node {
 }
 
 // TODO(jwall): UNITTESTS!!!!
-func textConsumer(p *Parser, chars... rune) {
+func textConsumer(p *Parser, chars ...rune) {
 	if p.curr == nil {
 		pushNode(p)
 	}
@@ -307,8 +307,8 @@ func startDoctypeStateHandler(p *Parser, c rune) stateHandler {
 			return dataStateHandler(p, c)
 		}
 	default:
-			// TODO setup a default doctype
-			return dataStateHandler(p, c)
+		// TODO setup a default doctype
+		return dataStateHandler(p, c)
 	}
 	panic("unreachable")
 }
@@ -439,8 +439,8 @@ func beforeDoctypeIdentHandler(p *Parser, c rune) stateHandler {
 	case '"', '\'':
 		return handleChar(makeIdentQuotedHandler(c))
 	case '>':
-		 // TODO parse error
-		 return dataStateHandlerSwitch(p)
+		// TODO parse error
+		return dataStateHandlerSwitch(p)
 	default:
 		// TODO parse error
 		// TODO bogusDoctypeState
@@ -449,7 +449,7 @@ func beforeDoctypeIdentHandler(p *Parser, c rune) stateHandler {
 }
 
 // Section 11.2.4.58
-func makeIdentQuotedHandler(q rune) (func(*Parser, rune) stateHandler) {
+func makeIdentQuotedHandler(q rune) func(*Parser, rune) stateHandler {
 	return func(p *Parser, c rune) stateHandler {
 		c2 := c
 		for {
@@ -477,7 +477,7 @@ func afterDoctypeIdentifierHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(afterDoctypeIdentifierHandler)
-    case '>':
+	case '>':
 		p.Mode = IM_beforeHtml
 		return dataStateHandlerSwitch(p)
 	default:
@@ -488,9 +488,9 @@ func afterDoctypeIdentifierHandler(p *Parser, c rune) stateHandler {
 }
 
 func startScriptDataState(p *Parser, c rune) stateHandler {
-		//fmt.Println("Adding TextNode")
-		pushNode(p) // push a text node onto the stack
-		return scriptDataStateHandler(p, c)
+	//fmt.Println("Adding TextNode")
+	pushNode(p) // push a text node onto the stack
+	return scriptDataStateHandler(p, c)
 }
 
 func scriptDataStateHandler(p *Parser, c rune) stateHandler {
@@ -593,7 +593,7 @@ func dataStateHandler(p *Parser, c rune) stateHandler {
 	//fmt.Println("curr node textNode?",
 	//	(p.curr != nil) && (p.curr.Type == TextNode))
 	// consume the token
-	if (p.curr != nil) {
+	if p.curr != nil {
 		switch p.curr.Data() {
 		case "base", "bgsound", "command", "link", "meta",
 			"area", "br", "embed", "img", "keygen", "wbr",
@@ -602,7 +602,9 @@ func dataStateHandler(p *Parser, c rune) stateHandler {
 		}
 		// this is the end of the textNode so pop it from stack
 		//fmt.Println("TTT: popping textNode from stack")
-		if (p.curr.Type == TextNode) { popNode(p) }
+		if p.curr.Type == TextNode {
+			popNode(p)
+		}
 	}
 	switch c {
 	case '<':
@@ -814,7 +816,7 @@ func beforeAttributeValueHandler(p *Parser, c rune) stateHandler {
 
 var memoizedQuotedAttributeHandlers = make(map[rune]func(p *Parser, c rune) stateHandler)
 // Section 11.2.4.3{8,9}
-func makeAttributeValueQuotedHandler(c rune) (func(p *Parser, c rune) stateHandler) {
+func makeAttributeValueQuotedHandler(c rune) func(p *Parser, c rune) stateHandler {
 	if memoizedQuotedAttributeHandlers[c] != nil {
 		return memoizedQuotedAttributeHandlers[c]
 	}
@@ -906,17 +908,17 @@ func afterAttributeNameHandler(p *Parser, c rune) stateHandler {
 func selfClosingTagStartHandler(p *Parser, c rune) stateHandler {
 	//fmt.Println("starting self closing tag handler")
 	switch c {
-		case '>':
-		    popNode(p)
-			return dataStateHandlerSwitch(p)
-		default:
-			// TODO parse error reconsume as before attribute handler
-			return handleChar(beforeAttributeNameHandler)
+	case '>':
+		popNode(p)
+		return dataStateHandlerSwitch(p)
+	default:
+		// TODO parse error reconsume as before attribute handler
+		return handleChar(beforeAttributeNameHandler)
 	}
 	panic("Unreachable")
 }
 
-func newEndTagError(problem string, n *Node, tag []rune)  os.Error {
+func newEndTagError(problem string, n *Node, tag []rune) os.Error {
 	msg := fmt.Sprintf(
 		"%s: End Tag does not match Start Tag start:[%s] end:[%s]",
 		problem, n.Data(), string(tag))

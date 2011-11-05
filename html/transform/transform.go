@@ -61,7 +61,7 @@ func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 
 // Compose a set of TransformFuncs into a single TransformFunc
 func Compose(fs ...TransformFunc) TransformFunc {
-	return func (n *Node) {
+	return func(n *Node) {
 		for _, f := range fs {
 			f(n)
 		}
