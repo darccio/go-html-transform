@@ -42,41 +42,41 @@ func (e ParseError) String() string {
 type insertionMode int
 
 const (
-	IM_initial            insertionMode = iota
-	IM_beforeHtml         insertionMode = iota
-	IM_beforeHead         insertionMode = iota
-	IM_inHead             insertionMode = iota
-	IM_inHeadNoScript     insertionMode = iota
-	IM_afterHead          insertionMode = iota
-	IM_inBody             insertionMode = iota
-	IM_text               insertionMode = iota
-	IM_inTable            insertionMode = iota
-	IM_inTableText        insertionMode = iota
-	IM_inCaption          insertionMode = iota
-	IM_inColumnGroup      insertionMode = iota
-	IM_inTableBody        insertionMode = iota
-	IM_inRow              insertionMode = iota
-	IM_inCell             insertionMode = iota
-	IM_inSelect           insertionMode = iota
-	IM_inSelectInTable    insertionMode = iota
-	IM_afterBody          insertionMode = iota
-	IM_afterFrameset      insertionMode = iota
-	IM_afterAfterBody     insertionMode = iota
-	IM_afterAfterFrameset insertionMode = iota
+	im_initial            insertionMode = iota
+	im_beforeHtml         insertionMode = iota
+	im_beforeHead         insertionMode = iota
+	im_inHead             insertionMode = iota
+	im_inHeadNoScript     insertionMode = iota
+	im_afterHead          insertionMode = iota
+	im_inBody             insertionMode = iota
+	im_text               insertionMode = iota
+	im_inTable            insertionMode = iota
+	im_inTableText        insertionMode = iota
+	im_inCaption          insertionMode = iota
+	im_inColumnGroup      insertionMode = iota
+	im_inTableBody        insertionMode = iota
+	im_inRow              insertionMode = iota
+	im_inCell             insertionMode = iota
+	im_inSelect           insertionMode = iota
+	im_inSelectInTable    insertionMode = iota
+	im_afterBody          insertionMode = iota
+	im_afterFrameset      insertionMode = iota
+	im_afterAfterBody     insertionMode = iota
+	im_afterAfterFrameset insertionMode = iota
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	//fmt.Println("In insertionModeSwitch")
 	currMode := p.Mode
 	switch currMode {
-	case IM_initial:
+	case im_initial:
 		fallthrough
-	case IM_beforeHtml:
+	case im_beforeHtml:
 		//fmt.Println("starting doctypeStateHandler")
-		p.Mode = IM_beforeHead
+		p.Mode = im_beforeHead
 		return handleChar(startDoctypeStateHandler)
 		//fallthrough
-	case IM_beforeHead:
+	case im_beforeHead:
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -84,16 +84,16 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "head":
-				p.Mode = IM_inHead
+				p.Mode = im_inHead
 			case "body":
-				p.Mode = IM_inBody
+				p.Mode = im_inBody
 			default:
 				// TODO(jwall): parse error
 			}
 		default:
 			// TODO(jwall): parse error
 		}
-	case IM_inHead:
+	case im_inHead:
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -102,18 +102,18 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			switch n.Data() {
 			case "script":
 				//fmt.Println("In a script tag")
-				p.Mode = IM_text
+				p.Mode = im_text
 				return handleChar(startScriptDataState)
 			case "body":
-				p.Mode = IM_inBody
+				p.Mode = im_inBody
 			default:
 				// TODO(jwall): parse error
 			}
 		default:
 			// TODO(jwall): parse error
 		}
-	case IM_inHeadNoScript:
-	case IM_afterHead:
+	case im_inHeadNoScript:
+	case im_afterHead:
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -121,7 +121,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		case ElementNode:
 			switch n.Data() {
 			case "body":
-				p.Mode = IM_inBody
+				p.Mode = im_inBody
 			default:
 				// TODO(jwall): parse error
 				// inject a body tag first?
@@ -129,27 +129,27 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		default:
 			// TODO(jwall): parse error
 		}
-	case IM_inTable:
+	case im_inTable:
 		fallthrough
-	case IM_inTableText:
+	case im_inTableText:
 		fallthrough
-	case IM_inCaption:
+	case im_inCaption:
 		fallthrough
-	case IM_inColumnGroup:
+	case im_inColumnGroup:
 		fallthrough
-	case IM_inTableBody:
+	case im_inTableBody:
 		fallthrough
-	case IM_inRow:
+	case im_inRow:
 		fallthrough
-	case IM_inCell:
+	case im_inCell:
 		fallthrough
-	case IM_inSelect:
+	case im_inSelect:
 		fallthrough
-	case IM_inSelectInTable:
+	case im_inSelectInTable:
 		fallthrough
-	case IM_afterBody:
+	case im_afterBody:
 		fallthrough
-	case IM_inBody:
+	case im_inBody:
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -158,26 +158,26 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			switch n.Data() {
 			case "script":
 				//fmt.Println("In a script tag")
-				p.Mode = IM_text
+				p.Mode = im_text
 				return handleChar(startScriptDataState)
 			default:
 				// TODO(jwall): parse error
 			}
 		}
-	case IM_text:
+	case im_text:
 		//fmt.Println("parsing script contents. data:", n.Data())
 		if n.Data() == "script" {
 			//fmt.Println("setting insertionMode to inBody")
-			p.Mode = IM_inBody
+			p.Mode = im_inBody
 			popNode(p)
 			return handleChar(dataStateHandler)
 		}
 		return handleChar(scriptDataStateHandler)
-	case IM_afterFrameset:
+	case im_afterFrameset:
 		fallthrough
-	case IM_afterAfterFrameset:
+	case im_afterAfterFrameset:
 		fallthrough
-	case IM_afterAfterBody:
+	case im_afterAfterBody:
 		fallthrough
 		// TODO(jwall): parse error
 	}
@@ -478,7 +478,7 @@ func afterDoctypeIdentifierHandler(p *Parser, c rune) stateHandler {
 	case '\t', '\n', '\f', ' ':
 		return handleChar(afterDoctypeIdentifierHandler)
 	case '>':
-		p.Mode = IM_beforeHtml
+		p.Mode = im_beforeHtml
 		return dataStateHandlerSwitch(p)
 	default:
 		// TODO parse error
