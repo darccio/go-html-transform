@@ -1,7 +1,7 @@
 package transform
 
 import (
-	. "h5"
+	. "go-html-transform.googlecode.com/hg/h5"
 	"os"
 	"io"
 )
