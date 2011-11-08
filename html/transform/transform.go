@@ -5,13 +5,11 @@ The html transform package implements a html css selector and transformer.
 An html doc can be inspected and queried using css selectors as well as
 transformed.
 
- 	doc := NewDoc(str)
- 	sel1 := NewSelector("li.menuitem")
- 	sel2 := NewSelector("a")
+	doc := NewDoc(str)
 	t := NewTransform(doc)
- 	t.Apply(CopyAnd(myModifiers...), sel1)
-  t..Apply(Replace(Text("my new text"), sel2)
-  newDoc := t.Doc()
+	t.Apply(CopyAnd(myModifiers...), "li.menuitem")
+	t.Apply(Replace(Text("my new text"), "a")
+	newDoc := t.Doc()
 */
 package transform
 
@@ -44,6 +42,8 @@ func (t *Transformer) String() string {
 	return t.doc.String()
 }
 
+// TODO(jwall): TransformApplication type that we can process the doc in one
+// pass.
 // The Apply method applies a TransformFunc to the nodes returned from
 // the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {

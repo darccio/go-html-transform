@@ -266,6 +266,7 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 	return nodes
 }
 
+// TODO(jwall): Apply multiple Selectors to a node tree in one pass.
 // Apply the css selector to a document.
 // Returns a Vector of nodes that the selector matched.
 func (sel SelectorQuery) Apply(doc *Node) []*Node {
