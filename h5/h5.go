@@ -39,30 +39,30 @@ func (e ParseError) String() string {
 }
 
 // The html5 insertion mode for parsing
-type InsertionMode int
+type insertionMode int
 
 const (
-	IM_initial            InsertionMode = iota
-	IM_beforeHtml         InsertionMode = iota
-	IM_beforeHead         InsertionMode = iota
-	IM_inHead             InsertionMode = iota
-	IM_inHeadNoScript     InsertionMode = iota
-	IM_afterHead          InsertionMode = iota
-	IM_inBody             InsertionMode = iota
-	IM_text               InsertionMode = iota
-	IM_inTable            InsertionMode = iota
-	IM_inTableText        InsertionMode = iota
-	IM_inCaption          InsertionMode = iota
-	IM_inColumnGroup      InsertionMode = iota
-	IM_inTableBody        InsertionMode = iota
-	IM_inRow              InsertionMode = iota
-	IM_inCell             InsertionMode = iota
-	IM_inSelect           InsertionMode = iota
-	IM_inSelectInTable    InsertionMode = iota
-	IM_afterBody          InsertionMode = iota
-	IM_afterFrameset      InsertionMode = iota
-	IM_afterAfterBody     InsertionMode = iota
-	IM_afterAfterFrameset InsertionMode = iota
+	IM_initial            insertionMode = iota
+	IM_beforeHtml         insertionMode = iota
+	IM_beforeHead         insertionMode = iota
+	IM_inHead             insertionMode = iota
+	IM_inHeadNoScript     insertionMode = iota
+	IM_afterHead          insertionMode = iota
+	IM_inBody             insertionMode = iota
+	IM_text               insertionMode = iota
+	IM_inTable            insertionMode = iota
+	IM_inTableText        insertionMode = iota
+	IM_inCaption          insertionMode = iota
+	IM_inColumnGroup      insertionMode = iota
+	IM_inTableBody        insertionMode = iota
+	IM_inRow              insertionMode = iota
+	IM_inCell             insertionMode = iota
+	IM_inSelect           insertionMode = iota
+	IM_inSelectInTable    insertionMode = iota
+	IM_afterBody          insertionMode = iota
+	IM_afterFrameset      insertionMode = iota
+	IM_afterAfterBody     insertionMode = iota
+	IM_afterAfterFrameset insertionMode = iota
 )
 
 func insertionModeSwitch(p *Parser, n *Node) stateHandler {
@@ -199,7 +199,7 @@ type Parser struct {
 	Top  *Node
 	curr *Node
 	c    *rune
-	Mode InsertionMode
+	Mode insertionMode
 	buf  []rune // temporary buffer
 }
 
@@ -236,7 +236,7 @@ func (p *Parser) pushBack(c rune) {
 // The result of parsing can be retrieved with p.Tree()
 func (p *Parser) Parse() os.Error {
 	// we start in the Doctype state
-	// and in the Initial InsertionMode
+	// and in the Initial insertionMode
 	// start with a docType
 	h := dataStateHandlerSwitch(p)
 	for h != nil {
