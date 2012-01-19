@@ -42,17 +42,17 @@ const (
 type Node struct {
 	Type NodeType // The type of node this is.
 	// TODO for gob this should be a public field
-	data       []int
+	data       []rune
 	Attr       []*Attribute // The attributes of the html5 node
 	Parent     *Node        // The parent of the html5 node if it has one, nil otherwise
 	Children   []*Node      // The children of the html5 node if it has any.
 	Public     bool         // True if this is a PUBLIC doctype node
 	System     bool         // True if this is a SYSTEM doctype node
-	Identifier []int        // The identifier if this is a doctype node
+	Identifier []rune        // The identifier if this is a doctype node
 }
 
 // Sets a Nodes data. (eg: The Tagname for ElementNodes or text for TextNodes)
-func (n *Node) SetData(rs []int) {
+func (n *Node) SetData(rs []rune) {
 	n.data = rs
 }
 
@@ -132,7 +132,7 @@ func (n *Node) Walk(f func(*Node)) {
 
 func cloneNode(n, p *Node) *Node {
 	clone := new(Node)
-	clone.data = make([]int, len(n.data))
+	clone.data = make([]rune, len(n.data))
 	clone.Attr = make([]*Attribute, len(n.Attr))
 	clone.Children = make([]*Node, len(n.Children))
 	clone.Parent = p
@@ -168,7 +168,7 @@ func (n *Node) Data() string {
 
 // Construct a TextNode
 func Text(str string) *Node {
-	return &Node{data: []int(str)}
+	return &Node{data: []rune(str)}
 }
 
 // TODO Constructors for other html node types.

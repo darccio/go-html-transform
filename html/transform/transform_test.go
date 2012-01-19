@@ -7,7 +7,7 @@ package transform
 
 import (
 	"testing"
-	. "go-html-transform.google.com/hg/h5"
+	. "code.google.com/p/go-html-transform/h5"
 )
 
 func TestNewTransform(t *testing.T) {

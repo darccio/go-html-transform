@@ -15,8 +15,8 @@ package h5
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
-	"os"
 	"io"
 	"strings"
 )
@@ -34,7 +34,7 @@ func NewParseError(n *Node, msg string, args ...interface{}) *ParseError {
 }
 
 // Represent the parse error as a string
-func (e ParseError) String() string {
+func (e ParseError) Error() string {
 	return e.msg
 }
 
@@ -203,7 +203,7 @@ type Parser struct {
 	buf  []rune // temporary buffer
 }
 
-type stateHandler func(p *Parser) (stateHandler, os.Error)
+type stateHandler func(p *Parser) (stateHandler, error)
 
 // Construct a new h5 parser from a string
 func NewParserFromString(s string) *Parser {
@@ -215,7 +215,7 @@ func NewParser(r io.Reader) *Parser {
 	return &Parser{In: bufio.NewReader(r)}
 }
 
-func (p *Parser) nextInput() (rune, os.Error) {
+func (p *Parser) nextInput() (rune, error) {
 	if p.c != nil {
 		c := p.c
 		p.c = nil
@@ -234,7 +234,7 @@ func (p *Parser) pushBack(c rune) {
 // Parse an html stream.
 // Returns an os.Error if there was problem parsing the stream.
 // The result of parsing can be retrieved with p.Tree()
-func (p *Parser) Parse() os.Error {
+func (p *Parser) Parse() error {
 	// we start in the Doctype state
 	// and in the Initial insertionMode
 	// start with a docType
@@ -244,14 +244,14 @@ func (p *Parser) Parse() os.Error {
 		//fmt.Printf("YYY: %v\n", p.curr.Data())
 		//}
 		h2, err := h(p)
-		if err == os.EOF {
+		if err == io.EOF {
 			//fmt.Println("End of file:")
 			return nil
 		}
 		if err != nil {
 			//fmt.Println("End of file: ", err)
 			// TODO parse error
-			return os.NewError(fmt.Sprintf("Parse error: %s", err))
+			return errors.New(fmt.Sprintf("Parse error: %s", err))
 		}
 		h = h2
 	}
@@ -271,14 +271,14 @@ func textConsumer(p *Parser, chars ...rune) {
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
-var memoized = make(map[func(*Parser, rune) stateHandler]stateHandler)
+var memoized = make(map[*func(*Parser, rune) stateHandler]stateHandler)
 
 // TODO(jwall): UNITTESTS!!!!
 func handleChar(h func(*Parser, rune) stateHandler) stateHandler {
-	if f, ok := memoized[h]; ok {
+	if f, ok := memoized[&h]; ok {
 		return f
 	}
-	memoized[h] = func(p *Parser) (stateHandler, os.Error) {
+	memoized[&h] = func(p *Parser) (stateHandler, error) {
 		c, err := p.nextInput()
 		if err != nil {
 			return nil, err
@@ -286,7 +286,7 @@ func handleChar(h func(*Parser, rune) stateHandler) stateHandler {
 		//fmt.Printf("YYY: char %c\n", c)
 		return h(p, c), nil
 	}
-	return memoized[h]
+	return memoized[&h]
 }
 
 func startDoctypeStateHandler(p *Parser, c rune) stateHandler {
@@ -377,12 +377,12 @@ var (
 )
 
 // Section 11.2.4.55
-func afterDoctypeNameHandler(p *Parser) (stateHandler, os.Error) {
+func afterDoctypeNameHandler(p *Parser) (stateHandler, error) {
 	firstSix := make([]rune, 0, 6)
 	//n := p.curr
 	for {
 		c, err := p.nextInput()
-		if err == os.EOF {
+		if err == io.EOF {
 			// TODO parse error
 			return dataStateHandlerSwitch(p), nil
 		}
@@ -627,7 +627,7 @@ func dataStateHandler(p *Parser, c rune) stateHandler {
 	panic("Unreachable")
 }
 
-func startHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+func startHtmlCommentHandler(p *Parser) (stateHandler, error) {
 	//fmt.Println("handling an html comment")
 	d1, err := p.nextInput()
 	if err != nil {
@@ -647,7 +647,7 @@ func startHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
 	return dataStateHandlerSwitch(p), nil
 }
 
-func htmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+func htmlCommentHandler(p *Parser) (stateHandler, error) {
 	n := p.curr
 	for {
 		c, err := p.nextInput()
@@ -663,7 +663,7 @@ func htmlCommentHandler(p *Parser) (stateHandler, os.Error) {
 	return dataStateHandlerSwitch(p), nil
 }
 
-func endHtmlCommentHandler(p *Parser) (stateHandler, os.Error) {
+func endHtmlCommentHandler(p *Parser) (stateHandler, error) {
 	c, err := p.nextInput()
 	if err != nil {
 		return nil, err
@@ -815,6 +815,7 @@ func beforeAttributeValueHandler(p *Parser, c rune) stateHandler {
 }
 
 var memoizedQuotedAttributeHandlers = make(map[rune]func(p *Parser, c rune) stateHandler)
+
 // Section 11.2.4.3{8,9}
 func makeAttributeValueQuotedHandler(c rune) func(p *Parser, c rune) stateHandler {
 	if memoizedQuotedAttributeHandlers[c] != nil {
@@ -918,7 +919,7 @@ func selfClosingTagStartHandler(p *Parser, c rune) stateHandler {
 	panic("Unreachable")
 }
 
-func newEndTagError(problem string, n *Node, tag []rune) os.Error {
+func newEndTagError(problem string, n *Node, tag []rune) error {
 	msg := fmt.Sprintf(
 		"%s: End Tag does not match Start Tag start:[%s] end:[%s]",
 		problem, n.Data(), string(tag))
@@ -940,14 +941,14 @@ func genImpliedEndTags(p *Parser) {
 }
 
 // Section 11.2.4.9
-func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
+func endTagOpenHandler(p *Parser) (stateHandler, error) {
 	// compare to current tags name
 	//fmt.Println("YYY: attempting to close a node")
 	n := p.curr
 	tag := make([]rune, 0, len(n.data))
 	for {
 		c, err := p.nextInput()
-		if err == os.EOF { // Parse Error
+		if err == io.EOF { // Parse Error
 			return nil, err
 		}
 		if err != nil {
@@ -992,7 +993,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, os.Error) {
 }
 
 // Section 11.2.4.44
-func bogusCommentHandler(p *Parser) (stateHandler, os.Error) {
+func bogusCommentHandler(p *Parser) (stateHandler, error) {
 	n := addSibling(p)
 	for {
 		c, err := p.nextInput()

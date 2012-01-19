@@ -15,7 +15,7 @@ package transform
 
 // TODO(jwall): Documentation...
 import (
-	. "go-html-transform.googlecode.com/hg/h5"
+	. "code.google.com/p/go-html-transform/h5"
 	"log"
 )
 

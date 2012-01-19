@@ -1,18 +1,17 @@
 package transform
 
 import (
-	. "go-html-transform.googlecode.com/hg/h5"
-	"os"
+	. "code.google.com/p/go-html-transform/h5"
 	"io"
 )
 
-func NewDoc(str string) (*Node, os.Error) {
+func NewDoc(str string) (*Node, error) {
 	p := NewParserFromString(str)
 	err := p.Parse()
 	return p.Top, err
 }
 
-func NewDocFromReader(rdr io.Reader) (*Node, os.Error) {
+func NewDocFromReader(rdr io.Reader) (*Node, error) {
 	p := NewParser(rdr)
 	err := p.Parse()
 	return p.Top, err

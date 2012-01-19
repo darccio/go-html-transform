@@ -1,7 +1,7 @@
 package transform
 
 import (
-	. "go-html-transform.googlecode.com/hg/h5"
+	. "code.google.com/p/go-html-transform/h5"
 	"log"
 	s "strings"
 )
@@ -107,7 +107,7 @@ func newAnyTagSelector(str string) *Selector {
 }
 
 func splitAttrs(str string) []string {
-	attrs := s.FieldsFunc(str[1:len(str)-1], func(c int) bool {
+	attrs := s.FieldsFunc(str[1:len(str)-1], func(c rune) bool {
 		if c == '=' {
 			return true
 		}
@@ -151,7 +151,7 @@ func newTagNameWithConstraints(str string, i int) *Selector {
 	return selector
 }
 
-func partition(s string, f func(c int) bool) []string {
+func partition(s string, f func(c rune) bool) []string {
 	parts := []string{}
 	start := 0
 	for i, char := range s {
@@ -200,7 +200,7 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
 	// TODO(jwall): support combinators > + \S
-	parts := partition(str, func(c int) bool {
+	parts := partition(str, func(c rune) bool {
 		for _, c2 := range SELECTOR_CHARS {
 			if c == c2 {
 				return true
