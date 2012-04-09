@@ -125,7 +125,6 @@ func Replace(ns ...*Node) TransformFunc {
 				}
 			}
 		}
-		// TODO(jwall): splice the new nodes into the spot the current node is
 	}
 }
 
