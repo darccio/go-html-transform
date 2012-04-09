@@ -347,7 +347,7 @@ func TestNewSelectorQuery(t *testing.T) {
 
 func TestPartition(t *testing.T) {
 	testStr := "foo.bar,baz.blah"
-	parted := partition(testStr, func(c int) bool {
+	parted := partition(testStr, func(c rune) bool {
 		if c == '.' {
 			return true
 		}
@@ -371,7 +371,7 @@ func TestPartition(t *testing.T) {
 
 func TestPartitionInitialChar(t *testing.T) {
 	testStr := ".foo"
-	parted := partition(testStr, func(c int) bool {
+	parted := partition(testStr, func(c rune) bool {
 		if c == '.' {
 			return true
 		}

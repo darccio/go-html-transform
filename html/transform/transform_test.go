@@ -101,6 +101,16 @@ func TestReplaceSplice(t *testing.T) {
 	assertEqual(t, doc.Children[1].Children[0].Data(), "bar")
 }
 
+func TestReplaceSpliceOnRootNode(t *testing.T) {
+	doc, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	ns, _ := NewDoc("<span>foo</span>")
+	f := Replace(ns)
+	f(doc)
+	assertEqual(t, len(doc.Children), 1)
+	assertEqual(t, doc.Children[0].Data(), "span")
+	assertEqual(t, doc.Children[0].Children[0].Data(), "foo")
+}
+
 func TestModifyAttrib(t *testing.T) {
 	node, _ := NewDoc("<div id=\"foo\">foo</div><")
 	assertEqual(t, node.Attr[0].Value, "foo")
@@ -178,10 +188,10 @@ func TestCopyAnd(t *testing.T) {
 	ul, _ := NewDoc("<ul><li class=\"item\">item1</li></ul>")
 	node := ul.Children[0]
 	fn1 := func(n *Node) {
-		n.Children[0].SetData([]int("foo"))
+		n.Children[0].SetData([]rune("foo"))
 	}
 	fn2 := func(n *Node) {
-		n.Children[0].SetData([]int("bar"))
+		n.Children[0].SetData([]rune("bar"))
 	}
 	f := CopyAnd(fn1, fn2)
 

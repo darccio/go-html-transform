@@ -107,20 +107,25 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 func Replace(ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		p := n.Parent
-		// TODO(jwall): splice the new nodes into the spot the current node is
-		for i, c := range p.Children {
-			if c == n {
-				n := i - 1
-				if n < 0 {
-					n = 0
+		switch p {
+		case nil:
+			n.Children = ns
+		default:
+			for i, c := range p.Children {
+				if c == n {
+					n := i - 1
+					if n < 0 {
+						n = 0
+					}
+					var newChild []*Node
+					pre := p.Children[:n]
+					post := p.Children[i+1:]
+					newChild = append(pre, ns...)
+					p.Children = append(newChild, post...)
 				}
-				var newChild []*Node
-				pre := p.Children[:n]
-				post := p.Children[i+1:]
-				newChild = append(pre, ns...)
-				p.Children = append(newChild, post...)
 			}
 		}
+		// TODO(jwall): splice the new nodes into the spot the current node is
 	}
 }
 
