@@ -336,3 +336,21 @@ func TestComment(t *testing.T) {
 	assertEqual(t, n.Children[1].Children[0].Data(), "div")
 	assertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
 }
+
+// TODO micro benchmarks
+func BenchmarkDocParse(t *testing.B) {
+	for i := 0; i < t.N; i++ {
+		p := NewParserFromString(
+			"<html><body><script> if (foo < 10) { }</script></body></html>")
+		err := p.Parse()
+		assertTrue(t, err == nil, "err is not nil: %v", err)
+		//fmt.Printf("XXX doc: %s\n", p.Top)
+		assertEqual(t, p.Top.Data(), "html")
+		assertEqual(t, len(p.Top.Children), 1)
+		assertEqual(t, p.Top.Children[0].Data(), "body")
+		assertEqual(t, len(p.Top.Children[0].Children), 1)
+		assertEqual(t, p.Top.Children[0].Children[0].Data(), "script")
+		assertEqual(t, p.Top.Children[0].Children[0].Children[0].Data(),
+			" if (foo < 10) { }")
+	}
+}

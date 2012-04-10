@@ -210,3 +210,14 @@ func TestCopyAnd(t *testing.T) {
 }
 
 // TODO(jwall): benchmarking tests
+func BenchmarkTransformApply(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+		tf := NewTransform(doc)
+		tf.Apply(AppendChildren(new(Node)), "body")
+		tf.Apply(TransformAttrib("id", func(val string) string {
+			return "bar"
+		}),
+			"div").Doc()
+	}
+}
