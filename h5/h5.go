@@ -271,14 +271,9 @@ func textConsumer(p *Parser, chars ...rune) {
 	p.curr.data = append(p.curr.data, chars...) // ugly but safer
 }
 
-var memoized = make(map[*func(*Parser, rune) stateHandler]stateHandler)
-
 // TODO(jwall): UNITTESTS!!!!
 func handleChar(h func(*Parser, rune) stateHandler) stateHandler {
-	if f, ok := memoized[&h]; ok {
-		return f
-	}
-	memoized[&h] = func(p *Parser) (stateHandler, error) {
+	return func(p *Parser) (stateHandler, error) {
 		c, err := p.nextInput()
 		if err != nil {
 			return nil, err
@@ -286,7 +281,6 @@ func handleChar(h func(*Parser, rune) stateHandler) stateHandler {
 		//fmt.Printf("YYY: char %c\n", c)
 		return h(p, c), nil
 	}
-	return memoized[&h]
 }
 
 func startDoctypeStateHandler(p *Parser, c rune) stateHandler {
@@ -814,14 +808,10 @@ func beforeAttributeValueHandler(p *Parser, c rune) stateHandler {
 	panic("Unreachable")
 }
 
-var memoizedQuotedAttributeHandlers = make(map[rune]func(p *Parser, c rune) stateHandler)
 
 // Section 11.2.4.3{8,9}
 func makeAttributeValueQuotedHandler(c rune) func(p *Parser, c rune) stateHandler {
-	if memoizedQuotedAttributeHandlers[c] != nil {
-		return memoizedQuotedAttributeHandlers[c]
-	}
-	f := func(p *Parser, c2 rune) stateHandler {
+	return func(p *Parser, c2 rune) stateHandler {
 		n := p.curr
 		switch c2 {
 		case '"', '\'':
@@ -836,8 +826,6 @@ func makeAttributeValueQuotedHandler(c rune) func(p *Parser, c rune) stateHandle
 		}
 		panic("Unreachable")
 	}
-	memoizedQuotedAttributeHandlers[c] = f
-	return f
 }
 
 // Section 11.2.4.40
