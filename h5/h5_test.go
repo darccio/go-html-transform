@@ -1,9 +1,9 @@
 package h5
 
 import (
-	"testing"
 	"fmt"
-//	"os"
+	"testing"
+	//	"os"
 	"reflect"
 )
 
@@ -234,13 +234,13 @@ func TestScriptDoc(t *testing.T) {
 
 func TestScriptOnlyDoc(t *testing.T) {
 	p := NewParserFromString(
-		"<script> if (foo < 10) { }</script>")
+		"<script> if (foo < 10) { var x = '<foo></foo>' }</script>")
 	err := p.Parse()
 	assertTrue(t, err == nil, "err is not nil: %v", err)
 	//fmt.Printf("XXX doc: %s\n", p.Top)
 	assertEqual(t, len(p.Top.Children), 1)
 	assertEqual(t, p.Top.Children[0].Data(),
-		" if (foo < 10) { }")
+		" if (foo < 10) { var x = '<foo></foo>' }")
 }
 
 func TestSimpledocSiblings(t *testing.T) {

@@ -491,6 +491,36 @@ func startScriptDataState(p *Parser, c rune) stateHandler {
 	return scriptDataStateHandler(p, c)
 }
 
+func scriptDataStringHandler(s rune) func(p *Parser, c rune) stateHandler {
+	return func(p *Parser, c rune) stateHandler {
+		textConsumer(p, c)
+		for {
+			c2, err := p.nextInput()
+			if err != nil {
+				// TODO parseError
+				return nil
+			}
+
+			if c2 == s {
+				textConsumer(p, c2)
+				return handleChar(scriptDataStateHandler)
+			}
+
+			if c2 == '\\' {
+				textConsumer(p, c2)
+				c2, err = p.nextInput()
+				if err != nil {
+					println("Incomplete String")
+					return nil
+				}
+			}
+
+			textConsumer(p, c2)
+		}
+		panic("unreachable")
+	}
+}
+
 func scriptDataStateHandler(p *Parser, c rune) stateHandler {
 	switch c {
 	case '<':
@@ -505,6 +535,11 @@ func scriptDataStateHandler(p *Parser, c rune) stateHandler {
 			}
 			if c2 == '<' {
 				return handleChar(scriptDataLessThanHandler)
+			}
+
+			if c2 == '"' || c2 == '\'' {
+				textConsumer(p, c2)
+				return handleChar(scriptDataStringHandler(c2))
 			}
 			textConsumer(p, c2)
 		}

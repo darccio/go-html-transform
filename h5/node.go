@@ -48,7 +48,7 @@ type Node struct {
 	Children   []*Node      // The children of the html5 node if it has any.
 	Public     bool         // True if this is a PUBLIC doctype node
 	System     bool         // True if this is a SYSTEM doctype node
-	Identifier []rune        // The identifier if this is a doctype node
+	Identifier []rune       // The identifier if this is a doctype node
 }
 
 // Sets a Nodes data. (eg: The Tagname for ElementNodes or text for TextNodes)
