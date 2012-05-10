@@ -232,6 +232,17 @@ func TestScriptDoc(t *testing.T) {
 		" if (foo < 10) { }")
 }
 
+func TestScriptOnlyDoc(t *testing.T) {
+	p := NewParserFromString(
+		"<script> if (foo < 10) { }</script>")
+	err := p.Parse()
+	assertTrue(t, err == nil, "err is not nil: %v", err)
+	//fmt.Printf("XXX doc: %s\n", p.Top)
+	assertEqual(t, len(p.Top.Children), 1)
+	assertEqual(t, p.Top.Children[0].Data(),
+		" if (foo < 10) { }")
+}
+
 func TestSimpledocSiblings(t *testing.T) {
 	p := NewParserFromString(
 		"<html><body><a>foo</a><div>bar</div></body></html>")

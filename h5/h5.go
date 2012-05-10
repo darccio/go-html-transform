@@ -87,6 +87,10 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 				p.Mode = im_inHead
 			case "body":
 				p.Mode = im_inBody
+			case "script": // we need to handle scripts in the snippet case.
+				//fmt.Println("In a script tag")
+				p.Mode = im_text
+				return handleChar(startScriptDataState)
 			default:
 				// TODO(jwall): parse error
 			}
