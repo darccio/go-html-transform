@@ -847,7 +847,6 @@ func beforeAttributeValueHandler(p *Parser, c rune) stateHandler {
 	panic("Unreachable")
 }
 
-
 // Section 11.2.4.3{8,9}
 func makeAttributeValueQuotedHandler(c rune) func(p *Parser, c rune) stateHandler {
 	return func(p *Parser, c2 rune) stateHandler {
