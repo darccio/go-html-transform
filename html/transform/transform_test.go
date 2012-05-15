@@ -58,8 +58,8 @@ func TestRemoveChildren(t *testing.T) {
 }
 
 func TestReplaceChildren(t *testing.T) {
-	doc, _ := NewDoc("<div id=\"foo\">foo</div>")
-	node := doc.Children[0]
+	doc, _ := NewDoc("<html><div id=\"foo\">foo</div></html>")
+	node := doc.Children[0].Children[0]
 	child := new(Node)
 	child2 := new(Node)
 	f := ReplaceChildren(child, child2)

@@ -17,6 +17,7 @@ package transform
 import (
 	. "code.google.com/p/go-html-transform/h5"
 	"log"
+	"reflect"
 )
 
 // The TransformFunc type is the type of a Node transformation function.
@@ -112,16 +113,9 @@ func Replace(ns ...*Node) TransformFunc {
 			n.Children = ns
 		default:
 			for i, c := range p.Children {
-				if c == n {
-					n := i - 1
-					if n < 0 {
-						n = 0
-					}
-					var newChild []*Node
-					pre := p.Children[:n]
-					post := p.Children[i+1:]
-					newChild = append(pre, ns...)
-					p.Children = append(newChild, post...)
+				if reflect.DeepEqual(c, n) {
+					pre := append(p.Children[:i], ns...)
+					p.Children = append(pre, p.Children[i+1:]...)
 				}
 			}
 		}
