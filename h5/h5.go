@@ -182,6 +182,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				"details", "dialog", "dir", "div", "dl", "fieldset",
 				"figcaption", "figure", "footer", "header", "hgroup",
 				"menu", "nav", "ol", "p", "section", "summary", "ul":
+				// TODO(jwall): should this live in the start-tag code?
 				maybeCloseTag(n, "p", buttonScope)
 			case "li":
 				// TODO
@@ -1035,7 +1036,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, error) {
 				"center", "details", "dir", "div", "dl", "fieldset",
 				"figcaption", "figure", "footer", "header", "hgroup",
 				"listing", "menu", "nav", "ol", "pre", "section", "summary",
-				"ul", "td", "th", "font":
+				"ul", "td", "th", "font", "body":
 				// generate implied end tags
 				genImpliedEndTags(p)
 				// reset the current node

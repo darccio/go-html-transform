@@ -371,6 +371,17 @@ func TestUnclosedPTagInBody(t *testing.T) {
 	assertEqual(t, p.Top.Children[0].Children[0].Data(), "p")
 	assertEqual(t, len(p.Top.Children[0].Children[0].Children), 0)
 	assertEqual(t, p.Top.Children[0].Children[1].Data(), "article")
+
+	p = NewParserFromString(
+		"<html><body><p>foo</body></html>")
+	err = p.Parse()
+	assertTrue(t, err == nil, "err is not nil: %v", err)
+	assertEqual(t, p.Top.Data(), "html")
+	assertEqual(t, p.Top.Children[0].Data(), "body")
+	assertEqual(t, len(p.Top.Children[0].Children), 1)
+	assertEqual(t, p.Top.Children[0].Children[0].Data(), "p")
+	assertEqual(t, len(p.Top.Children[0].Children[0].Children), 1)
+	assertEqual(t, p.Top.Children[0].Children[0].Children[0].Data(), "foo")
 }
 
 // TODO micro benchmarks
