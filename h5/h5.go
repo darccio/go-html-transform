@@ -65,8 +65,9 @@ const (
 	im_afterAfterFrameset insertionMode = iota
 )
 
-func insertionModeSwitch(p *Parser, n *Node) stateHandler {
+func insertionModeSwitch(p *Parser) stateHandler {
 	//fmt.Println("In insertionModeSwitch")
+	n := p.curr
 	currMode := p.Mode
 	switch currMode {
 	case im_initial:
@@ -159,11 +160,39 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			// TODO(jwall): parse error
 		case CommentNode:
 		case ElementNode:
+			// see http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-inbody
 			switch n.Data() {
 			case "script":
 				//fmt.Println("In a script tag")
 				p.Mode = im_text
 				return handleChar(startScriptDataState)
+			case "h1", "h2", "h3", "h4", "h5", "h6":
+				// TODO
+				fallthrough
+			case "pre", "listing":
+				// TODO
+				fallthrough
+			case "form":
+				// TODO
+				fallthrough
+			case "hr":
+				// TODO
+				fallthrough
+			case "address", "article", "aside", "blockquote", "center",
+				"details", "dialog", "dir", "div", "dl", "fieldset",
+				"figcaption", "figure", "footer", "header", "hgroup",
+				"menu", "nav", "ol", "p", "section", "summary", "ul":
+				maybeCloseTag(n, "p", buttonScope)
+			case "li":
+				// TODO
+			case "dd", "dt":
+				// TODO
+			case "plaintext":
+				// TODO
+			case "button":
+				// TODO
+			case "rp", "rt":
+				// TODO
 			default:
 				// TODO(jwall): parse error
 			}
@@ -188,12 +217,26 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	return handleChar(dataStateHandler)
 }
 
+func maybeCloseTag(n *Node, target string, scope map[string]bool) {
+	if n.Parent == nil {
+		return
+	} else if _, ok := scope[n.Parent.Data()]; ok {
+		// parse error?
+		return
+	} else if n.Parent.Data() == target {
+		tag := n.Parent
+		gp := tag.Parent
+		tag.Children = tag.Children[:len(tag.Children)-1]
+		gp.Children = append(gp.Children, n)
+		n.Parent = gp
+	}
+}
+
 func dataStateHandlerSwitch(p *Parser) stateHandler {
-	n := p.curr
 	/*fmt.Printf(
 	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
 	p.Mode, n)*/
-	return insertionModeSwitch(p, n)
+	return insertionModeSwitch(p)
 }
 
 // An html5 parsing struct. It holds the parsing state for the html5 parsing

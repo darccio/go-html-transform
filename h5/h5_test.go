@@ -348,6 +348,31 @@ func TestComment(t *testing.T) {
 	assertEqual(t, n.Children[1].Children[0].Children[0].Data(), "foo")
 }
 
+func TestUnclosedPTagInBody(t *testing.T) {
+	p := NewParserFromString(
+		"<html><body><p>foo<article></article></body></html>")
+	err := p.Parse()
+	assertTrue(t, err == nil, "err is not nil: %v", err)
+	assertEqual(t, p.Top.Data(), "html")
+	assertEqual(t, p.Top.Children[0].Data(), "body")
+	assertEqual(t, len(p.Top.Children[0].Children), 2)
+	assertEqual(t, p.Top.Children[0].Children[0].Data(), "p")
+	assertEqual(t, len(p.Top.Children[0].Children[0].Children), 1)
+	assertEqual(t, p.Top.Children[0].Children[0].Children[0].Data(), "foo")
+	assertEqual(t, p.Top.Children[0].Children[1].Data(), "article")
+
+	p = NewParserFromString(
+		"<html><body><p><article></article></body></html>")
+	err = p.Parse()
+	assertTrue(t, err == nil, "err is not nil: %v", err)
+	assertEqual(t, p.Top.Data(), "html")
+	assertEqual(t, p.Top.Children[0].Data(), "body")
+	assertEqual(t, len(p.Top.Children[0].Children), 2)
+	assertEqual(t, p.Top.Children[0].Children[0].Data(), "p")
+	assertEqual(t, len(p.Top.Children[0].Children[0].Children), 0)
+	assertEqual(t, p.Top.Children[0].Children[1].Data(), "article")
+}
+
 // TODO micro benchmarks
 func BenchmarkDocParse(t *testing.B) {
 	for i := 0; i < t.N; i++ {
