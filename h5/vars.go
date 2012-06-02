@@ -2,6 +2,7 @@ package h5
 
 var (
 	// Scopes
+	allScope = map[string]bool{}
 	baseScope = map[string]bool{
 		"applet":true,
 		"caption":true,

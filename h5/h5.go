@@ -168,15 +168,14 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				return handleChar(startScriptDataState)
 			case "h1", "h2", "h3", "h4", "h5", "h6":
 				// TODO
+				maybeCloseTags(n, []string{"h1", "h2", "h3", "h4", "h5", "h6"},
+					allScope)
 				fallthrough
 			case "pre", "listing":
-				// TODO
 				fallthrough
 			case "form":
-				// TODO
 				fallthrough
 			case "hr":
-				// TODO
 				fallthrough
 			case "address", "article", "aside", "blockquote", "center",
 				"details", "dialog", "dir", "div", "dl", "fieldset",
@@ -185,15 +184,20 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				// TODO(jwall): should this live in the start-tag code?
 				maybeCloseTag(n, "p", buttonScope)
 			case "li":
-				// TODO
+				// TODO handle isSpecial
+				maybeCloseTag(n, "li", allScope)
+				maybeCloseTag(n, "p", buttonScope)
 			case "dd", "dt":
-				// TODO
+				maybeCloseTags(n, []string{"dd", "dt"}, allScope)
+				maybeCloseTag(n, "p", buttonScope)
 			case "plaintext":
-				// TODO
+				maybeCloseTag(n, "p", buttonScope)
+				// TODO plaintext state
 			case "button":
-				// TODO
+				maybeCloseTag(n, "button", baseScope)
 			case "rp", "rt":
-				// TODO
+				// TODO check for ruby element in scope
+				genImpliedEndTags(p)
 			default:
 				// TODO(jwall): parse error
 			}
@@ -218,13 +222,26 @@ func insertionModeSwitch(p *Parser) stateHandler {
 	return handleChar(dataStateHandler)
 }
 
+func oneOf(t string, ts ...string) bool {
+	for _, s := range ts {
+		if t == s {
+			return true
+		}
+	}
+	return false
+}
+
 func maybeCloseTag(n *Node, target string, scope map[string]bool) {
+	maybeCloseTags(n, []string{target}, scope)
+}
+
+func maybeCloseTags(n *Node, targets []string, scope map[string]bool) {
 	if n.Parent == nil {
 		return
 	} else if _, ok := scope[n.Parent.Data()]; ok {
 		// parse error?
 		return
-	} else if n.Parent.Data() == target {
+	} else if oneOf(n.Parent.Data(), targets...) {
 		tag := n.Parent
 		gp := tag.Parent
 		tag.Children = tag.Children[:len(tag.Children)-1]
