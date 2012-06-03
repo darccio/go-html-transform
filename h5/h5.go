@@ -113,11 +113,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 			case "body":
 				p.Mode = im_inBody
 			case "title":
-<<<<<<< local
 				return rcDataStateStartHandler
-=======
-				return handleChar(rcDataStateStartHandler)
->>>>>>> other
 			default:
 				// TODO(jwall): parse error
 			}
@@ -223,11 +219,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 			case "td", "th":
 				maybeCloseTags(n, []string{"td", "th"}, allScope)
 			case "textarea":
-<<<<<<< local
 				return rcDataStateStartHandler
-=======
-				return handleChar(rcDataStateStartHandler)
->>>>>>> other
 			default:
 				// TODO(jwall): parse error
 			}
@@ -359,17 +351,9 @@ func (p *Parser) Tree() *Node {
 	return p.Top
 }
 
-<<<<<<< local
 func rcDataStateStartHandler(p *Parser) (stateHandler, error) {
-=======
-func rcDataStateStartHandler(p *Parser) stateHandler {
->>>>>>> other
 	pushNode(p)
-<<<<<<< local
 	return handleChar(rcDataStateHandler), nil
-=======
-	return handleChar(rcDataStateHandler)
->>>>>>> other
 }
 
 // TODO(jwall): UNITTESTS!!!!
