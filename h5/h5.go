@@ -111,6 +111,8 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				return handleChar(startScriptDataState)
 			case "body":
 				p.Mode = im_inBody
+			case "title":
+				return handleChar(rcDataStateStartHandler)
 			default:
 				// TODO(jwall): parse error
 			}
@@ -213,6 +215,8 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				maybeCloseTag(n, "tr", allScope)
 			case "td", "th":
 				maybeCloseTags(n, []string{"td", "th"}, allScope)
+			case "textarea":
+				return handleChar(rcDataStateStartHandler)
 			default:
 				// TODO(jwall): parse error
 			}
@@ -341,6 +345,73 @@ func (p *Parser) Parse() error {
 // Return the parsed html5 tree or nil if parsing hasn't occured yet
 func (p *Parser) Tree() *Node {
 	return p.Top
+}
+
+func rcDataStateStartHandler(p *Parser) stateHandler {
+	pushNode(p)
+	return handleChar(rcDataStateHandler)
+}
+
+// TODO(jwall): UNITTESTS!!!!
+func rcDataStateHandler(p *Parser, c rune) stateHandler {
+	switch c {
+	case '<':
+		return handleChar(rcDataLessThanSignState)
+	case '&':
+		// TODO character references?
+		fallthrough
+	default:
+		textConsumer(p, c)
+	}
+	panic("unreachable")
+}
+
+func rcDataLessThanSignState(p *Parser, c rune) stateHandler {
+	switch c {
+	case '/':
+		return handleChar(rcDataEndTagOpenState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagOpenState(p *Parser, c rune) stateHandler {
+	switch {
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		pushNode(p)
+		p.curr.data = append(p.curr.data, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagNameState(p *Parser, c rune) stateHandler {
+	switch {
+	case c == '\t', c == '\n', c == '\r', c == ' ':
+	case c == '/':
+		return handleChar(selfClosingTagStartHandler)
+	case c == '>':
+		popNode(p)
+		return dataStateHandlerSwitch(p)
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		textConsumer(p, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
 }
 
 // TODO(jwall): UNITTESTS!!!!
