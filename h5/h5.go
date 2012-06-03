@@ -185,9 +185,11 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				maybeCloseTag(n, "p", buttonScope)
 			case "li":
 				// TODO handle isSpecial
+				// TODO handle no more content in parent element
 				maybeCloseTag(n, "li", allScope)
 				maybeCloseTag(n, "p", buttonScope)
 			case "dd", "dt":
+				// TODO handle no more content in parent element
 				maybeCloseTags(n, []string{"dd", "dt"}, allScope)
 				maybeCloseTag(n, "p", buttonScope)
 			case "plaintext":
@@ -198,6 +200,19 @@ func insertionModeSwitch(p *Parser) stateHandler {
 			case "rp", "rt":
 				// TODO check for ruby element in scope
 				genImpliedEndTags(p)
+			case "option":
+				// TODO handle no more content in parent element
+				maybeCloseTag(n, "option", allScope)
+			case "optgroup":
+				// TODO handle no more content in parent element
+				maybeCloseTags(n, []string{"optgroup", "option"}, allScope)
+			case "colgroup":
+				// check for space or comment if not then:
+				//   maybeCloseTag(n, "optgroup", baseScope)
+			case "tr":
+				maybeCloseTag(n, "tr", allScope)
+			case "td", "th":
+				maybeCloseTags(n, []string{"td", "th"}, allScope)
 			default:
 				// TODO(jwall): parse error
 			}
