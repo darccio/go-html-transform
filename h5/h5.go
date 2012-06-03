@@ -99,6 +99,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 			// TODO(jwall): parse error
 		}
 	case im_inHead:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -111,6 +112,8 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				return handleChar(startScriptDataState)
 			case "body":
 				p.Mode = im_inBody
+			case "title":
+				return rcDataStateStartHandler
 			default:
 				// TODO(jwall): parse error
 			}
@@ -119,6 +122,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 		}
 	case im_inHeadNoScript:
 	case im_afterHead:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -155,6 +159,7 @@ func insertionModeSwitch(p *Parser) stateHandler {
 	case im_afterBody:
 		fallthrough
 	case im_inBody:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -213,11 +218,14 @@ func insertionModeSwitch(p *Parser) stateHandler {
 				maybeCloseTag(n, "tr", allScope)
 			case "td", "th":
 				maybeCloseTags(n, []string{"td", "th"}, allScope)
+			case "textarea":
+				return rcDataStateStartHandler
 			default:
 				// TODO(jwall): parse error
 			}
 		}
 	case im_text:
+		// TODO refactor into a function
 		//fmt.Println("parsing script contents. data:", n.Data())
 		if n.Data() == "script" {
 			//fmt.Println("setting insertionMode to inBody")
@@ -341,6 +349,73 @@ func (p *Parser) Parse() error {
 // Return the parsed html5 tree or nil if parsing hasn't occured yet
 func (p *Parser) Tree() *Node {
 	return p.Top
+}
+
+func rcDataStateStartHandler(p *Parser) (stateHandler, error) {
+	pushNode(p)
+	return handleChar(rcDataStateHandler), nil
+}
+
+// TODO(jwall): UNITTESTS!!!!
+func rcDataStateHandler(p *Parser, c rune) stateHandler {
+	switch c {
+	case '<':
+		return handleChar(rcDataLessThanSignState)
+	case '&':
+		// TODO character references?
+		fallthrough
+	default:
+		textConsumer(p, c)
+	}
+	panic("unreachable")
+}
+
+func rcDataLessThanSignState(p *Parser, c rune) stateHandler {
+	switch c {
+	case '/':
+		return handleChar(rcDataEndTagOpenState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagOpenState(p *Parser, c rune) stateHandler {
+	switch {
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		pushNode(p)
+		p.curr.data = append(p.curr.data, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagNameState(p *Parser, c rune) stateHandler {
+	switch {
+	case c == '\t', c == '\n', c == '\r', c == ' ':
+	case c == '/':
+		return handleChar(selfClosingTagStartHandler)
+	case c == '>':
+		popNode(p)
+		return dataStateHandlerSwitch(p)
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		textConsumer(p, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
 }
 
 // TODO(jwall): UNITTESTS!!!!
