@@ -20,6 +20,7 @@ func runTestTests(ps []string) {
 }
 
 func runHtmlTests(ps []string) {
+	// TODO(jwall): with timings?
 	for _, p := range ps {
 		fmt.Println("Attempting to parse file: ", p)
 		f, err := os.Open(p)
