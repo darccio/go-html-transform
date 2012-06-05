@@ -353,6 +353,7 @@ func (p *Parser) Tree() *Node {
 
 func rcDataStateStartHandler(p *Parser) (stateHandler, error) {
 	pushNode(p)
+	p.Mode = im_text
 	return handleChar(rcDataStateHandler), nil
 }
 
@@ -366,6 +367,7 @@ func rcDataStateHandler(p *Parser, c rune) stateHandler {
 		fallthrough
 	default:
 		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
 	}
 	panic("unreachable")
 }
