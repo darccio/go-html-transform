@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"code.google.com/p/go-html-transform/h5"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,8 +12,47 @@ import (
 
 
 func runDatTests(ps []string) {
-	//for _, p := range ps {
-	//}
+	for _, p := range ps {
+		fmt.Println("Running tests in file: ", p)
+		f, err := os.Open(p)
+		if err != nil {
+			fmt.Println("ERROR opening file: ", err)
+		}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			fmt.Println("ERROR reading file: ", err)
+		}
+		cases := bytes.Split(data, []byte("\n\n"))
+		for _, c := range cases {
+			runDatCase(c)
+		}
+	}
+}
+
+func runDatCase(c []byte) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("ERROR while running test case:", e)
+		}
+	}()
+	parts := bytes.Split(c, []byte("#"))
+	if len(parts) != 4 {
+		fmt.Printf("Malformed test case: %d, %q\n", len(parts), string(c))
+		return
+	}
+	fmt.Println("Running test case:", string(c))
+	testData := make(map[string]string)
+	for _, p := range parts[1:] {
+		t := bytes.Split(p, []byte("\n"))
+		testData[string(t[0])] = string(t[1])
+	}
+	p := h5.NewParserFromString(string(testData["data"]))
+	err := p.Parse()
+	if err != nil {
+		fmt.Println("ERROR parsing file: ", err)
+	} else {
+		fmt.Println("SUCCESS!!!")
+	}
 }
 
 func runTestTests(ps []string) {
@@ -25,14 +66,14 @@ func runHtmlTests(ps []string) {
 		fmt.Println("Attempting to parse file: ", p)
 		f, err := os.Open(p)
 		if err != nil {
-			fmt.Println("Error opening file: ", err)
+			fmt.Println("ERROR opening file: ", err)
 		}
 		parse := h5.NewParser(f)
 		err = parse.Parse()
 		if err != nil {
-			fmt.Println("Error parsing file: ", err)
+			fmt.Println("ERROR parsing file: ", err)
 		} else {
-			fmt.Println("Success!!!")
+			fmt.Println("SUCCESS!!!")
 		}
 	}
 }
@@ -65,7 +106,7 @@ func main() {
 	spec[htmlRe] = []string{}
 	err := grep("./", spec)
 	if err != nil {
-		fmt.Println("Error while grepping: ", err)
+		fmt.Println("ERROR while grepping", err)
 	}
 	runDatTests(spec[datRe])
 	runTestTests(spec[testRe])
