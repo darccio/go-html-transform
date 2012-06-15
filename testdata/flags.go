@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// TODO(jwall): Move these to a common flags library.
 type stringEnum struct {
 	val string
 	e map[string]struct{}

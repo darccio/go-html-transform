@@ -19,7 +19,8 @@ var (
 	}, "all", "Type of test to run")
 )
 
-func runDatTests(ps []string) {
+func runDatTests(ps []string) int {
+	var counter int
 	for _, p := range ps {
 		if *verbose { fmt.Println("Running tests in file: ", p); }
 		f, err := os.Open(p)
@@ -32,21 +33,25 @@ func runDatTests(ps []string) {
 		}
 		cases := bytes.Split(data, []byte("\n\n"))
 		for _, c := range cases {
-			runDatCase(c)
+			counter += runDatCase(c)
 		}
 	}
+	return counter
 }
 
-func runDatCase(c []byte) {
+func runDatCase(c []byte) int {
+	var counter int
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Println("ERROR while running test case:", e)
+			counter++
 		}
 	}()
 	parts := bytes.Split(c, []byte("#"))
-	if len(parts) != 4  && *verbose {
+	if len(parts) != 4 { counter++; }
+	if len(parts) != 4 && *verbose {
 		fmt.Printf("Malformed test case: %d, %q\n", len(parts), string(c))
-		return
+		return counter
 	}
 	fmt.Println("Running test case:", string(c))
 	testData := make(map[string]string)
@@ -59,33 +64,41 @@ func runDatCase(c []byte) {
 	if err != nil {
 		fmt.Println("Test case:", string(c))
 		fmt.Println("ERROR parsing: ", err)
+		counter++
 	} else {
 		if *verbose { fmt.Println("SUCCESS!!!") }
 	}
+	return counter
 }
 
-func runTestTests(ps []string) {
+func runTestTests(ps []string) int {
+	var counter int
 	//for _, p := range ps {
 	//}
+	return counter
 }
 
-func runHtmlTests(ps []string) {
+func runHtmlTests(ps []string) int {
+	var counter int
 	// TODO(jwall): with timings?
 	for _, p := range ps {
 		if *verbose { fmt.Println("Attempting to parse file: ", p); }
 		f, err := os.Open(p)
 		if err != nil {
 			fmt.Println("ERROR opening file: ", err)
+			counter++
 		}
 		parse := h5.NewParser(f)
 		err = parse.Parse()
 		if err != nil {
 			if !*verbose { fmt.Println("Attempting to parse file: ", p); }
 			fmt.Println("ERROR parsing file: ", err)
+			counter++
 		} else {
 			if *verbose { fmt.Println("SUCCESS!!!") }
 		}
 	}
+	return counter
 }
 
 type grepSpec map[*regexp.Regexp][]string
@@ -106,6 +119,8 @@ func grep(path string, spec grepSpec) error {
 	})
 }
 
+// TODO(jwall): failure counter
+// TODO(jwall): Output overall success
 func main() {
 	flag.Parse()
 	datRe := regexp.MustCompile("dat$")
@@ -115,18 +130,24 @@ func main() {
 	spec[datRe] = []string{}
 	spec[testRe] = []string{}
 	spec[htmlRe] = []string{}
+	var counter int
 	err := grep("./", spec)
 	if err != nil {
 		fmt.Println("ERROR while grepping", err)
 	}
 	specType := testSpec.String()
 	if specType == "all" || specType == "dat" {
-		runDatTests(spec[datRe])
+		counter += runDatTests(spec[datRe])
 	}
 	if specType == "all" || specType == "test" {
-		runTestTests(spec[testRe])
+		counter += runTestTests(spec[testRe])
 	}
 	if specType == "all" || specType == "dat" {
-		runHtmlTests(spec[htmlRe])
+		counter += runHtmlTests(spec[htmlRe])
+	}
+	if counter > 0 {
+		fmt.Printf("%d Errors found\n", counter)
+	} else {
+		fmt.Println("All Tests passed!!")
 	}
 }
