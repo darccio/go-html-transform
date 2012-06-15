@@ -8,7 +8,7 @@ import (
 // TODO(jwall): Move these to a common flags library.
 type stringEnum struct {
 	val string
-	e map[string]struct{}
+	e   map[string]struct{}
 }
 
 func (e *stringEnum) Set(v string) error {
@@ -19,14 +19,14 @@ func (e *stringEnum) Set(v string) error {
 	return fmt.Errorf("Value %q not a valid enum value")
 }
 
-func(e *stringEnum) String() string {
+func (e *stringEnum) String() string {
 	return e.val
 }
 
 func StringEnum(name string, e map[string]struct{}, d, doc string) flag.Value {
 	val := &stringEnum{
-	val: d,
-	e: e,
+		val: d,
+		e:   e,
 	}
 	flag.Var(val, name, doc)
 	return val

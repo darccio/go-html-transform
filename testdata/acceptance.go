@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
-	"fmt"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,17 +12,19 @@ import (
 )
 
 var (
-	verbose = flag.Bool("verbose", false, "Verbosity for test output")
+	verbose  = flag.Bool("verbose", false, "Verbosity for test output")
 	testSpec = StringEnum("test_spec", map[string]struct{}{"dat": struct{}{},
-		"file":struct{}{},
-		"all": struct{}{},
+		"file": struct{}{},
+		"all":  struct{}{},
 	}, "all", "Type of test to run")
 )
 
 func runDatTests(ps []string) int {
 	var counter int
 	for _, p := range ps {
-		if *verbose { fmt.Println("Running tests in file: ", p); }
+		if *verbose {
+			fmt.Println("Running tests in file: ", p)
+		}
 		f, err := os.Open(p)
 		if err != nil {
 			fmt.Println("ERROR opening file: ", err)
@@ -48,7 +50,9 @@ func runDatCase(c []byte) int {
 		}
 	}()
 	parts := bytes.Split(c, []byte("#"))
-	if len(parts) != 4 { counter++; }
+	if len(parts) != 4 {
+		counter++
+	}
 	if len(parts) != 4 && *verbose {
 		fmt.Printf("Malformed test case: %d, %q\n", len(parts), string(c))
 		return counter
@@ -66,7 +70,9 @@ func runDatCase(c []byte) int {
 		fmt.Println("ERROR parsing: ", err)
 		counter++
 	} else {
-		if *verbose { fmt.Println("SUCCESS!!!") }
+		if *verbose {
+			fmt.Println("SUCCESS!!!")
+		}
 	}
 	return counter
 }
@@ -82,7 +88,9 @@ func runHtmlTests(ps []string) int {
 	var counter int
 	// TODO(jwall): with timings?
 	for _, p := range ps {
-		if *verbose { fmt.Println("Attempting to parse file: ", p); }
+		if *verbose {
+			fmt.Println("Attempting to parse file: ", p)
+		}
 		f, err := os.Open(p)
 		if err != nil {
 			fmt.Println("ERROR opening file: ", err)
@@ -91,11 +99,15 @@ func runHtmlTests(ps []string) int {
 		parse := h5.NewParser(f)
 		err = parse.Parse()
 		if err != nil {
-			if !*verbose { fmt.Println("Attempting to parse file: ", p); }
+			if !*verbose {
+				fmt.Println("Attempting to parse file: ", p)
+			}
 			fmt.Println("ERROR parsing file: ", err)
 			counter++
 		} else {
-			if *verbose { fmt.Println("SUCCESS!!!") }
+			if *verbose {
+				fmt.Println("SUCCESS!!!")
+			}
 		}
 	}
 	return counter
