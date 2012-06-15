@@ -4,16 +4,24 @@ import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
 	"fmt"
+	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 )
 
+var (
+	verbose = flag.Bool("verbose", false, "Verbosity for test output")
+	testSpec = StringEnum("test_spec", map[string]struct{}{"dat": struct{}{},
+		"file":struct{}{},
+		"all": struct{}{},
+	}, "all", "Type of test to run")
+)
 
 func runDatTests(ps []string) {
 	for _, p := range ps {
-		fmt.Println("Running tests in file: ", p)
+		if *verbose { fmt.Println("Running tests in file: ", p); }
 		f, err := os.Open(p)
 		if err != nil {
 			fmt.Println("ERROR opening file: ", err)
@@ -36,7 +44,7 @@ func runDatCase(c []byte) {
 		}
 	}()
 	parts := bytes.Split(c, []byte("#"))
-	if len(parts) != 4 {
+	if len(parts) != 4  && *verbose {
 		fmt.Printf("Malformed test case: %d, %q\n", len(parts), string(c))
 		return
 	}
@@ -49,9 +57,10 @@ func runDatCase(c []byte) {
 	p := h5.NewParserFromString(string(testData["data"]))
 	err := p.Parse()
 	if err != nil {
-		fmt.Println("ERROR parsing file: ", err)
+		fmt.Println("Test case:", string(c))
+		fmt.Println("ERROR parsing: ", err)
 	} else {
-		fmt.Println("SUCCESS!!!")
+		if *verbose { fmt.Println("SUCCESS!!!") }
 	}
 }
 
@@ -63,7 +72,7 @@ func runTestTests(ps []string) {
 func runHtmlTests(ps []string) {
 	// TODO(jwall): with timings?
 	for _, p := range ps {
-		fmt.Println("Attempting to parse file: ", p)
+		if *verbose { fmt.Println("Attempting to parse file: ", p); }
 		f, err := os.Open(p)
 		if err != nil {
 			fmt.Println("ERROR opening file: ", err)
@@ -71,9 +80,10 @@ func runHtmlTests(ps []string) {
 		parse := h5.NewParser(f)
 		err = parse.Parse()
 		if err != nil {
+			if !*verbose { fmt.Println("Attempting to parse file: ", p); }
 			fmt.Println("ERROR parsing file: ", err)
 		} else {
-			fmt.Println("SUCCESS!!!")
+			if *verbose { fmt.Println("SUCCESS!!!") }
 		}
 	}
 }
@@ -97,6 +107,7 @@ func grep(path string, spec grepSpec) error {
 }
 
 func main() {
+	flag.Parse()
 	datRe := regexp.MustCompile("dat$")
 	testRe := regexp.MustCompile("test$")
 	htmlRe := regexp.MustCompile("html?$")
@@ -108,7 +119,14 @@ func main() {
 	if err != nil {
 		fmt.Println("ERROR while grepping", err)
 	}
-	runDatTests(spec[datRe])
-	runTestTests(spec[testRe])
-	runHtmlTests(spec[htmlRe])
+	specType := testSpec.String()
+	if specType == "all" || specType == "dat" {
+		runDatTests(spec[datRe])
+	}
+	if specType == "all" || specType == "test" {
+		runTestTests(spec[testRe])
+	}
+	if specType == "all" || specType == "dat" {
+		runHtmlTests(spec[htmlRe])
+	}
 }
