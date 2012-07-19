@@ -414,6 +414,13 @@ func TestUnclosedLiTagInBody(t *testing.T) {
 	assertEqual(t, p.Top.Children[0].Children[0].Children[1].Children[0].Data(), "bar")
 }
 
+func TestCloseTagNoOpen(t *testing.T) {
+	p := NewParserFromString(
+		"<html><body><div></div></div>foo</body></html>")
+	err := p.Parse()
+	assertTrue(t, err == nil, "err is no t nil %v", err)
+}
+
 // TODO micro benchmarks
 func BenchmarkDocParse(t *testing.B) {
 	for i := 0; i < t.N; i++ {
