@@ -20,7 +20,11 @@ func (e *stringEnum) Set(v string) error {
 }
 
 func (e *stringEnum) String() string {
-	return e.val
+	var list []string
+	for k, _ := range e.e {
+		list = append(list, k)
+	}
+	return e.val + fmt.Sprintf(" from %v", list)
 }
 
 func StringEnum(name string, e map[string]struct{}, d, doc string) flag.Value {
