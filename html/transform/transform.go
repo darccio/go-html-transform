@@ -43,6 +43,10 @@ func (t *Transformer) String() string {
 	return t.doc.String()
 }
 
+func (t *Transformer) Clone() *Transformer {
+	return NewTransform(t.Doc())
+}
+
 // TODO(jwall): TransformApplication type that we can process the doc in one
 // pass.
 // The Apply method applies a TransformFunc to the nodes returned from
@@ -53,6 +57,25 @@ func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	nodes := sq.Apply(t.doc)
 	for _, n := range nodes {
 		f(n)
+	}
+	return t
+}
+
+type Transform struct {
+	q []string
+	f TransformFunc
+}
+
+// Spec creates a Transform that you can apply using ApplyAll.
+func Trans(f TransformFunc, sel1 string, sel ...string) Transform {
+	return Transform{f:f, q:append([]string{sel1}, sel...)}
+}
+
+// ApplyAll applies a series of Transforms to a document.
+//     t.ApplyAll(Trans(f, sel1, sel2), Trans(f2, sel3, sel4))
+func (t *Transformer) ApplyAll(ts ...Transform) *Transformer {
+	for _, spec := range ts {
+		t.Apply(spec.f, spec.q...)
 	}
 	return t
 }
