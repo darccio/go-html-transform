@@ -253,12 +253,10 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 		} else {
 			for _, c := range n.Children {
 				if len(sel) > 1 {
-					ns := applyToNode(sel[1:], c)
+					ns := SelectorQuery(sel[1:]).Apply(c)
 					if len(ns) > 0 {
 						nodes = append(nodes, ns...)
 					}
-				} else {
-					nodes = []*Node{n}
 				}
 			}
 		}

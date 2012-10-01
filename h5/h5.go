@@ -65,8 +65,9 @@ const (
 	im_afterAfterFrameset insertionMode = iota
 )
 
-func insertionModeSwitch(p *Parser, n *Node) stateHandler {
+func insertionModeSwitch(p *Parser) stateHandler {
 	//fmt.Println("In insertionModeSwitch")
+	n := p.curr
 	currMode := p.Mode
 	switch currMode {
 	case im_initial:
@@ -98,6 +99,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 			// TODO(jwall): parse error
 		}
 	case im_inHead:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -110,6 +112,8 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 				return handleChar(startScriptDataState)
 			case "body":
 				p.Mode = im_inBody
+			case "title":
+				return rcDataStateStartHandler
 			default:
 				// TODO(jwall): parse error
 			}
@@ -118,6 +122,7 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 		}
 	case im_inHeadNoScript:
 	case im_afterHead:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
@@ -154,21 +159,73 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	case im_afterBody:
 		fallthrough
 	case im_inBody:
+		// TODO refactor into a function
 		switch n.Type {
 		case DoctypeNode:
 			// TODO(jwall): parse error
 		case CommentNode:
 		case ElementNode:
+			// see http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html#parsing-main-inbody
 			switch n.Data() {
 			case "script":
 				//fmt.Println("In a script tag")
 				p.Mode = im_text
 				return handleChar(startScriptDataState)
+			case "h1", "h2", "h3", "h4", "h5", "h6":
+				// TODO
+				maybeCloseTags(n, []string{"h1", "h2", "h3", "h4", "h5", "h6"},
+					allScope)
+				fallthrough
+			case "pre", "listing":
+				fallthrough
+			case "form":
+				fallthrough
+			case "hr":
+				fallthrough
+			case "address", "article", "aside", "blockquote", "center",
+				"details", "dialog", "dir", "div", "dl", "fieldset",
+				"figcaption", "figure", "footer", "header", "hgroup",
+				"menu", "nav", "ol", "p", "section", "summary", "ul":
+				// TODO(jwall): should this live in the start-tag code?
+				maybeCloseTag(n, "p", buttonScope)
+			case "li":
+				// TODO handle isSpecial
+				// TODO handle no more content in parent element
+				maybeCloseTag(n, "li", allScope)
+				maybeCloseTag(n, "p", buttonScope)
+			case "dd", "dt":
+				// TODO handle no more content in parent element
+				maybeCloseTags(n, []string{"dd", "dt"}, allScope)
+				maybeCloseTag(n, "p", buttonScope)
+			case "plaintext":
+				maybeCloseTag(n, "p", buttonScope)
+				// TODO plaintext state
+			case "button":
+				maybeCloseTag(n, "button", baseScope)
+			case "rp", "rt":
+				// TODO check for ruby element in scope
+				genImpliedEndTags(p)
+			case "option":
+				// TODO handle no more content in parent element
+				maybeCloseTag(n, "option", allScope)
+			case "optgroup":
+				// TODO handle no more content in parent element
+				maybeCloseTags(n, []string{"optgroup", "option"}, allScope)
+			case "colgroup":
+				// check for space or comment if not then:
+				//   maybeCloseTag(n, "optgroup", baseScope)
+			case "tr":
+				maybeCloseTag(n, "tr", allScope)
+			case "td", "th":
+				maybeCloseTags(n, []string{"td", "th"}, allScope)
+			case "textarea":
+				return rcDataStateStartHandler
 			default:
 				// TODO(jwall): parse error
 			}
 		}
 	case im_text:
+		// TODO refactor into a function
 		//fmt.Println("parsing script contents. data:", n.Data())
 		if n.Data() == "script" {
 			//fmt.Println("setting insertionMode to inBody")
@@ -188,12 +245,39 @@ func insertionModeSwitch(p *Parser, n *Node) stateHandler {
 	return handleChar(dataStateHandler)
 }
 
+func oneOf(t string, ts ...string) bool {
+	for _, s := range ts {
+		if t == s {
+			return true
+		}
+	}
+	return false
+}
+
+func maybeCloseTag(n *Node, target string, scope map[string]bool) {
+	maybeCloseTags(n, []string{target}, scope)
+}
+
+func maybeCloseTags(n *Node, targets []string, scope map[string]bool) {
+	if n.Parent == nil {
+		return
+	} else if _, ok := scope[n.Parent.Data()]; ok {
+		// parse error?
+		return
+	} else if oneOf(n.Parent.Data(), targets...) {
+		tag := n.Parent
+		gp := tag.Parent
+		tag.Children = tag.Children[:len(tag.Children)-1]
+		gp.Children = append(gp.Children, n)
+		n.Parent = gp
+	}
+}
+
 func dataStateHandlerSwitch(p *Parser) stateHandler {
-	n := p.curr
 	/*fmt.Printf(
 	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
 	p.Mode, n)*/
-	return insertionModeSwitch(p, n)
+	return insertionModeSwitch(p)
 }
 
 // An html5 parsing struct. It holds the parsing state for the html5 parsing
@@ -265,6 +349,75 @@ func (p *Parser) Parse() error {
 // Return the parsed html5 tree or nil if parsing hasn't occured yet
 func (p *Parser) Tree() *Node {
 	return p.Top
+}
+
+func rcDataStateStartHandler(p *Parser) (stateHandler, error) {
+	pushNode(p)
+	p.Mode = im_text
+	return handleChar(rcDataStateHandler), nil
+}
+
+// TODO(jwall): UNITTESTS!!!!
+func rcDataStateHandler(p *Parser, c rune) stateHandler {
+	switch c {
+	case '<':
+		return handleChar(rcDataLessThanSignState)
+	case '&':
+		// TODO character references?
+		fallthrough
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataLessThanSignState(p *Parser, c rune) stateHandler {
+	switch c {
+	case '/':
+		return handleChar(rcDataEndTagOpenState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagOpenState(p *Parser, c rune) stateHandler {
+	switch {
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		pushNode(p)
+		p.curr.data = append(p.curr.data, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
+}
+
+func rcDataEndTagNameState(p *Parser, c rune) stateHandler {
+	switch {
+	case c == '\t', c == '\n', c == '\r', c == ' ':
+	case c == '/':
+		return handleChar(selfClosingTagStartHandler)
+	case c == '>':
+		popNode(p)
+		return dataStateHandlerSwitch(p)
+	case 'A' <= c, c <= 'Z':
+		c += 0x0020
+		fallthrough
+	case 'a' <= c, c <= 'z':
+		textConsumer(p, c)
+		return handleChar(rcDataEndTagNameState)
+	default:
+		textConsumer(p, c)
+		return handleChar(rcDataStateHandler)
+	}
+	panic("unreachable")
 }
 
 // TODO(jwall): UNITTESTS!!!!
@@ -734,7 +887,7 @@ func tagOpenHandler(p *Parser, c rune) stateHandler {
 		lc := c + 0x0020 // lowercase it
 		curr.data = []rune{lc}
 		return handleChar(tagNameHandler)
-	case 'a' <= c && c <= 'z':
+	case 'a' <= c && c <= 'z', c == '_', c == '-':
 		//fmt.Printf("ZZZ: opening a new tag\n")
 		curr := pushNode(p)
 		curr.Type = ElementNode
@@ -992,7 +1145,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, error) {
 				"center", "details", "dir", "div", "dl", "fieldset",
 				"figcaption", "figure", "footer", "header", "hgroup",
 				"listing", "menu", "nav", "ol", "pre", "section", "summary",
-				"ul", "td", "th", "font":
+				"ul", "td", "th", "font", "body":
 				// generate implied end tags
 				genImpliedEndTags(p)
 				// reset the current node
@@ -1007,7 +1160,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, error) {
 		case 'A' <= c && c <= 'Z':
 			lc := c + 0x0020 // lowercase it
 			tag = append(tag, lc)
-		case 'a' <= c && c <= 'z', '0' <= c && c <= '9':
+		case 'a' <= c && c <= 'z', '0' <= c && c <= '9', c == '_', c == '-':
 			tag = append(tag, c)
 		default: // Bogus Comment state
 			tag = append(tag, c)

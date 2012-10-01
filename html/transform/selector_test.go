@@ -428,13 +428,13 @@ func TestSelectorQueryMultipleSelectors(t *testing.T) {
 			t.Error("Selector Query application failed %s", err)
 		}
 	}()
-	docStr := "<html><head /><body><div class=\"content\"><a>foo</a></div>" +
+	docStr := "<html><head /><body><div class=\"content\"><a>foo</a>bar<div><a><baz</a></div></div>" +
 		"<div class=\"content\">bar</div></body></html>"
 	doc, _ := NewDoc(docStr)
 	expectedNode := doc.Children[1].Children[0].Children[0]
 	selQuery := NewSelectorQuery("div.content", "a") // descendent a's of div.content
 
 	nodes := selQuery.Apply(doc)
-	assertEqual(t, len(nodes), 1)
+	assertEqual(t, len(nodes), 2)
 	assertEqual(t, nodes[0], expectedNode)
 }
