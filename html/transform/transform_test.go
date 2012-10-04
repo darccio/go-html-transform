@@ -98,7 +98,10 @@ func TestReplaceSplice(t *testing.T) {
 	assertEqual(t, len(doc.Children), 2)
 	assertEqual(t, doc.Children[0].Data(), "span")
 	assertEqual(t, doc.Children[0].Children[0].Data(), "foo")
+	assertEqual(t, doc.Children[1].Data(), "span")
 	assertEqual(t, doc.Children[1].Children[0].Data(), "bar")
+	assertEqual(t, doc.String(),
+		"<div id=\"foo\"><span>foo</span><span>bar</span></div>")
 }
 
 func TestReplaceSpliceOnRootNode(t *testing.T) {
