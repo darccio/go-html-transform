@@ -146,7 +146,7 @@ func cloneNode(n, p *Node) *Node {
 	}
 	if len(n.Children) > 0 {
 		for i, c := range n.Children {
-			clone.Children[i] = cloneNode(c, n)
+			clone.Children[i] = cloneNode(c, clone)
 		}
 	}
 	return clone

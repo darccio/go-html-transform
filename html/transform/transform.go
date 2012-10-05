@@ -136,7 +136,6 @@ func Replace(ns ...*Node) TransformFunc {
 		default:
 			newChildren := []*Node{}
 			for _, c := range p.Children {
-				log.Printf("%q == %q ", c, n)
 				if c.String() != n.String() {
 					newChildren = append(newChildren, c)
 				} else {
