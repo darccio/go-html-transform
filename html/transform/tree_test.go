@@ -6,8 +6,8 @@
 package transform
 
 import (
-	"testing"
 	. "code.google.com/p/go-html-transform/h5"
+	"testing"
 )
 
 func assertEqual(t *testing.T, val interface{}, expected interface{}) {

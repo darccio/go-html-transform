@@ -6,8 +6,8 @@
 package transform
 
 import (
-	"testing"
 	. "code.google.com/p/go-html-transform/h5"
+	"testing"
 )
 
 func TestNewTransform(t *testing.T) {
@@ -210,6 +210,25 @@ func TestCopyAnd(t *testing.T) {
 	assertEqual(t, ul.Children[1].Attr[0].Name, "class")
 	assertEqual(t, ul.Children[1].Attr[0].Value, "item")
 	assertEqual(t, ul.Children[1].Children[0].Data(), "bar")
+}
+
+func TestTransformSubtransforms(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Error("TestTransformSubtransforms paniced %s", err)
+		}
+	}()
+	doc, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
+
+	f := SubTransform(CopyAnd(
+		ReplaceChildren(Text("bar")),
+		ReplaceChildren(Text("baz")),
+	), "li")
+	tf := NewTransform(doc)
+	tf.Apply(f, "ul")
+	assertEqual(t, tf.String(),
+		"<html><body><ul><li>bar</li><li>baz</li></ul></body></html>")
+
 }
 
 // TODO(jwall): benchmarking tests

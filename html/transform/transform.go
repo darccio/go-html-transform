@@ -67,7 +67,7 @@ type Transform struct {
 
 // Spec creates a Transform that you can apply using ApplyAll.
 func Trans(f TransformFunc, sel1 string, sel ...string) Transform {
-	return Transform{f:f, q:append([]string{sel1}, sel...)}
+	return Transform{f: f, q: append([]string{sel1}, sel...)}
 }
 
 // ApplyAll applies a series of Transforms to a document.
@@ -230,6 +230,17 @@ func CopyAnd(fns ...TransformFunc) TransformFunc {
 		replaceFn(n)
 	}
 }
+
+func SubTransform(f TransformFunc, sel1 string, sels ...string) TransformFunc {
+	return func(n *Node) {
+		// TODO This is perhaps not the most efficient way to do this.
+		tf := NewTransform(n)
+		q := append([]string{sel1}, sels...)
+		tf.Apply(f, q...)
+		Replace(tf.Doc())(n)
+	}
+}
+
 // Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
 // Use of this source code is governed by the Artistic License 2.0.
 // That License is included in the LICENSE file.
