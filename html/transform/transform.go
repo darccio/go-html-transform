@@ -49,8 +49,9 @@ func (t *Transformer) Clone() *Transformer {
 	return NewTransform(t.Doc())
 }
 
-// TODO(jwall): TransformApplication type that we can process the doc in one
+// TODO(jwall): TransformApplication type that can process the doc in one
 // pass.
+
 // The Apply method applies a TransformFunc to the nodes returned from
 // the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {

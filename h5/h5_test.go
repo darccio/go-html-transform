@@ -414,11 +414,25 @@ func TestUnclosedLiTagInBody(t *testing.T) {
 	assertEqual(t, p.Top.Children[0].Children[0].Children[1].Children[0].Data(), "bar")
 }
 
-func TestCloseTagNoOpen(t *testing.T) {
+//func TestCloseTagNoOpen(t *testing.T) {
+//	p := NewParserFromString(
+//		"<html><body><div></div></div>foo</body></html>")
+//	err := p.Parse()
+//	assertTrue(t, err == nil, "err is no t nil %v", err)
+//}
+
+func TestTitleTag(t *testing.T) {
 	p := NewParserFromString(
-		"<html><body><div></div></div>foo</body></html>")
+		"<html><head><title></title></head><body></body></html>")
 	err := p.Parse()
-	assertTrue(t, err == nil, "err is no t nil %v", err)
+	assertTrue(t, err == nil, "err is not nil %v", err)
+	assertEqual(t, p.Top.Data(), "html")
+	assertEqual(t, len(p.Top.Children), 2)
+	assertEqual(t, p.Top.Children[0].Data(), "head")
+	assertEqual(t, len(p.Top.Children[0].Children), 1)
+	assertEqual(t, p.Top.Children[0].Children[0].Data(), "title")
+	assertEqual(t, p.Top.String(),
+		"<html><head><title></title></head><body/></html>")
 }
 
 // TODO micro benchmarks

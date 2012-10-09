@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 )
 
 // Represents an html5 parsing error. holds a message and the current html5 node
@@ -226,9 +227,8 @@ func insertionModeSwitch(p *Parser) stateHandler {
 		}
 	case im_text:
 		// TODO refactor into a function
-		//fmt.Println("parsing script contents. data:", n.Data())
-		if n.Data() == "script" {
-			//fmt.Println("setting insertionMode to inBody")
+		switch n.Data() {
+		case "script", "head", "html", "body":
 			p.Mode = im_inBody
 			popNode(p)
 			return handleChar(dataStateHandler)
@@ -274,9 +274,13 @@ func maybeCloseTags(n *Node, targets []string, scope map[string]bool) {
 }
 
 func dataStateHandlerSwitch(p *Parser) stateHandler {
-	/*fmt.Printf(
-	"insertionMode: %v in dataStateHandlerSwitch with node: %v\n",
-	p.Mode, n)*/
+	/*name := ""
+	if p.curr != nil {
+		name = p.curr.Data()
+	}
+	fmt.Printf(
+		"insertionMode: %v in dataStateHandlerSwitch with node: %q\n",
+		p.Mode, name)*/
 	return insertionModeSwitch(p)
 }
 
@@ -375,6 +379,7 @@ func rcDataStateHandler(p *Parser, c rune) stateHandler {
 func rcDataLessThanSignState(p *Parser, c rune) stateHandler {
 	switch c {
 	case '/':
+		p.buf = nil
 		return handleChar(rcDataEndTagOpenState)
 	default:
 		textConsumer(p, c)
@@ -386,11 +391,11 @@ func rcDataLessThanSignState(p *Parser, c rune) stateHandler {
 func rcDataEndTagOpenState(p *Parser, c rune) stateHandler {
 	switch {
 	case 'A' <= c, c <= 'Z':
-		c += 0x0020
+		c = unicode.ToLower(c)
 		fallthrough
 	case 'a' <= c, c <= 'z':
-		pushNode(p)
-		p.curr.data = append(p.curr.data, c)
+		popNode(p)
+		p.buf = append(p.buf, c)
 		return handleChar(rcDataEndTagNameState)
 	default:
 		textConsumer(p, c)
@@ -405,16 +410,24 @@ func rcDataEndTagNameState(p *Parser, c rune) stateHandler {
 	case c == '/':
 		return handleChar(selfClosingTagStartHandler)
 	case c == '>':
-		popNode(p)
-		return dataStateHandlerSwitch(p)
+		//fmt.Printf("buf: %q, tag %q\n", string(p.buf), p.curr.Data())
+		if string(p.buf) == p.curr.Data() { // appropriate end tag
+			return dataStateHandlerSwitch(p)
+		} else {
+			pushNode(p)
+			textConsumer(p, '>', c)
+			textConsumer(p, p.buf...)
+			return dataStateHandlerSwitch(p)
+		}
 	case 'A' <= c, c <= 'Z':
-		c += 0x0020
+		c = unicode.ToLower(c)
 		fallthrough
 	case 'a' <= c, c <= 'z':
-		textConsumer(p, c)
+		p.buf = append(p.buf, c)
 		return handleChar(rcDataEndTagNameState)
 	default:
 		textConsumer(p, c)
+		textConsumer(p, p.buf...)
 		return handleChar(rcDataStateHandler)
 	}
 	panic("unreachable")
@@ -490,7 +503,7 @@ func beforeDoctypeHandler(p *Parser, c rune) stateHandler {
 		// TODO parse error, quirks mode
 		return dataStateHandlerSwitch(p)
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		curr.data = append(curr.data, lc)
 		return handleChar(doctypeNameState)
 	default:
@@ -510,7 +523,7 @@ func doctypeNameState(p *Parser, c rune) stateHandler {
 	case c == '>':
 		return afterDoctypeNameHandler
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		n.data = append(n.data, lc)
 		return handleChar(doctypeNameState)
 	default:
@@ -554,7 +567,7 @@ func afterDoctypeNameHandler(p *Parser) (stateHandler, error) {
 					return handleChar(afterDoctypeHandler), nil
 				}
 			} else {
-				lc := c + 0x0020 // lowercase it
+				lc := unicode.ToLower(c)
 				firstSix = append(firstSix, lc)
 			}
 		}
@@ -717,7 +730,7 @@ func scriptDataEndTagOpenHandler(p *Parser, c rune) stateHandler {
 	//fmt.Printf("trying to close script tag c: %c\n", c)
 	switch {
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		p.buf = append(p.buf, lc)
 		return handleChar(scriptDataEndTagNameHandler)
 	case 'a' <= c && c <= 'z':
@@ -758,7 +771,7 @@ func scriptDataEndTagNameHandler(p *Parser, c rune) stateHandler {
 			return handleChar(scriptDataStateHandler)
 		}
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		p.buf = append(p.buf, lc)
 		return handleChar(scriptDataEndTagNameHandler)
 	case 'a' <= c && c <= 'z':
@@ -884,7 +897,7 @@ func tagOpenHandler(p *Parser, c rune) stateHandler {
 		//fmt.Printf("ZZZ: opening a new tag\n")
 		curr := pushNode(p)
 		curr.Type = ElementNode
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		curr.data = []rune{lc}
 		return handleChar(tagNameHandler)
 	case 'a' <= c && c <= 'z', c == '_', c == '-':
@@ -911,7 +924,7 @@ func tagNameHandler(p *Parser, c rune) stateHandler {
 	case c == '>':
 		return dataStateHandlerSwitch(p)
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		n.data = append(n.data, lc)
 		return handleChar(tagNameHandler)
 	default:
@@ -933,7 +946,7 @@ func beforeAttributeNameHandler(p *Parser, c rune) stateHandler {
 	case c == '>':
 		return dataStateHandlerSwitch(p)
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		newAttr := new(Attribute)
 		newAttr.Name = string(lc)
 		n.Attr = append(n.Attr, newAttr)
@@ -963,7 +976,7 @@ func attributeNameHandler(p *Parser, c rune) stateHandler {
 	case c == '=':
 		return handleChar(beforeAttributeValueHandler)
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		currAttr := n.Attr[len(n.Attr)-1]
 		currAttr.Name += string(lc)
 		return handleChar(attributeNameHandler)
@@ -1067,7 +1080,7 @@ func afterAttributeNameHandler(p *Parser, c rune) stateHandler {
 	case c == '=':
 		return handleChar(beforeAttributeValueHandler)
 	case 'A' <= c && c <= 'Z':
-		lc := c + 0x0020 // lowercase it
+		lc := unicode.ToLower(c)
 		newAttr := new(Attribute)
 		newAttr.Name = string(lc)
 		n.Attr = append(n.Attr, newAttr)
@@ -1158,7 +1171,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, error) {
 			popNode(p)
 			return dataStateHandlerSwitch(p), nil
 		case 'A' <= c && c <= 'Z':
-			lc := c + 0x0020 // lowercase it
+			lc := unicode.ToLower(c)
 			tag = append(tag, lc)
 		case 'a' <= c && c <= 'z', '0' <= c && c <= '9', c == '_', c == '-':
 			tag = append(tag, c)
