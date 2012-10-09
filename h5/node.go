@@ -95,8 +95,12 @@ func (n *Node) String() string {
 		if n.Children == nil || len(n.Children) == 0 {
 			name := n.Data()
 			switch name {
-			case "textarea":
-				return "<textarea" + attrString(n.Attr) + "></textarea>"
+			case "base", "bgsound", "command", "link", "meta",
+				"area", "br", "embed", "img", "keygen", "wbr",
+				"param", "source", "track", "hr", "input", "image":
+				return fmt.Sprintf("<%s%s>", name, attrString(n.Attr))
+			default:
+				return fmt.Sprintf("<%s%s></%s>", name, attrString(n.Attr), name)
 			}
 			return "<" + n.Data() + attrString(n.Attr) + "/>"
 		} else {

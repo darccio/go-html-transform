@@ -432,7 +432,7 @@ func TestTitleTag(t *testing.T) {
 	assertEqual(t, len(p.Top.Children[0].Children), 1)
 	assertEqual(t, p.Top.Children[0].Children[0].Data(), "title")
 	assertEqual(t, p.Top.String(),
-		"<html><head><title></title></head><body/></html>")
+		"<html><head><title></title></head><body></body></html>")
 }
 
 // TODO micro benchmarks
