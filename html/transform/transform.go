@@ -1,22 +1,5 @@
-// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
-// Use of this source code is governed by the Artistic License 2.0.
-// That License is included in the LICENSE file.
-/*
-
-The html transform package implements a html css selector and transformer.
-
-An html doc can be inspected and queried using css selectors as well as
-transformed.
-
-	doc := NewDoc(str)
-	t := NewTransform(doc)
-	t.Apply(CopyAnd(myModifiers...), "li.menuitem")
-	t.Apply(Replace(Text("my new text"), "a")
-	newDoc := t.Doc()
-*/
 package transform
 
-// TODO(jwall): Documentation...
 import (
 	. "code.google.com/p/go-html-transform/h5"
 	"log"
@@ -49,9 +32,6 @@ func (t *Transformer) Clone() *Transformer {
 	return NewTransform(t.Doc())
 }
 
-// TODO(jwall): TransformApplication type that can process the doc in one
-// pass.
-
 // The Apply method applies a TransformFunc to the nodes returned from
 // the Selector query
 func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
@@ -64,14 +44,16 @@ func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
 	return t
 }
 
+// Transform is a bundle of selectors and a transform func. It forms a
+// self contained Transfrom on an html document that can be reused.
 type Transform struct {
 	q []string
 	f TransformFunc
 }
 
-// Spec creates a Transform that you can apply using ApplyAll.
-func Trans(f TransformFunc, sel1 string, sel ...string) Transform {
-	return Transform{f: f, q: append([]string{sel1}, sel...)}
+// Trans creates a Transform that you can apply using ApplyAll.
+func Trans(f TransformFunc, sel1 string, sel ...string) *Transform {
+	return &Transform{f: f, q: append([]string{sel1}, sel...)}
 }
 
 // ApplyAll applies a series of Transforms to a document.
@@ -131,6 +113,8 @@ func ReplaceChildren(ns ...*Node) TransformFunc {
 	}
 }
 
+// Replace constructs a TransformFunc that replaces a node with the nodes passed
+// in.
 func Replace(ns ...*Node) TransformFunc {
 	return func(n *Node) {
 		p := n.Parent
@@ -152,7 +136,8 @@ func Replace(ns ...*Node) TransformFunc {
 }
 
 // ModifyAttrb creates a TransformFunc that modifies the attributes
-// of the node it operates on.
+// of the node it operates on. If an Attribute with the same name
+// as the key doesn't exist it creates it.
 func ModifyAttrib(key string, val string) TransformFunc {
 	return func(n *Node) {
 		found := false
@@ -170,6 +155,8 @@ func ModifyAttrib(key string, val string) TransformFunc {
 	}
 }
 
+// TransformAttrib returns a TransformFunc that transforms an attribute on
+// the node it operates on.
 func TransformAttrib(key string, f func(string) string) TransformFunc {
 	return func(n *Node) {
 		for i, attr := range n.Attr {
@@ -180,6 +167,8 @@ func TransformAttrib(key string, f func(string) string) TransformFunc {
 	}
 }
 
+// DoAll returns a TransformFunc that combines all the TransformFuncs that are
+// passed in. Doing each transform in order.
 func DoAll(fs ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		for _, f := range fs {
@@ -192,7 +181,6 @@ func DoAll(fs ...TransformFunc) TransformFunc {
 // function for each node in the list.
 // The function should be of a type either func(...*Node) TransformFunc
 // or func(*Node) TransformFunc. Any other type will panic.
-// Returns a TransformFunc.
 func ForEach(f interface{}, ns ...*Node) TransformFunc {
 	switch t := f.(type) {
 	case func(...*Node) TransformFunc:
@@ -219,9 +207,8 @@ func ForEach(f interface{}, ns ...*Node) TransformFunc {
 
 // CopyAnd will construct a TransformFunc that will
 // make a copy of the node for each passed in TransformFunc
-// And replace the passed in node with the resulting transformed
+// and replace the passed in node with the resulting transformed
 // Nodes.
-// Returns a TransformFunc
 func CopyAnd(fns ...TransformFunc) TransformFunc {
 	return func(n *Node) {
 		newNodes := make([]*Node, len(fns))
@@ -235,6 +222,10 @@ func CopyAnd(fns ...TransformFunc) TransformFunc {
 	}
 }
 
+// SubTransform constructs a TransformFunc that runs a TransformFunc on any
+// nodes in the tree rooted by the node it matches on if those nodes match
+// the selectors. This is useful for creating self contained Transforms that are
+// meant to work on subtrees of the html document.
 func SubTransform(f TransformFunc, sel1 string, sels ...string) TransformFunc {
 	return func(n *Node) {
 		// TODO This is perhaps not the most efficient way to do this.
@@ -244,3 +235,7 @@ func SubTransform(f TransformFunc, sel1 string, sels ...string) TransformFunc {
 		Replace(tf.Doc())(n)
 	}
 }
+
+// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
+// Use of this source code is governed by the Artistic License 2.0.
+// That License is included in the LICENSE file.

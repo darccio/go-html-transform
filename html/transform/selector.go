@@ -7,12 +7,12 @@ import (
 )
 
 // SelectorQuery is the type of a CSS Selector Query.
-// Each Selector in the slice is operated on order with
+// Each Selector in the slice is operated on in order with
 // subsequent selectors matching against the descendants
-// of the previous selectors match.
+// of the previous selectors matched.
 type SelectorQuery []*Selector
 
-// SelectorPart is the type of a single Selector's Class, ID or Pseudo part.
+// SelectorPart is the type of a single Selector's Class, ID part.
 type SelectorPart struct {
 	Type byte   // a bitmask of the selector types
 	Val  string // the value we are matching against
@@ -33,11 +33,13 @@ const (
 	PSEUDO  byte = ':'  // Pseudo SelectoPart Type
 	ANY     byte = '*'  // Any tag Selector Type
 	ATTR    byte = '['  // Attr Selector Type
+	// TODO SIBLING byte = '+' // Sibling combinator
+	// TODO Child byte = '>' // Direct Child combinator
 )
 
 const (
 	// Important characters in a Selector string
-	SELECTOR_CHARS string = ".:#["
+	SELECTOR_CHARS string = ".:#[" // TODO "+> "
 )
 
 func matchAttrib(nodeAttr []*Attribute, matchAttr map[string]string) bool {
@@ -69,7 +71,10 @@ func (part SelectorPart) match(node *Node) bool {
 		idAttr := make(map[string]string)
 		idAttr["id"] = part.Val
 		return matchAttrib(node.Attr, idAttr)
+	case ANY:
+		return true
 	case PSEUDO:
+		// TODO match pseudo selectors
 	}
 	return false
 }
@@ -84,7 +89,14 @@ func (sel *Selector) Match(node *Node) bool {
 	attribResult := matchAttrib(node.Attr, sel.Attr)
 	partsResult := true
 	for _, part := range sel.Parts {
-		partsResult = partsResult && part.match(node)
+		switch part.Type {
+		// case SIBLING:
+		// 	// TODO(jwall): Match SIBLING's
+		// case CHILD:
+		// 	// TODO(jwall): Match Immediate Children
+		default:
+			partsResult = partsResult && part.match(node)
+		}
 	}
 	return partsResult && tagNameResult && attribResult
 }
@@ -106,6 +118,7 @@ func newAnyTagSelector(str string) *Selector {
 	}
 }
 
+// Support ~= matching
 func splitAttrs(str string) []string {
 	attrs := s.FieldsFunc(str[1:len(str)-1], func(c rune) bool {
 		if c == '=' {
@@ -199,7 +212,7 @@ func MergeSelectors(sel1 *Selector, sel2 *Selector) {
 // It creates a Selector by parsing the string passed in.
 func NewSelector(str string) *Selector {
 	str = s.TrimSpace(str) // trim whitespace
-	// TODO(jwall): support combinators > + \S
+	// TODO(jwall): support combinators > +
 	parts := partition(str, func(c rune) bool {
 		for _, c2 := range SELECTOR_CHARS {
 			if c == c2 {
