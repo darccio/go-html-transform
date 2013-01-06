@@ -2,6 +2,7 @@ package h5
 
 import (
 	"fmt"
+	"html"
 )
 
 // The type of a html5 nodes attributes
@@ -172,7 +173,7 @@ func (n *Node) Data() string {
 
 // Construct a TextNode
 func Text(str string) *Node {
-	return &Node{data: []rune(str)}
+	return &Node{data: []rune(html.EscapeString(str))}
 }
 
 // TODO Constructors for other html node types.
