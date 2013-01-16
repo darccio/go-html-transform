@@ -27,7 +27,11 @@ func (e *stringEnum) String() string {
 	return e.val + fmt.Sprintf(" from %v", list)
 }
 
-func StringEnum(name string, e map[string]struct{}, d, doc string) flag.Value {
+func (e *stringEnum) Value() string {
+	return e.val
+}
+
+func StringEnum(name string, e map[string]struct{}, d, doc string) *stringEnum {
 	val := &stringEnum{
 		val: d,
 		e:   e,

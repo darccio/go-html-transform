@@ -16,11 +16,14 @@ var (
 	testSpec = StringEnum("test_spec", map[string]struct{}{"dat": struct{}{},
 		"file": struct{}{},
 		"all":  struct{}{},
+		"html":  struct{}{},
 	}, "all", "Type of test to run")
+	help = flag.Bool("help", false, "Show this help")
 )
 
 func runDatTests(ps []string) int {
 	var counter int
+	fmt.Println("Running dat tests")
 	for _, p := range ps {
 		if *verbose {
 			fmt.Println("Running tests in file: ", p)
@@ -67,10 +70,12 @@ func runDatCase(c []byte) int {
 	err := p.Parse()
 	if err != nil {
 		fmt.Println("Test case:", string(c))
+		fmt.Println(p.Top.String())
 		fmt.Println("ERROR parsing: ", err)
 		counter++
 	} else {
 		if *verbose {
+			fmt.Println(p.Top.String())
 			fmt.Println("SUCCESS!!!")
 		}
 	}
@@ -135,6 +140,11 @@ func grep(path string, spec grepSpec) error {
 // TODO(jwall): Output overall success
 func main() {
 	flag.Parse()
+	if *help {
+		fmt.Println("Usage:")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
 	datRe := regexp.MustCompile("dat$")
 	testRe := regexp.MustCompile("test$")
 	htmlRe := regexp.MustCompile("html?$")
@@ -147,14 +157,15 @@ func main() {
 	if err != nil {
 		fmt.Println("ERROR while grepping", err)
 	}
-	specType := testSpec.String()
+	specType := testSpec.Value()
+	fmt.Printf("specType %q\n", specType)
 	if specType == "all" || specType == "dat" {
 		counter += runDatTests(spec[datRe])
 	}
 	if specType == "all" || specType == "test" {
 		counter += runTestTests(spec[testRe])
 	}
-	if specType == "all" || specType == "dat" {
+	if specType == "all" || specType == "html" {
 		counter += runHtmlTests(spec[htmlRe])
 	}
 	if counter > 0 {
