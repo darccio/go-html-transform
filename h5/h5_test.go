@@ -52,17 +52,22 @@ func TestPopNode(t *testing.T) {
 	assertEqual(t, p.Top, p.curr)
 }
 
-func TestAddSibling(t *testing.T) {
+func TestAddSiblingOrChild(t *testing.T) {
 	p := new(Parser)
 	top := pushNode(p)
 	top.data = append(top.data, []rune("foo")...)
 	next := pushNode(p)
 	next.data = append(next.data, []rune("bar")...)
-	sib := addSibling(p)
+	sib := addSiblingOrChild(p)
 	sib.data = append(sib.data, []rune("baz")...)
 	assertEqual(t, len(top.Children), 2)
 	assertEqual(t, top.Children[0], next)
 	assertEqual(t, top.Children[1], sib)
+	p = new(Parser)
+	top = pushNode(p)
+	child := addSiblingOrChild(p)
+	assertEqual(t, len(top.Children), 1)
+	assertEqual(t, top.Children[0], child)
 }
 
 func TestBogusCommentHandlerNoEOF(t *testing.T) {

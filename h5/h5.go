@@ -1186,7 +1186,7 @@ func endTagOpenHandler(p *Parser) (stateHandler, error) {
 
 // Section 11.2.4.44
 func bogusCommentHandler(p *Parser) (stateHandler, error) {
-	n := addSibling(p)
+	n := addSiblingOrChild(p)
 	for {
 		c, err := p.nextInput()
 		if err != nil {
@@ -1202,10 +1202,14 @@ func bogusCommentHandler(p *Parser) (stateHandler, error) {
 	panic("Unreachable")
 }
 
-func addSibling(p *Parser) *Node {
+func addSiblingOrChild(p *Parser) *Node {
 	//fmt.Printf("adding sibling to: %s\n", p.curr.Data())
 	n := new(Node)
-	p.curr.Parent.Children = append(p.curr.Parent.Children, n)
+	if p.curr != nil && p.curr.Parent != nil {
+		p.curr.Parent.Children = append(p.curr.Parent.Children, n)
+	} else {
+		p.curr.Children = append(p.curr.Children, n)
+	}
 	p.curr = n
 	return n
 }
