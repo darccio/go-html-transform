@@ -9,7 +9,8 @@ The html5 parser is still somewhat incomplete but I believe it's more complete t
 
 Patches for defencies you find are greatly appreciated.
 
-> \# installs just the html5 parser
+> \# install go-html-transform
+>
 > go get code.google.com/p/go-html-transform/h5
 
 You can see sample useage in the comments at the top of the page [transform.go][] and [h5.go][].
