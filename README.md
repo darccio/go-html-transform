@@ -1,7 +1,7 @@
 go-html-transform
 =================
 
-Unofficial mirror of go-html-transform project: an html5 parser and CSS selector based html scraping and transformation library.
+*Unofficial mirror of go-html-transform project: an html5 parser and CSS selector based html scraping and transformation library.*
 
 This library provides a way to parse, scrape, and transform html5 pages using CSS selector queries.
 
@@ -11,9 +11,9 @@ Patches for defencies you find are greatly appreciated.
 
 > \# install go-html-transform
 >
-> go get code.google.com/p/go-html-transform/h5
+> go get github.com/imdario/go-html-transform/h5
 
-You can see sample useage in the comments at the top of the page [transform.go][] and [h5.go][].
+You can see sample useage in the comments at the top of the source files [transform.go][] and [h5.go][].
 
 Documentation for the library can be found at [godoc.com][].
 
