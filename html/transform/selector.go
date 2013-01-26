@@ -1,7 +1,8 @@
 package transform
 
 import (
-	. "code.google.com/p/go-html-transform/h5"
+	"code.google.com/p/go-html-transform/h5"
+	"exp/html"
 	"log"
 	s "strings"
 )
@@ -42,15 +43,16 @@ const (
 	SELECTOR_CHARS string = ".:#[" // TODO "+> "
 )
 
-func matchAttrib(nodeAttr []*Attribute, matchAttr map[string]string) bool {
+func matchAttrib(nodeAttr []html.Attribute, matchAttr map[string]string) bool {
 	attribResult := true
+	// TODO(jwall): support attribute matchers.
 	for key, val := range matchAttr {
 		exists := false
 		matched := false
 		for _, attr := range nodeAttr {
-			if key == attr.Name {
+			if key == attr.Key {
 				exists = true
-				if val == attr.Value {
+				if val == attr.Val {
 					matched = true
 				}
 				attribResult = attribResult && exists && matched
@@ -61,7 +63,7 @@ func matchAttrib(nodeAttr []*Attribute, matchAttr map[string]string) bool {
 	return attribResult
 }
 
-func (part SelectorPart) match(node *Node) bool {
+func (part SelectorPart) match(node *html.Node) bool {
 	switch part.Type {
 	case CLASS:
 		classAttr := make(map[string]string)
@@ -81,10 +83,10 @@ func (part SelectorPart) match(node *Node) bool {
 
 // The Match method tests if a Selector matches a Node.
 // Returns true for a match false otherwise.
-func (sel *Selector) Match(node *Node) bool {
+func (sel *Selector) Match(node *html.Node) bool {
 	tagNameResult := true
-	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != node.Data() {
-		tagNameResult = tagNameResult && false
+	if sel.TagName != "" && sel.TagName != "*" && sel.TagName != h5.Data(node) {
+		tagNameResult = false
 	}
 	attribResult := matchAttrib(node.Attr, sel.Attr)
 	partsResult := true
@@ -258,13 +260,13 @@ func NewSelectorQuery(sel ...string) SelectorQuery {
 	return q
 }
 
-func applyToNode(sel []*Selector, n *Node) []*Node {
-	var nodes []*Node
+func applyToNode(sel []*Selector, n *html.Node) []*html.Node {
+	var nodes []*html.Node
 	if sel[0].Match(n) {
 		if len(sel) == 1 {
-			nodes = []*Node{n}
+			nodes = []*html.Node{n}
 		} else {
-			for _, c := range n.Children {
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
 				if len(sel) > 1 {
 					ns := SelectorQuery(sel[1:]).Apply(c)
 					if len(ns) > 0 {
@@ -280,13 +282,13 @@ func applyToNode(sel []*Selector, n *Node) []*Node {
 // TODO(jwall): Apply multiple Selectors to a node tree in one pass.
 // Apply the css selector to a document.
 // Returns a Vector of nodes that the selector matched.
-func (sel SelectorQuery) Apply(doc *Node) []*Node {
-	interesting := []*Node{}
-	f := func(n *Node) {
+func (sel SelectorQuery) Apply(doc *html.Node) []*html.Node {
+	interesting := []*html.Node{}
+	f := func(n *html.Node) {
 		found := applyToNode(sel, n)
 		interesting = append(interesting, found...)
 	}
-	doc.Walk(f)
+	h5.NewTree(doc).Walk(f)
 	return interesting
 }
 

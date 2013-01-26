@@ -6,7 +6,7 @@
 package transform
 
 import (
-	. "code.google.com/p/go-html-transform/h5"
+	"exp/html"
 	"testing"
 )
 
@@ -23,19 +23,7 @@ func assertNotNil(t *testing.T, val interface{}) {
 	}
 }
 
-func nodeTree() *Node {
+func nodeTree() *html.Node {
 	n, _ := NewDoc("<html><head /><body /></html>")
-	return n
-}
-
-func TestNewDoc(t *testing.T) {
-	docStr := "<a>foo</a>"
-	node, _ := NewDoc(docStr)
-	assertEqual(t, node.Children[0].Parent, node)
-	assertEqual(t, node.Data(), "a")
-	assertEqual(t, len(node.Children), 1)
-	assertEqual(t, node.Type, ElementNode)
-	assertEqual(t, node.Children[0].Data(), "foo")
-	assertEqual(t, len(node.Children), 1)
-	assertEqual(t, node.Children[0].Type, TextNode)
+	return n.Top()
 }

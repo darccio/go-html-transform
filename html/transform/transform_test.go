@@ -6,67 +6,71 @@
 package transform
 
 import (
-	. "code.google.com/p/go-html-transform/h5"
+	"code.google.com/p/go-html-transform/h5"
 	"testing"
 )
 
 func TestNewTransform(t *testing.T) {
-	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-	tf := NewTransform(doc)
+	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
+	doc := tree.Top()
+	tf := NewTransform(tree)
 	// hacky way of comparing an uncomparable type
-	assertEqual(t, (*tf.doc).Type, (*doc).Type)
+	assertEqual(t, tf.Doc().Type, doc.Type)
 }
 
 func TestTransformApply(t *testing.T) {
-	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-	tf := NewTransform(doc)
-	newDoc := tf.Apply(AppendChildren(new(Node)), "body").Doc()
-	assertEqual(t, len(newDoc.Children[0].Children), 2)
+	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
+	tf := NewTransform(tree)
+	n := h5.Text("bar")
+	newDoc := tf.Apply(AppendChildren(n), "body").String()
+	assertEqual(t, newDoc, "<html><head></head><body><div id=\"foo\"></div>bar</body></html>")
+}
+
+func TestTransformApplyAll(t *testing.T) {
+	tree, _ := NewDoc("<html><head></head><body><ul><li>foo</ul></body></html>")
+	tf := NewTransform(tree)
+	n := h5.Text("bar")
+	n2 := h5.Text("quux")
+	tf.ApplyAll(
+		Trans(AppendChildren(n), "body", "li"),
+		Trans(AppendChildren(n2), "body", "li"),
+	).String()
+	assertEqual(t, tf.String(), "<html><head></head><body><ul><li>foobarquux</li></ul></body></html>")
 }
 
 func TestTransformApplyMulti(t *testing.T) {
-	doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-	tf := NewTransform(doc)
-	tf.Apply(AppendChildren(new(Node)), "body")
+	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
+	tf := NewTransform(tree)
+	tf.Apply(AppendChildren(h5.Text("")), "body")
 	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
 		t.Logf("Rewriting Url")
 		return "bar"
 	}),
-		"div").Doc()
-	assertEqual(t, len(newDoc.Children[0].Children), 2)
-	assertEqual(t, newDoc.Children[0].Children[0].Attr[0].Value,
-		"bar")
+		"div").String()
+	assertEqual(t, newDoc, "<html><head></head><body><div id=\"bar\"></div></body></html>")
 }
 
 func TestAppendChildren(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\"></div><")
-	child := new(Node)
-	child2 := new(Node)
-	f := AppendChildren(child, child2)
-	f(node)
-	assertEqual(t, len(node.Children), 2)
-	assertEqual(t, node.Children[0], child)
-	assertEqual(t, node.Children[1], child2)
+	node := h5.Anchor("", "")
+	child := h5.Text("foo ")
+	child2 := h5.Text("bar")
+	AppendChildren(child, child2)(node)
+	assertEqual(t, h5.NewTree(node).String(), "<a>foo bar</a>")
 }
 
 func TestRemoveChildren(t *testing.T) {
-	doc, _ := NewDoc("<div id=\"foo\">foo</div>")
-	node := doc.Children[0]
-	f := RemoveChildren()
-	f(node)
-	assertEqual(t, len(node.Children), 0)
+	node := h5.Anchor("", "foo")
+	RemoveChildren()(node)
+	assertEqual(t, h5.NewTree(node).String(), "<a></a>")
 }
 
 func TestReplaceChildren(t *testing.T) {
-	doc, _ := NewDoc("<html><div id=\"foo\">foo</div></html>")
-	node := doc.Children[0].Children[0]
-	child := new(Node)
-	child2 := new(Node)
-	f := ReplaceChildren(child, child2)
-	f(node)
-	assertEqual(t, len(node.Children), 2)
-	assertEqual(t, node.Children[0], child)
-	assertEqual(t, node.Children[1], child2)
+	node := h5.Anchor("", "foo")
+	assertEqual(t, h5.NewTree(node).String(), "<a>foo</a>")
+	child := h5.Text("baz ")
+	child2 := h5.Text("quux")
+	ReplaceChildren(child, child2)(node)
+	assertEqual(t, h5.NewTree(node).String(), "<a>baz quux</a>")
 }
 
 func TestReplace(t *testing.T) {
@@ -75,13 +79,11 @@ func TestReplace(t *testing.T) {
 			t.Error("TestReplace paniced")
 		}
 	}()
-	doc, _ := NewDoc("<div id=\"foo\">foo</div><")
-	node := doc.Children[0]
-	ns, _ := NewDoc("<span>foo</span>")
-	f := Replace(ns)
-	f(node)
-	assertEqual(t, len(doc.Children), 1)
-	assertEqual(t, doc.Children[0].Data(), "span")
+	node := h5.Div("", nil, h5.Div("", nil, h5.Text("foo")))
+	replacement := h5.Div("", nil, h5.Text("bar"))
+	Replace(replacement)(node.FirstChild)
+	assertEqual(t, h5.NewTree(node).String(),
+		"<div><div>bar</div></div>")
 }
 
 func TestReplaceSplice(t *testing.T) {
@@ -90,96 +92,58 @@ func TestReplaceSplice(t *testing.T) {
 			t.Error("TestReplaceSplice paniced")
 		}
 	}()
-	doc, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
-	node := doc.Children[0]
-	ns, _ := NewDoc("<span>foo</span>")
-	f := Replace(ns)
-	f(node)
-	assertEqual(t, len(doc.Children), 2)
-	assertEqual(t, doc.Children[0].Data(), "span")
-	assertEqual(t, doc.Children[0].Children[0].Data(), "foo")
-	assertEqual(t, doc.Children[1].Data(), "span")
-	assertEqual(t, doc.Children[1].Children[0].Data(), "bar")
-	assertEqual(t, doc.String(),
+	node := h5.Div("foo", nil,
+		h5.Text("foo"),
+		h5.Element("span", nil, h5.Text("bar")),
+	)
+	node2 := h5.Element("span", nil, h5.Text("foo"))
+	Replace(node2)(node.FirstChild)
+	assertEqual(t, h5.NewTree(node).String(),
 		"<div id=\"foo\"><span>foo</span><span>bar</span></div>")
 }
 
 func TestReplaceSpliceOnRootNode(t *testing.T) {
-	doc, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("TestReplaceSpliceOnRootNode didn't panic")
+		}
+	}()
+	tree, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	doc := tree.Top()
 	ns, _ := NewDoc("<span>foo</span>")
-	f := Replace(ns)
+	f := Replace(ns.Top())
 	f(doc)
-	assertEqual(t, len(doc.Children), 1)
-	assertEqual(t, doc.Children[0].Data(), "span")
-	assertEqual(t, doc.Children[0].Children[0].Data(), "foo")
+	assertEqual(t, h5.Data(doc.FirstChild), "span")
+	assertEqual(t, h5.Data(doc.FirstChild.FirstChild), "foo")
 }
 
 func TestModifyAttrib(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\">foo</div><")
-	assertEqual(t, node.Attr[0].Value, "foo")
-	f := ModifyAttrib("id", "bar")
-	f(node)
-	assertEqual(t, node.Attr[0].Value, "bar")
-	f = ModifyAttrib("class", "baz")
-	f(node)
-	assertEqual(t, node.Attr[1].Name, "class")
-	assertEqual(t, node.Attr[1].Value, "baz")
+	node := h5.Anchor("", "")
+	ModifyAttrib("id", "bar")(node)
+	assertEqual(t, node.Attr[0].Val, "bar")
+	ModifyAttrib("class", "baz")(node)
+	assertEqual(t, node.Attr[1].Key, "class")
+	assertEqual(t, node.Attr[1].Val, "baz")
 }
 
 func TestTransformAttrib(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\">foo</div><")
-	assertEqual(t, node.Attr[0].Value, "foo")
-	f := TransformAttrib("id", func(s string) string { return "bar" })
-	f(node)
-	assertEqual(t, node.Attr[0].Value, "bar")
+	node := h5.Anchor("", "")
+	ModifyAttrib("id", "foo")(node)
+	assertEqual(t, node.Attr[0].Val, "foo")
+	TransformAttrib("id", func(s string) string { return "bar" })(node)
+	assertEqual(t, node.Attr[0].Val, "bar")
 }
 
 func TestDoAll(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\">foo</div><")
-	preNode := Text("pre node")
-	postNode := Text("post node")
+	tree, _ := NewDoc("<div id=\"foo\">foo</div><")
+	node := tree.Top()
+	preNode := h5.Text("pre node")
+	postNode := h5.Text("post node")
 	f := DoAll(AppendChildren(postNode),
 		PrependChildren(preNode))
 	f(node)
-	assertEqual(t, len(node.Children), 3)
-	assertEqual(t, node.Children[0].Data(), preNode.Data())
-	assertEqual(t, node.Children[len(node.Children)-1].Data(), postNode.Data())
-}
-
-func TestForEach(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\">foo</div><")
-	txtNode1 := Text(" bar")
-	txtNode2 := Text(" baz")
-	f := ForEach(AppendChildren, txtNode1, txtNode2)
-	f(node)
-	assertEqual(t, len(node.Children), 3)
-	assertEqual(t, node.Children[1].Data(), txtNode1.Data())
-	assertEqual(t, node.Children[2].Data(), txtNode2.Data())
-}
-
-func TestForEachSingleArgFuncs(t *testing.T) {
-	node, _ := NewDoc("<div id=\"foo\">foo</div><")
-	txtNode1 := Text(" bar")
-	txtNode2 := Text(" baz")
-	singleArgFun := func(n *Node) TransformFunc {
-		return AppendChildren(n)
-	}
-	f := ForEach(singleArgFun, txtNode1, txtNode2)
-	f(node)
-	assertEqual(t, len(node.Children), 3)
-	assertEqual(t, node.Children[1].Data(), txtNode1.Data())
-	assertEqual(t, node.Children[2].Data(), txtNode2.Data())
-}
-
-func TestForEachPanic(t *testing.T) {
-	defer func() {
-		if err := recover(); err == nil {
-			t.Error("ForEach Failed to panic")
-		}
-	}()
-	txtNode1 := Text(" bar")
-	txtNode2 := Text(" baz")
-	ForEach("foo", txtNode1, txtNode2)
+	assertEqual(t, h5.Data(node.FirstChild), h5.Data(preNode))
+	assertEqual(t, h5.Data(node.LastChild), h5.Data(postNode))
 }
 
 func TestCopyAnd(t *testing.T) {
@@ -188,28 +152,15 @@ func TestCopyAnd(t *testing.T) {
 			t.Error("TestCopyAnd paniced %s", err)
 		}
 	}()
-	ul, _ := NewDoc("<ul><li class=\"item\">item1</li></ul>")
-	node := ul.Children[0]
-	fn1 := func(n *Node) {
-		n.Children[0].SetData([]rune("foo"))
-	}
-	fn2 := func(n *Node) {
-		n.Children[0].SetData([]rune("bar"))
-	}
-	f := CopyAnd(fn1, fn2)
-
-	assertEqual(t, len(ul.Children), 1)
-	f(node)
-	assertEqual(t, len(ul.Children), 2)
-	assertEqual(t, ul.Children[0].Data(), "li")
-	assertEqual(t, ul.Children[0].Attr[0].Name, "class")
-	assertEqual(t, ul.Children[0].Attr[0].Value, "item")
-	assertEqual(t, ul.Children[0].Children[0].Data(), "foo")
-
-	assertEqual(t, ul.Children[1].Data(), "li")
-	assertEqual(t, ul.Children[1].Attr[0].Name, "class")
-	assertEqual(t, ul.Children[1].Attr[0].Value, "item")
-	assertEqual(t, ul.Children[1].Children[0].Data(), "bar")
+	node := h5.Div("", nil, h5.Div("", nil, h5.Text("foo")))
+	assertEqual(t, h5.NewTree(node).String(),
+		"<div><div>foo</div></div>")
+	CopyAnd(
+		AppendChildren(h5.Text("bar")),
+		ReplaceChildren(h5.Text("baz")),
+	)(node.FirstChild)
+	assertEqual(t, h5.NewTree(node).String(),
+		"<div><div>foobar</div><div>baz</div></div>")
 }
 
 func TestTransformSubtransforms(t *testing.T) {
@@ -218,25 +169,25 @@ func TestTransformSubtransforms(t *testing.T) {
 			t.Error("TestTransformSubtransforms paniced %s", err)
 		}
 	}()
-	doc, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
+	tree, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
 
 	f := SubTransform(CopyAnd(
-		ReplaceChildren(Text("bar")),
-		ReplaceChildren(Text("baz")),
+		ReplaceChildren(h5.Text("bar")),
+		ReplaceChildren(h5.Text("baz"), h5.Text("quux")),
 	), "li")
-	tf := NewTransform(doc)
-	tf.Apply(f, "ul")
+	tf := NewTransform(tree)
+	tf.ApplyAll(Trans(f, "ul"))
 	assertEqual(t, tf.String(),
-		"<html><body><ul><li>bar</li><li>baz</li></ul></body></html>")
+		"<html><head></head><body><ul><li>bar</li><li>bazquux</li></ul></body></html>")
 
 }
 
 // TODO(jwall): benchmarking tests
 func BenchmarkTransformApply(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		doc, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-		tf := NewTransform(doc)
-		tf.Apply(AppendChildren(new(Node)), "body")
+		tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
+		tf := NewTransform(tree)
+		tf.Apply(AppendChildren(h5.Text("")), "body")
 		tf.Apply(TransformAttrib("id", func(val string) string {
 			return "bar"
 		}),
