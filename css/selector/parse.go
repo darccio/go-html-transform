@@ -116,7 +116,7 @@ func parseSimpleAttr(rdr io.ByteScanner, sel *SimpleSelector) error {
 }
 
 func parseSequence(rdr io.ByteScanner) (Sequence, error) {
-	seq := make([]SimpleSelector, 1)
+	seq := []SimpleSelector{}
 	rdr.UnreadByte()
 	for c, err := rdr.ReadByte(); err != io.EOF; c, err = rdr.ReadByte() {
 		if err != nil {

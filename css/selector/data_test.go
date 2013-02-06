@@ -8,6 +8,8 @@ import (
 var chains = []string{
 	// Universal
 	"*",
+	// Tag
+	"a",
 	// sequence
 	"ul.foo.bar:first-child::first-line",
 	// combinators

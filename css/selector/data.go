@@ -3,6 +3,13 @@
 // The package follows the CSS3 Spec at: http://www.w3.org/TR/css3-selectors/
 package selector
 
+import (
+	"code.google.com/p/go-html-transform/h5"
+
+	"exp/html"
+	"strings"
+)
+
 type selectorType int
 
 const (
@@ -92,6 +99,61 @@ const (
 	bMul = 100000000
 )
 
+func attrDashPrefix(prefix string, a *html.Attribute) bool {
+	return a.Val == prefix || strings.HasPrefix(a.Val, prefix+"-")
+}
+
+func attrContains(val string, a *html.Attribute) bool {
+	for _, v := range strings.Split(a.Val, " ") {
+		if val == v {
+			return true
+		}
+	}
+	return false
+}
+
+func attrExactly(val string, a *html.Attribute) bool {
+	return val == a.Val
+}
+
+func (ss SimpleSelector) Match(n *html.Node) bool {
+	if n == nil {
+		return false
+	}
+	if ss.Type == Tag {
+		return strings.ToLower(ss.Tag) == strings.ToLower(h5.Data(n))
+	}
+	if ss.Type == PseudoClass || ss.Type == PseudoElement {
+		// TODO(jwall):
+		panic("Can't match with PseudoClasse or PseudoElement")
+	}
+	for _, a := range n.Attr {
+		switch ss.Type {
+		case Id:
+			if strings.ToLower(a.Key) == "id" {
+				return a.Val == ss.Value
+			}
+		case Class:
+			if strings.ToLower(a.Key) == "class" {
+				return attrContains(ss.Value, &a)
+			}
+		case Attr:
+			if strings.ToLower(a.Key) == strings.ToLower(ss.AttrName) {
+				switch ss.AttrMatch {
+				case Exactly:
+					return attrExactly(ss.Value, &a)
+				case Contains:
+					return attrContains(ss.Value, &a)
+				case DashPrefix:
+					return attrDashPrefix(ss.Value, &a)
+				}
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (ss SimpleSelector) Specificity() int64 {
 	switch ss.Type {
 	case Id:
@@ -128,6 +190,27 @@ func (ss SimpleSelector) String() string {
 // element.
 type Sequence []SimpleSelector
 
+func (s Sequence) Find(n *html.Node) []*html.Node {
+	var found []*html.Node
+	h5.WalkNodes(n, func(n *html.Node) {
+		if s.Match(n) {
+			found = append(found, n)
+		}
+	})
+	return found
+}
+
+func (s Sequence) Match(n *html.Node) bool {
+	if n == nil {
+		return false
+	}
+	match := true
+	for _, ss := range s {
+		match = match && ss.Match(n)
+	}
+	return match
+}
+
 func (s Sequence) String() string {
 	ss := ""
 	for _, sel := range s {
@@ -159,6 +242,48 @@ type Link struct {
 	Sequence
 }
 
+// Find all the nodes in a html.Node tree that match this Selector Link.
+func (l Link) Find(n *html.Node) []*html.Node {
+	var found []*html.Node
+	switch l.combinator {
+	case Descendant:
+		// walk the node tree returning any nodes the sequence matches
+		h5.WalkNodes(n, func(n *html.Node) {
+			if l.Sequence.Match(n) {
+				found = append(found, n)
+			}
+		})
+	case Child:
+		// iterate through the children returning any nodes the sequence matches
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if l.Sequence.Match(c) {
+				found = append(found, c)
+			}
+		}
+	case AdjacentSibling:
+		// look at the two adjacent siblings if any and return any that the squence matches.
+		if l.Sequence.Match(n.PrevSibling) {
+			found = append(found, n.PrevSibling)
+		}
+		if l.Sequence.Match(n.NextSibling) {
+			found = append(found, n.NextSibling)
+		}
+	case Sibling:
+		// Look at all the siblings if any and return any that the sequence matches.
+		for s := n.PrevSibling; s != nil; s = s.PrevSibling {
+			if l.Sequence.Match(s) {
+				found = append([]*html.Node{s}, found...)
+			}
+		}
+		for s := n.NextSibling; s != nil; s = s.NextSibling {
+			if l.Sequence.Match(s) {
+				found = append(found, s)
+			}
+		}
+	}
+	return found
+}
+
 func (l Link) String() string {
 	return l.combinator.String() + l.Sequence.String()
 }
@@ -167,6 +292,19 @@ func (l Link) String() string {
 type Chain struct {
 	Head Sequence
 	Tail []Link
+}
+
+// Find all the nodes in a html.Node tree that match this Selector Chain.
+func (chn *Chain) Find(n *html.Node) []*html.Node {
+	found := chn.Head.Find(n)
+	for _, l := range chn.Tail {
+		var interesting []*html.Node
+		for _, n := range found {
+			interesting = l.Find(n)
+		}
+		found = interesting
+	}
+	return found
 }
 
 func (chn *Chain) String() string {
