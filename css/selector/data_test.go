@@ -2,6 +2,7 @@ package selector
 
 import (
 	"testing"
+	"strings"
 )
 
 var chains = []string{
@@ -32,11 +33,15 @@ func TestSelectorString(t *testing.T) {
 		}
 	}
 	// test EOS for { characters
-	sel, err := Selector("ul li {")
+	rdr := strings.NewReader("ul li {")
+	sel, err := SelectorFromScanner(rdr)
 	if err != EOS {
 		t.Errorf("Selector didn't return End of Selector %q", err)
 	}
 	if sel.String() != "ul li" {
 		t.Errorf("Selector %q != %q", sel.String(), "ul li")
+	}
+	if b, _ := rdr.ReadByte(); b != '{' {
+		t.Errorf("Next byte was not %c", b)
 	}
 }
