@@ -5,10 +5,19 @@
 package transform
 
 import (
+	"code.google.com/p/go-html-transform/css/selector"
 	"code.google.com/p/go-html-transform/h5"
+
 	"exp/html"
 	"log"
 )
+
+// Collector defines an interface for html node collectors.
+type Collector interface {
+	// Find searches a tree rooted at n and returns a slice of nodes
+	// that match a criteria.
+	Find(n *html.Node) []*html.Node
+}
 
 // The TransformFunc type is the type of a html.Node transformation function.
 type TransformFunc func(*html.Node)
@@ -20,11 +29,11 @@ type Transformer struct {
 
 // Constructor for a Transformer. It makes a copy of the document
 // and transforms that instead of the original.
-func NewTransform(t h5.Tree) *Transformer {
-	return newTransform(t.Clone())
+func NewTransformer(t h5.Tree) *Transformer {
+	return newTransformer(t.Clone())
 }
 
-func newTransform(t h5.Tree) *Transformer {
+func newTransformer(t h5.Tree) *Transformer {
 	return &Transformer{doc: t}
 }
 
@@ -38,41 +47,53 @@ func (t *Transformer) String() string {
 }
 
 func (t *Transformer) Clone() *Transformer {
-	return NewTransform(t.doc)
+	return NewTransformer(t.doc)
 }
 
-func applyFuncToQuery(f TransformFunc, n *html.Node, sel ...string) {
-	sq := NewSelectorQuery(sel...)
-	for _, nn := range sq.Apply(n) {
+func applyFuncToCollector(f TransformFunc, n *html.Node, sel Collector) {
+	for _, nn := range sel.Find(n) {
 		f(nn)
 	}
 }
 
-// The Apply method applies a TransformFunc to the nodes returned from
-// the Selector query
-func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
+// The ApplyWithSelector method applies a TransformFunc to the nodes matched
+// by the CSS3 Selector.
+func (t *Transformer) Apply(f TransformFunc, sel string) *Transformer {
+	sq, _ := selector.Selector(sel)
+	return t.ApplyWithCollector(f, sq)
+}
+
+func (t *Transformer) ApplyWithCollector(f TransformFunc, coll Collector) *Transformer {
 	// TODO come up with a way to walk tree once?
-	applyFuncToQuery(f, t.Doc(), sel...)
+	applyFuncToCollector(f, t.Doc(), coll)
 	return t
 }
 
 // Transform is a bundle of selectors and a transform func. It forms a
 // self contained Transfrom on an html document that can be reused.
 type Transform struct {
-	q []string
-	f TransformFunc
+	coll Collector
+	f    TransformFunc
 }
 
 // Trans creates a Transform that you can apply using ApplyAll.
-func Trans(f TransformFunc, sel1 string, sel ...string) *Transform {
-	return &Transform{f: f, q: append([]string{sel1}, sel...)}
+// It takes a TransformFunc and a valid CSS3 Selector
+func Trans(f TransformFunc, sel string) *Transform {
+	sq, _ := selector.Selector(sel)
+	return TransCollector(f, sq)
+}
+
+// TransCollector creates a Transform that you can apply using ApplyAll.
+// It takes a TransformFunc and a Collector
+func TransCollector(f TransformFunc, coll Collector) *Transform {
+	return &Transform{f: f, coll: coll}
 }
 
 // ApplyAll applies a series of Transforms to a document.
 //     t.ApplyAll(Trans(f, sel1, sel2), Trans(f2, sel3, sel4))
 func (t *Transformer) ApplyAll(ts ...*Transform) *Transformer {
 	for _, spec := range ts {
-		t.Apply(spec.f, spec.q...)
+		t.ApplyWithCollector(spec.f, spec.coll)
 	}
 	return t
 }
@@ -170,13 +191,24 @@ func CopyAnd(fns ...TransformFunc) TransformFunc {
 	}
 }
 
-// SubTransform constructs a TransformFunc that runs a TransformFunc on any
-// nodes in the tree rooted by the node it matches on if those nodes match
-// the selectors. This is useful for creating self contained Transforms that are
+// SubTransform constructs a TransformFunc that runs a TransformFunc on
+// any nodes in the tree rooted by the node the the TransformFunc is run
+// against.
+// This is useful for creating self contained Transforms that are
 // meant to work on subtrees of the html document.
-func SubTransform(f TransformFunc, sel1 string, sels ...string) TransformFunc {
+func SubTransform(f TransformFunc, sel string) TransformFunc {
+	sq, _ := selector.Selector(sel)
+	return SubTransformCollector(f, sq)
+}
+
+// SubTransformSelector constructs a TransformFunc that runs a TransformFunc on
+// any nodes collected, using the passed in collector, from the subtree the
+// TransformFunc is run on.
+// This is useful for creating self contained Transforms that are
+// meant to work on subtrees of the html document.
+func SubTransformCollector(f TransformFunc, coll Collector) TransformFunc {
 	return func(n *html.Node) {
-		applyFuncToQuery(f, n, append([]string{sel1}, sels...)...)
+		applyFuncToCollector(f, n, coll)
 	}
 }
 

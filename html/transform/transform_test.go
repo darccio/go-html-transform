@@ -10,17 +10,17 @@ import (
 	"testing"
 )
 
-func TestNewTransform(t *testing.T) {
+func TestNewTransformer(t *testing.T) {
 	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
 	doc := tree.Top()
-	tf := NewTransform(tree)
+	tf := NewTransformer(tree)
 	// hacky way of comparing an uncomparable type
 	assertEqual(t, tf.Doc().Type, doc.Type)
 }
 
 func TestTransformApply(t *testing.T) {
 	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
-	tf := NewTransform(tree)
+	tf := NewTransformer(tree)
 	n := h5.Text("bar")
 	newDoc := tf.Apply(AppendChildren(n), "body").String()
 	assertEqual(t, newDoc, "<html><head></head><body><div id=\"foo\"></div>bar</body></html>")
@@ -28,19 +28,19 @@ func TestTransformApply(t *testing.T) {
 
 func TestTransformApplyAll(t *testing.T) {
 	tree, _ := NewDoc("<html><head></head><body><ul><li>foo</ul></body></html>")
-	tf := NewTransform(tree)
+	tf := NewTransformer(tree)
 	n := h5.Text("bar")
 	n2 := h5.Text("quux")
 	tf.ApplyAll(
-		Trans(AppendChildren(n), "body", "li"),
-		Trans(AppendChildren(n2), "body", "li"),
+		Trans(AppendChildren(n), "body li"),
+		Trans(AppendChildren(n2), "body li"),
 	).String()
 	assertEqual(t, tf.String(), "<html><head></head><body><ul><li>foobarquux</li></ul></body></html>")
 }
 
 func TestTransformApplyMulti(t *testing.T) {
 	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
-	tf := NewTransform(tree)
+	tf := NewTransformer(tree)
 	tf.Apply(AppendChildren(h5.Text("")), "body")
 	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
 		t.Logf("Rewriting Url")
@@ -175,7 +175,7 @@ func TestTransformSubtransforms(t *testing.T) {
 		ReplaceChildren(h5.Text("bar")),
 		ReplaceChildren(h5.Text("baz"), h5.Text("quux")),
 	), "li")
-	tf := NewTransform(tree)
+	tf := NewTransformer(tree)
 	tf.ApplyAll(Trans(f, "ul"))
 	assertEqual(t, tf.String(),
 		"<html><head></head><body><ul><li>bar</li><li>bazquux</li></ul></body></html>")
@@ -186,7 +186,7 @@ func TestTransformSubtransforms(t *testing.T) {
 func BenchmarkTransformApply(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-		tf := NewTransform(tree)
+		tf := NewTransformer(tree)
 		tf.Apply(AppendChildren(h5.Text("")), "body")
 		tf.Apply(TransformAttrib("id", func(val string) string {
 			return "bar"
