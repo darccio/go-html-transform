@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-//	"log"
 )
 
 var (
@@ -36,7 +34,6 @@ func consumeValue(rdr io.ByteScanner) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("XXX: consuming %c", c)
 		switch c {
 		case '{':
 			rdr.UnreadByte()
@@ -52,14 +49,11 @@ func consumeValue(rdr io.ByteScanner) ([]byte, error) {
 }
 
 func parseSimpleTag(rdr io.ByteScanner, sel *SimpleSelector) error {
-	//log.Printf("XXX: tag before parse: %q", sel.Tag)
 	bs, err := consumeValue(rdr)
 	if err != nil && err != EOS {
 		return err
 	}
-	//log.Printf("XXX: bs %q", bs)
 	sel.Tag = sel.Tag + string(bs)
-	//log.Printf("XXX: tag after parse: %q", sel.Tag)
 	return err
 }
 
@@ -122,7 +116,6 @@ func parseSequence(rdr io.ByteScanner) (Sequence, error) {
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("XXX: Char in parseSequence %c", c)
 		switch c {
 		case '*':
 			seq = append(seq, SimpleSelector{Type: Universal})

@@ -1,8 +1,8 @@
 package selector
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
 var chains = []string{
