@@ -136,6 +136,30 @@ var finders = []testSpec{
 		nil,
 		partials("<span>bar</span><span>baz<span>quux</span></span><span>quux</span>"),
 	},
+	testSpec{
+		":empty",
+		partial("<div><div></div></div>"),
+		nil,
+		partials("<div></div>"),
+	},
+	testSpec{
+		"a:first-child",
+		partial("<div><a>foo</a><b>baz</b></div>"),
+		nil,
+		partials("<a>foo</a>"),
+	},
+	testSpec{
+		"b:last-child",
+		partial("<div><a>foo</a><b>baz</b></div>"),
+		nil,
+		partials("<b>baz</b>"),
+	},
+	testSpec{
+		"a:only-child",
+		partial("<div><a>foo</a></div>"),
+		nil,
+		partials("<a>foo</a>"),
+	},
 }
 
 func TestSelectorFind(t *testing.T) {

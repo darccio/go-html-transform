@@ -38,7 +38,7 @@ func consumeValue(rdr io.ByteScanner) ([]byte, error) {
 		case '{':
 			rdr.UnreadByte()
 			return bs, EOS
-		case '>', '+', '~', ' ', '\t', '\n', '\f', ',', '.', '#', '[':
+		case '>', '+', '~', ' ', '\t', '\n', '\f', ',', '.', '#', '[', ':':
 			rdr.UnreadByte()
 			return bs, nil
 		default:
@@ -58,10 +58,15 @@ func parseSimpleTag(rdr io.ByteScanner, sel *SimpleSelector) error {
 }
 
 func parseSimpleSelector(rdr io.ByteScanner, sel *SimpleSelector) error {
+	b, err := rdr.ReadByte()
+	if err != nil && err != EOS {
+		return err
+	}
 	bs, err := consumeValue(rdr)
 	if err != nil && err != EOS {
 		return err
 	}
+	bs = append([]byte{b}, bs...)
 	if sel.Type == PseudoClass && bs[0] == ':' {
 		sel.Type = PseudoElement
 		bs = bs[1:]

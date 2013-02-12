@@ -7,6 +7,7 @@ import (
 	"code.google.com/p/go-html-transform/h5"
 
 	"exp/html"
+	"fmt"
 	"strings"
 )
 
@@ -123,9 +124,24 @@ func (ss SimpleSelector) Match(n *html.Node) bool {
 	if ss.Type == Tag {
 		return strings.ToLower(ss.Tag) == strings.ToLower(h5.Data(n))
 	}
-	if ss.Type == PseudoClass || ss.Type == PseudoElement {
-		// TODO(jwall):
-		panic("Can't match with PseudoClasse or PseudoElement")
+	if ss.Type == PseudoClass {
+		switch ss.Value {
+		case "root":
+			return n.Parent == nil
+		case "first-child":
+			return n.Parent != nil && n.Parent.FirstChild == n
+		case "last-child":
+			return n.Parent != nil && n.Parent.LastChild == n
+		case "only-child":
+			return n.PrevSibling == nil && n.NextSibling == nil
+		case "empty":
+			return n.FirstChild == nil
+		default:
+			// TODO(jwall):
+			panic(fmt.Errorf("Can't match with PseudoClass %s", ss.Value))
+		}
+	} else if ss.Type == PseudoElement {
+		panic(fmt.Errorf("Can't match with PseudoElement %s", ss.Value))
 	}
 	for _, a := range n.Attr {
 		switch ss.Type {
