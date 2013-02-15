@@ -22,7 +22,8 @@ func TestTransformApply(t *testing.T) {
 	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
 	tf := NewTransformer(tree)
 	n := h5.Text("bar")
-	newDoc := tf.Apply(AppendChildren(n), "body").String()
+	tf.Apply(AppendChildren(n), "body")
+	newDoc := tf.String()
 	assertEqual(t, newDoc, "<html><head></head><body><div id=\"foo\"></div>bar</body></html>")
 }
 
@@ -31,10 +32,9 @@ func TestTransformApplyAll(t *testing.T) {
 	tf := NewTransformer(tree)
 	n := h5.Text("bar")
 	n2 := h5.Text("quux")
-	tf.ApplyAll(
-		Trans(AppendChildren(n), "body li"),
-		Trans(AppendChildren(n2), "body li"),
-	).String()
+	t1, _ := Trans(AppendChildren(n), "body li")
+	t2, _ := Trans(AppendChildren(n2), "body li")
+	tf.ApplyAll(t1, t2,)
 	assertEqual(t, tf.String(), "<html><head></head><body><ul><li>foobarquux</li></ul></body></html>")
 }
 
@@ -42,11 +42,12 @@ func TestTransformApplyMulti(t *testing.T) {
 	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
 	tf := NewTransformer(tree)
 	tf.Apply(AppendChildren(h5.Text("")), "body")
-	newDoc := tf.Apply(TransformAttrib("id", func(val string) string {
+	tf.Apply(TransformAttrib("id", func(val string) string {
 		t.Logf("Rewriting Url")
 		return "bar"
 	}),
-		"div").String()
+		"div")
+	newDoc := tf.String()
 	assertEqual(t, newDoc, "<html><head></head><body><div id=\"bar\"></div></body></html>")
 }
 
@@ -171,12 +172,13 @@ func TestTransformSubtransforms(t *testing.T) {
 	}()
 	tree, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
 
-	f := SubTransform(CopyAnd(
+	f, _ := SubTransform(CopyAnd(
 		ReplaceChildren(h5.Text("bar")),
 		ReplaceChildren(h5.Text("baz"), h5.Text("quux")),
 	), "li")
 	tf := NewTransformer(tree)
-	tf.ApplyAll(Trans(f, "ul"))
+	t1, _ := Trans(f, "ul")
+	tf.ApplyAll(t1)
 	assertEqual(t, tf.String(),
 		"<html><head></head><body><ul><li>bar</li><li>bazquux</li></ul></body></html>")
 
@@ -191,6 +193,7 @@ func BenchmarkTransformApply(b *testing.B) {
 		tf.Apply(TransformAttrib("id", func(val string) string {
 			return "bar"
 		}),
-			"div").Doc()
+			"div")
+		tf.Doc()
 	}
 }
