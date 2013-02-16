@@ -64,6 +64,7 @@ func (t *Transformer) Apply(f TransformFunc, sel string) error {
 	return err
 }
 
+// ApplyWithCollector applies a TransformFunc to the tree using a Collector.
 func (t *Transformer) ApplyWithCollector(f TransformFunc, coll Collector) {
 	// TODO come up with a way to walk tree once?
 	applyFuncToCollector(f, t.Doc(), coll)
@@ -82,6 +83,14 @@ type Transform struct {
 func Trans(f TransformFunc, sel string) (*Transform, error) {
 	sq, err := selector.Selector(sel)
 	return TransCollector(f, sq), err
+}
+
+// MustTrans creates a Transform.
+// Panics if the selector wasn't valid.
+func MustTrans(f TransformFunc, sel string) *Transform {
+	t, err := Trans(f, sel)
+	if err != nil { panic(err) }
+	return t
 }
 
 // TransCollector creates a Transform that you can apply using ApplyAll.
@@ -196,9 +205,19 @@ func CopyAnd(fns ...TransformFunc) TransformFunc {
 // against.
 // This is useful for creating self contained Transforms that are
 // meant to work on subtrees of the html document.
-func SubTransform(f TransformFunc, sel string) (TransformFunc, error) {
+func Subtransform(f TransformFunc, sel string) (TransformFunc, error) {
 	sq, err := selector.Selector(sel)
-	return SubTransformCollector(f, sq), err
+	return SubtransformCollector(f, sq), err
+}
+
+// SubTransform constructs a TransformFunc that runs a TransformFunc on
+// any nodes in the tree rooted by the node the the TransformFunc is run
+// against.
+// Panics if the selector string is malformed.
+func MustSubtransform(f TransformFunc, sel string) TransformFunc {
+	t, err := Subtransform(f, sel)
+	if err != nil { panic(err) }
+	return t
 }
 
 // SubTransformSelector constructs a TransformFunc that runs a TransformFunc on
@@ -206,7 +225,7 @@ func SubTransform(f TransformFunc, sel string) (TransformFunc, error) {
 // TransformFunc is run on.
 // This is useful for creating self contained Transforms that are
 // meant to work on subtrees of the html document.
-func SubTransformCollector(f TransformFunc, coll Collector) TransformFunc {
+func SubtransformCollector(f TransformFunc, coll Collector) TransformFunc {
 	return func(n *html.Node) {
 		applyFuncToCollector(f, n, coll)
 	}
