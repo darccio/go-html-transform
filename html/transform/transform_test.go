@@ -34,7 +34,7 @@ func TestTransformApplyAll(t *testing.T) {
 	n2 := h5.Text("quux")
 	t1, _ := Trans(AppendChildren(n), "body li")
 	t2, _ := Trans(AppendChildren(n2), "body li")
-	tf.ApplyAll(t1, t2,)
+	tf.ApplyAll(t1, t2)
 	assertEqual(t, tf.String(), "<html><head></head><body><ul><li>foobarquux</li></ul></body></html>")
 }
 
@@ -150,7 +150,7 @@ func TestDoAll(t *testing.T) {
 func TestCopyAnd(t *testing.T) {
 	defer func() {
 		if err := recover(); err != nil {
-			t.Error("TestCopyAnd paniced %s", err)
+			t.Errorf("TestCopyAnd paniced %s", err)
 		}
 	}()
 	node := h5.Div("", nil, h5.Div("", nil, h5.Text("foo")))
@@ -167,7 +167,7 @@ func TestCopyAnd(t *testing.T) {
 func TestTransformSubtransforms(t *testing.T) {
 	defer func() {
 		if err := recover(); err != nil {
-			t.Error("TestTransformSubtransforms paniced %s", err)
+			t.Errorf("TestTransformSubtransforms paniced %s", err)
 		}
 	}()
 	tree, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
