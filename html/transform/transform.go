@@ -210,7 +210,7 @@ func Subtransform(f TransformFunc, sel string) (TransformFunc, error) {
 	return SubtransformCollector(f, sq), err
 }
 
-// SubTransform constructs a TransformFunc that runs a TransformFunc on
+// MustSubtransform constructs a TransformFunc that runs a TransformFunc on
 // any nodes in the tree rooted by the node the the TransformFunc is run
 // against.
 // Panics if the selector string is malformed.

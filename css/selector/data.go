@@ -88,10 +88,15 @@ func (t attrMatchType) String() string {
 
 // SimpleSelector describes one thing about an element.
 type SimpleSelector struct {
+	// The type of Simple Selector.
 	Type      selectorType
+	// The Tagname of the SimpleSelector if Type is Tag
 	Tag       string
+	// The attribute matching type if Type is Attr
 	AttrMatch attrMatchType
+	// The value to match against if Type is Id, Class, Pseudoclass, Pseudoelement, or Attr
 	Value     string
+	// The attribute name if Type is Attr
 	AttrName  string
 }
 
@@ -117,6 +122,7 @@ func attrExactly(val string, a *html.Attribute) bool {
 	return val == a.Val
 }
 
+// Match returns true if this SimpleSelector matches this node false otherwise.
 func (ss SimpleSelector) Match(n *html.Node) bool {
 	if n == nil {
 		return false
@@ -170,6 +176,7 @@ func (ss SimpleSelector) Match(n *html.Node) bool {
 	return false
 }
 
+// Specificity returns the CSS3 specificity for a SimpleSelector.
 func (ss SimpleSelector) Specificity() int64 {
 	switch ss.Type {
 	case Id:
@@ -206,6 +213,8 @@ func (ss SimpleSelector) String() string {
 // element.
 type Sequence []SimpleSelector
 
+// Find finds all Nodes that match this sequence in the tree rooted by
+// n.
 func (s Sequence) Find(n *html.Node) []*html.Node {
 	var found []*html.Node
 	h5.WalkNodes(n, func(n *html.Node) {
@@ -216,6 +225,7 @@ func (s Sequence) Find(n *html.Node) []*html.Node {
 	return found
 }
 
+// Match returns true if this Sequence matches this node false otherwise.
 func (s Sequence) Match(n *html.Node) bool {
 	if n == nil {
 		return false
@@ -254,14 +264,16 @@ func (s Sequence) Specificity() int64 {
 
 // Link joins a sequence to another sequence with a combinator.
 type Link struct {
-	combinator
+	// Combinator used to join this link with another Link or Sequence in a Chain.
+	Combinator combinator
+	// Sequence that combinator will join to the previous Link or Sequence in a Chain.
 	Sequence
 }
 
 // Find all the nodes in a html.Node tree that match this Selector Link.
 func (l Link) Find(n *html.Node) []*html.Node {
 	var found []*html.Node
-	switch l.combinator {
+	switch l.Combinator {
 	case Descendant:
 		// walk the node tree returning any nodes the sequence matches
 		h5.WalkNodes(n, func(n *html.Node) {
@@ -301,12 +313,14 @@ func (l Link) Find(n *html.Node) []*html.Node {
 }
 
 func (l Link) String() string {
-	return l.combinator.String() + l.Sequence.String()
+	return l.Combinator.String() + l.Sequence.String()
 }
 
-// Chain is a chain of Sequences joined by combinators.
+// Chain is a chain of sequences joined using Links.
 type Chain struct {
+	// The first Sequence of selectors in the Chain.
 	Head Sequence
+	// The rest of the Links in the chain.
 	Tail []Link
 }
 

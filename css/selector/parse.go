@@ -185,8 +185,8 @@ func parseCombinator(rdr io.ByteScanner, p *Link) error {
 			return fmt.Errorf("Encountered ',' after combinator")
 		case ' ', '\t', '\n', '\r', '\f':
 		case '>', '+', '~':
-			if p.combinator == Descendant {
-				p.combinator = combinatorMap[c]
+			if p.Combinator == Descendant {
+				p.Combinator = combinatorMap[c]
 			} else {
 				return fmt.Errorf("Can't combine multiple combinators")
 			}

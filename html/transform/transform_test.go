@@ -172,7 +172,7 @@ func TestTransformSubtransforms(t *testing.T) {
 	}()
 	tree, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
 
-	f, _ := SubTransform(CopyAnd(
+	f, _ := Subtransform(CopyAnd(
 		ReplaceChildren(h5.Text("bar")),
 		ReplaceChildren(h5.Text("baz"), h5.Text("quux")),
 	), "li")
