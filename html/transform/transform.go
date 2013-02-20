@@ -8,7 +8,7 @@ import (
 	"code.google.com/p/go-html-transform/css/selector"
 	"code.google.com/p/go-html-transform/h5"
 
-	"exp/html"
+	"code.google.com/p/go.net/html"
 	"log"
 )
 

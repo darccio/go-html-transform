@@ -1,7 +1,7 @@
 package h5
 
 import (
-	"exp/html"
+	"code.google.com/p/go.net/html"
 	"reflect"
 	"testing"
 )

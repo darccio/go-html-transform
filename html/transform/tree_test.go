@@ -6,7 +6,7 @@
 package transform
 
 import (
-	"exp/html"
+	"code.google.com/p/go.net/html"
 	"testing"
 )
 

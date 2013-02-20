@@ -3,7 +3,7 @@
 // That License is included in the LICENSE file.
 
 /*
-Package h5 implements an wrapper for code.google.com/p/go/src/exp/html.
+Package h5 implements an wrapper for code.google.com/p/go/src/code.google.com/p/go.net/html.
 
     p := h5.NewParser(rdr)
     err := p.Parse()
@@ -19,8 +19,8 @@ package h5
 
 import (
 	"bytes"
-	"exp/html"
-	"exp/html/atom"
+	"code.google.com/p/go.net/html"
+	"code.google.com/p/go.net/html/atom"
 	"io"
 	"strings"
 )
