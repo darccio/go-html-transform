@@ -5,11 +5,13 @@
 package transform
 
 import (
-	"code.google.com/p/go-html-transform/css/selector"
-	"code.google.com/p/go-html-transform/h5"
+	"io"
+	"log"
 
 	"code.google.com/p/go.net/html"
-	"log"
+
+	"code.google.com/p/go-html-transform/css/selector"
+	"code.google.com/p/go-html-transform/h5"
 )
 
 // Collector defines an interface for html node collectors.
@@ -40,6 +42,10 @@ func newTransformer(t h5.Tree) *Transformer {
 // The Doc method returns the document under transformation.
 func (t *Transformer) Doc() *html.Node {
 	return t.doc.Top()
+}
+
+func (t *Transformer) Render(w io.Writer) error {
+	return t.doc.Render(w)
 }
 
 func (t *Transformer) String() string {
@@ -89,7 +95,9 @@ func Trans(f TransformFunc, sel string) (*Transform, error) {
 // Panics if the selector wasn't valid.
 func MustTrans(f TransformFunc, sel string) *Transform {
 	t, err := Trans(f, sel)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	return t
 }
 
@@ -216,7 +224,9 @@ func Subtransform(f TransformFunc, sel string) (TransformFunc, error) {
 // Panics if the selector string is malformed.
 func MustSubtransform(f TransformFunc, sel string) TransformFunc {
 	t, err := Subtransform(f, sel)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	return t
 }
 
