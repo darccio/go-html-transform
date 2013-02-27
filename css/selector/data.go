@@ -89,15 +89,15 @@ func (t attrMatchType) String() string {
 // SimpleSelector describes one thing about an element.
 type SimpleSelector struct {
 	// The type of Simple Selector.
-	Type      selectorType
+	Type selectorType
 	// The Tagname of the SimpleSelector if Type is Tag
-	Tag       string
+	Tag string
 	// The attribute matching type if Type is Attr
 	AttrMatch attrMatchType
 	// The value to match against if Type is Id, Class, Pseudoclass, Pseudoelement, or Attr
-	Value     string
+	Value string
 	// The attribute name if Type is Attr
-	AttrName  string
+	AttrName string
 }
 
 const (
