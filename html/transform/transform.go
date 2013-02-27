@@ -26,16 +26,25 @@ type TransformFunc func(*html.Node)
 
 // Transformer encapsulates a document under transformation.
 type Transformer struct {
-	doc h5.Tree
+	doc *h5.Tree
+}
+
+func NewFromReader(rdr io.Reader) (*Transformer, error) {
+	tree, err := h5.New(rdr)
+	if err != nil {
+		return New(tree), nil
+	}
+	return nil, err
 }
 
 // Constructor for a Transformer. It makes a copy of the document
 // and transforms that instead of the original.
-func NewTransformer(t h5.Tree) *Transformer {
-	return newTransformer(t.Clone())
+func New(t *h5.Tree) *Transformer {
+	clone := t.Clone()
+	return newTransformer(&clone)
 }
 
-func newTransformer(t h5.Tree) *Transformer {
+func newTransformer(t *h5.Tree) *Transformer {
 	return &Transformer{doc: t}
 }
 
@@ -53,7 +62,7 @@ func (t *Transformer) String() string {
 }
 
 func (t *Transformer) Clone() *Transformer {
-	return NewTransformer(t.doc)
+	return New(t.doc)
 }
 
 func applyFuncToCollector(f TransformFunc, n *html.Node, sel Collector) {

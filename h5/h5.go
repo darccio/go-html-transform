@@ -3,11 +3,9 @@
 // That License is included in the LICENSE file.
 
 /*
-Package h5 implements an wrapper for code.google.com/p/go/src/code.google.com/p/go.net/html.
+Package h5 implements a wrapper and DSL for code.google.com/p/go/src/code.google.com/p/go.net/html.
 
-    p := h5.NewParser(rdr)
-    err := p.Parse()
-    tree := p.Tree()
+    tree, err := h5.New(rdr)
 
     tree.Walk(func(n *Node) {
        // do something with the node
@@ -24,10 +22,6 @@ import (
 	"io"
 	"strings"
 )
-
-type Parser struct {
-	Top *html.Node
-}
 
 func Partial(r io.Reader) ([]*html.Node, error) {
 	b := &html.Node{}
@@ -58,19 +52,12 @@ func RenderNodesToString(ns []*html.Node) string {
 }
 
 // Construct a new h5 parser from a string
-func NewParserFromString(s string) (*Parser, error) {
-	return NewParser(strings.NewReader(s))
+func NewFromString(s string) (*Tree, error) {
+	return New(strings.NewReader(s))
 }
 
 // Construct a new h5 parser from a io.Reader
-func NewParser(r io.Reader) (*Parser, error) {
+func New(r io.Reader) (*Tree, error) {
 	n, err := html.Parse(r)
-	return &Parser{Top: n}, err
+	return &Tree{n}, err
 }
-
-// Tree returns the Top Node as a Tree.
-func (p *Parser) Tree() Tree {
-	return Tree{p.Top}
-}
-
-// TODO(jwall): Handle fragments.

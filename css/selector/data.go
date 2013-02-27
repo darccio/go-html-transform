@@ -1,4 +1,4 @@
-// package selector contains a css3 selector parser.
+// Package selector contains a css3 selector parser.
 //
 // The package follows the CSS3 Spec at: http://www.w3.org/TR/css3-selectors/
 package selector

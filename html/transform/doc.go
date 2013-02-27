@@ -4,11 +4,10 @@ Package transform implements a html css selector and transformer.
 An html doc can be inspected and queried using a subset of css selectors as
 well as transformed.
 
-   doc := NewDoc(str)
-	  t := NewTransform(doc)
-	  t.Apply(CopyAnd(myModifiers...), "li.menuitem")
-	  t.Apply(Replace(Text("my new text"), "a")
-	  newDoc := t.Doc()
+	tree, _ := h5.New(rdr)
+	t := transform.New(Tree)
+	t.Apply(CopyAnd(myModifiers...), "li.menuitem")
+	t.Apply(Replace(Text("my new text"), "a")
 
 You can use the building blocks in this package as an html templating engine.
 the basic principle behind html transform is that your template is just data

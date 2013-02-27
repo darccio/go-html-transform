@@ -30,16 +30,16 @@ func assertOrDie(t tester, ok bool, msg string, args ...interface{}) {
 }
 
 func TestNodeClone(t *testing.T) {
-	p, err := NewParserFromString(
+	tree, err := NewFromString(
 		"<html><body><a>foo</a><div>bar</div></body></html>")
 	assertOrDie(t, err == nil, "error while parsing string: %s", err)
-	n := p.Tree().Clone()
+	n := tree.Clone()
 	assertEqual(
-		t, n.String(), p.Tree().String())
+		t, n.String(), tree.String())
 }
 
 func TestNodeWalk(t *testing.T) {
-	p, err := NewParserFromString(
+	tree, err := NewFromString(
 		"<html><head></head><body><a>foo</a><div>bar</div></body></html>")
 	assertOrDie(t, err == nil, "error while parsing string: %s", err)
 	i := 0
@@ -48,7 +48,6 @@ func TestNodeWalk(t *testing.T) {
 		ns = append(ns, Data(n))
 		i++
 	}
-	tree := p.Tree()
 	assertEqual(t, tree.String(),
 		"<html><head></head><body><a>foo</a><div>bar</div></body></html>")
 	tree.Walk(f)

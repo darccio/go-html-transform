@@ -10,17 +10,29 @@ import (
 	"testing"
 )
 
+func assertEqual(t *testing.T, val interface{}, expected interface{}) {
+	if val != expected {
+		t.Errorf("NotEqual Expected: [%s] Actual: [%s]",
+			expected, val)
+	}
+}
+
+func assertNotNil(t *testing.T, val interface{}) {
+	if val == nil {
+		t.Errorf("Value is Nil")
+	}
+}
+
 func TestNewTransformer(t *testing.T) {
-	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
-	doc := tree.Top()
-	tf := NewTransformer(tree)
+	tree, _ := h5.NewFromString("<html><body><div id=\"foo\"></div></body></html>")
+	tf := New(tree)
 	// hacky way of comparing an uncomparable type
-	assertEqual(t, tf.Doc().Type, doc.Type)
+	assertEqual(t, tf.Doc().Type, tree.Top().Type)
 }
 
 func TestTransformApply(t *testing.T) {
-	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
-	tf := NewTransformer(tree)
+	tree, _ := h5.NewFromString("<html><body><div id=\"foo\"></div></body></html>")
+	tf := New(tree)
 	n := h5.Text("bar")
 	tf.Apply(AppendChildren(n), "body")
 	newDoc := tf.String()
@@ -28,8 +40,8 @@ func TestTransformApply(t *testing.T) {
 }
 
 func TestTransformApplyAll(t *testing.T) {
-	tree, _ := NewDoc("<html><head></head><body><ul><li>foo</ul></body></html>")
-	tf := NewTransformer(tree)
+	tree, _ := h5.NewFromString("<html><head></head><body><ul><li>foo</ul></body></html>")
+	tf := New(tree)
 	n := h5.Text("bar")
 	n2 := h5.Text("quux")
 	t1, _ := Trans(AppendChildren(n), "body li")
@@ -39,8 +51,8 @@ func TestTransformApplyAll(t *testing.T) {
 }
 
 func TestTransformApplyMulti(t *testing.T) {
-	tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html>")
-	tf := NewTransformer(tree)
+	tree, _ := h5.NewFromString("<html><body><div id=\"foo\"></div></body></html>")
+	tf := New(tree)
 	tf.Apply(AppendChildren(h5.Text("")), "body")
 	tf.Apply(TransformAttrib("id", func(val string) string {
 		t.Logf("Rewriting Url")
@@ -109,9 +121,9 @@ func TestReplaceSpliceOnRootNode(t *testing.T) {
 			t.Error("TestReplaceSpliceOnRootNode didn't panic")
 		}
 	}()
-	tree, _ := NewDoc("<div id=\"foo\">foo<span>bar</span></div><")
+	tree, _ := h5.NewFromString("<div id=\"foo\">foo<span>bar</span></div><")
 	doc := tree.Top()
-	ns, _ := NewDoc("<span>foo</span>")
+	ns, _ := h5.NewFromString("<span>foo</span>")
 	f := Replace(ns.Top())
 	f(doc)
 	assertEqual(t, h5.Data(doc.FirstChild), "span")
@@ -136,7 +148,7 @@ func TestTransformAttrib(t *testing.T) {
 }
 
 func TestDoAll(t *testing.T) {
-	tree, _ := NewDoc("<div id=\"foo\">foo</div><")
+	tree, _ := h5.NewFromString("<div id=\"foo\">foo</div><")
 	node := tree.Top()
 	preNode := h5.Text("pre node")
 	postNode := h5.Text("post node")
@@ -170,13 +182,13 @@ func TestTransformSubtransforms(t *testing.T) {
 			t.Errorf("TestTransformSubtransforms paniced %s", err)
 		}
 	}()
-	tree, _ := NewDoc("<html><body><ul><li>foo</ul></body></html>")
+	tree, _ := h5.NewFromString("<html><body><ul><li>foo</ul></body></html>")
 
 	f, _ := Subtransform(CopyAnd(
 		ReplaceChildren(h5.Text("bar")),
 		ReplaceChildren(h5.Text("baz"), h5.Text("quux")),
 	), "li")
-	tf := NewTransformer(tree)
+	tf := New(tree)
 	t1, _ := Trans(f, "ul")
 	tf.ApplyAll(t1)
 	assertEqual(t, tf.String(),
@@ -187,8 +199,8 @@ func TestTransformSubtransforms(t *testing.T) {
 // TODO(jwall): benchmarking tests
 func BenchmarkTransformApply(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		tree, _ := NewDoc("<html><body><div id=\"foo\"></div></body></html")
-		tf := NewTransformer(tree)
+		tree, _ := h5.NewFromString("<html><body><div id=\"foo\"></div></body></html")
+		tf := New(tree)
 		tf.Apply(AppendChildren(h5.Text("")), "body")
 		tf.Apply(TransformAttrib("id", func(val string) string {
 			return "bar"
