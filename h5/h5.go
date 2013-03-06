@@ -21,6 +21,7 @@ import (
 	"code.google.com/p/go.net/html/atom"
 	"io"
 	"strings"
+	"fmt"
 )
 
 func Partial(r io.Reader) ([]*html.Node, error) {
@@ -59,5 +60,11 @@ func NewFromString(s string) (*Tree, error) {
 // Construct a new h5 parser from a io.Reader
 func New(r io.Reader) (*Tree, error) {
 	n, err := html.Parse(r)
-	return &Tree{n}, err
+	if err != nil {
+		return nil, err
+	}
+	if n == nil {
+		return nil, fmt.Errorf("Error parsing html from reader")
+	}
+	return &Tree{n}, nil
 }

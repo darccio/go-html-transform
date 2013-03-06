@@ -31,7 +31,7 @@ type Transformer struct {
 
 func NewFromReader(rdr io.Reader) (*Transformer, error) {
 	tree, err := h5.New(rdr)
-	if err != nil {
+	if err == nil {
 		return New(tree), nil
 	}
 	return nil, err
