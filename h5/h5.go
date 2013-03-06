@@ -19,9 +19,9 @@ import (
 	"bytes"
 	"code.google.com/p/go.net/html"
 	"code.google.com/p/go.net/html/atom"
+	"fmt"
 	"io"
 	"strings"
-	"fmt"
 )
 
 func Partial(r io.Reader) ([]*html.Node, error) {
