@@ -1,27 +1,60 @@
+// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
+// Use of this source code is governed by the Artistic License 2.0.
+// That License is included in the LICENSE file.
+
 package transform
 
 import (
-	. "code.google.com/p/go-html-transform/h5"
+	"io"
 	"log"
+
+	"code.google.com/p/go.net/html"
+
+	"code.google.com/p/go-html-transform/css/selector"
+	"code.google.com/p/go-html-transform/h5"
 )
 
-// The TransformFunc type is the type of a Node transformation function.
-type TransformFunc func(*Node)
+// Collector defines an interface for html node collectors.
+type Collector interface {
+	// Find searches a tree rooted at n and returns a slice of nodes
+	// that match a criteria.
+	Find(n *html.Node) []*html.Node
+}
+
+// The TransformFunc type is the type of a html.Node transformation function.
+type TransformFunc func(*html.Node)
 
 // Transformer encapsulates a document under transformation.
 type Transformer struct {
-	doc *Node
+	doc *h5.Tree
+}
+
+func NewFromReader(rdr io.Reader) (*Transformer, error) {
+	tree, err := h5.New(rdr)
+	if err == nil {
+		return New(tree), nil
+	}
+	return nil, err
 }
 
 // Constructor for a Transformer. It makes a copy of the document
 // and transforms that instead of the original.
-func NewTransform(d *Node) *Transformer {
-	return &Transformer{doc: d.Clone()}
+func New(t *h5.Tree) *Transformer {
+	clone := t.Clone()
+	return newTransformer(&clone)
+}
+
+func newTransformer(t *h5.Tree) *Transformer {
+	return &Transformer{doc: t}
 }
 
 // The Doc method returns the document under transformation.
-func (t *Transformer) Doc() *Node {
-	return t.doc
+func (t *Transformer) Doc() *html.Node {
+	return t.doc.Top()
+}
+
+func (t *Transformer) Render(w io.Writer) error {
+	return t.doc.Render(w)
 }
 
 func (t *Transformer) String() string {
@@ -29,140 +62,132 @@ func (t *Transformer) String() string {
 }
 
 func (t *Transformer) Clone() *Transformer {
-	return NewTransform(t.Doc())
+	return New(t.doc)
 }
 
-// The Apply method applies a TransformFunc to the nodes returned from
-// the Selector query
-func (t *Transformer) Apply(f TransformFunc, sel ...string) *Transformer {
-	// TODO come up with a way to walk tree once?
-	sq := NewSelectorQuery(sel...)
-	nodes := sq.Apply(t.doc)
-	for _, n := range nodes {
-		f(n)
+func applyFuncToCollector(f TransformFunc, n *html.Node, sel Collector) {
+	for _, nn := range sel.Find(n) {
+		f(nn)
 	}
-	return t
+}
+
+// The ApplyWithSelector method applies a TransformFunc to the nodes matched
+// by the CSS3 Selector.
+func (t *Transformer) Apply(f TransformFunc, sel string) error {
+	sq, err := selector.Selector(sel)
+	t.ApplyWithCollector(f, sq)
+	return err
+}
+
+// ApplyWithCollector applies a TransformFunc to the tree using a Collector.
+func (t *Transformer) ApplyWithCollector(f TransformFunc, coll Collector) {
+	// TODO come up with a way to walk tree once?
+	applyFuncToCollector(f, t.Doc(), coll)
 }
 
 // Transform is a bundle of selectors and a transform func. It forms a
 // self contained Transfrom on an html document that can be reused.
 type Transform struct {
-	q []string
-	f TransformFunc
+	coll Collector
+	f    TransformFunc
 }
 
 // Trans creates a Transform that you can apply using ApplyAll.
-func Trans(f TransformFunc, sel1 string, sel ...string) *Transform {
-	return &Transform{f: f, q: append([]string{sel1}, sel...)}
+// It takes a TransformFunc and a valid CSS3 Selector.
+// It returns a *Transform or an error if the selector wasn't valid
+func Trans(f TransformFunc, sel string) (*Transform, error) {
+	sq, err := selector.Selector(sel)
+	return TransCollector(f, sq), err
 }
 
-// ApplyAll applies a series of Transforms to a document.
-//     t.ApplyAll(Trans(f, sel1, sel2), Trans(f2, sel3, sel4))
-func (t *Transformer) ApplyAll(ts ...Transform) *Transformer {
-	for _, spec := range ts {
-		t.Apply(spec.f, spec.q...)
+// MustTrans creates a Transform.
+// Panics if the selector wasn't valid.
+func MustTrans(f TransformFunc, sel string) *Transform {
+	t, err := Trans(f, sel)
+	if err != nil {
+		panic(err)
 	}
 	return t
 }
 
-// Compose a set of TransformFuncs into a single TransformFunc
-func Compose(fs ...TransformFunc) TransformFunc {
-	return func(n *Node) {
-		for _, f := range fs {
-			f(n)
-		}
+// TransCollector creates a Transform that you can apply using ApplyAll.
+// It takes a TransformFunc and a Collector
+func TransCollector(f TransformFunc, coll Collector) *Transform {
+	return &Transform{f: f, coll: coll}
+}
+
+// ApplyAll applies a series of Transforms to a document.
+//     t.ApplyAll(Trans(f, sel1, sel2), Trans(f2, sel3, sel4))
+func (t *Transformer) ApplyAll(ts ...*Transform) {
+	for _, spec := range ts {
+		t.ApplyWithCollector(spec.f, spec.coll)
 	}
 }
 
 // AppendChildren creates a TransformFunc that appends the Children passed in.
-func AppendChildren(cs ...*Node) TransformFunc {
-	return func(n *Node) {
-		sz := len(n.Children)
-		newChild := make([]*Node, sz+len(cs))
-		copy(newChild, n.Children)
-		copy(newChild[sz:], cs)
-		n.Children = newChild
+func AppendChildren(cs ...*html.Node) TransformFunc {
+	return func(n *html.Node) {
+		for _, c := range cs {
+			if c.Parent != nil {
+				c.Parent.RemoveChild(c)
+			}
+			n.AppendChild(c)
+		}
 	}
 }
 
 // PrependChildren creates a TransformFunc that prepends the Children passed in.
-func PrependChildren(cs ...*Node) TransformFunc {
-	return func(n *Node) {
-		sz := len(n.Children)
-		sz2 := len(cs)
-		newChild := make([]*Node, sz+len(cs))
-		copy(newChild[sz2:], n.Children)
-		copy(newChild[0:sz2], cs)
-		n.Children = newChild
+func PrependChildren(cs ...*html.Node) TransformFunc {
+	return func(n *html.Node) {
+		for _, c := range cs {
+			n.InsertBefore(c, n.FirstChild)
+		}
 	}
 }
 
 // RemoveChildren creates a TransformFunc that removes the Children of the node
 // it operates on.
 func RemoveChildren() TransformFunc {
-	return func(n *Node) {
-		n.Children = make([]*Node, 0)
+	return func(n *html.Node) {
+		removeChildren(n)
+	}
+}
+
+func removeChildren(n *html.Node) {
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		defer n.RemoveChild(c)
 	}
 }
 
 // ReplaceChildren creates a TransformFunc that replaces the Children of the
 // node it operates on with the Children passed in.
-func ReplaceChildren(ns ...*Node) TransformFunc {
-	return func(n *Node) {
-		n.Children = ns
+func ReplaceChildren(ns ...*html.Node) TransformFunc {
+	return func(n *html.Node) {
+		removeChildren(n)
+		for _, c := range ns {
+			n.AppendChild(c)
+		}
 	}
+}
+
+func nodeToString(n *html.Node) string {
+	t := h5.NewTree(n)
+	return t.String()
 }
 
 // Replace constructs a TransformFunc that replaces a node with the nodes passed
 // in.
-func Replace(ns ...*Node) TransformFunc {
-	return func(n *Node) {
+func Replace(ns ...*html.Node) TransformFunc {
+	return func(n *html.Node) {
 		p := n.Parent
 		switch p {
 		case nil:
-			n.Children = ns
+			log.Panicf("Attempt to replace Root node: %s", h5.RenderNodesToString([]*html.Node{n}))
 		default:
-			newChildren := []*Node{}
-			for _, c := range p.Children {
-				if c.String() != n.String() {
-					newChildren = append(newChildren, c)
-				} else {
-					newChildren = append(newChildren, ns...)
-				}
+			for _, nc := range ns {
+				p.InsertBefore(nc, n)
 			}
-			ReplaceChildren(newChildren...)(p)
-		}
-	}
-}
-
-// ModifyAttrb creates a TransformFunc that modifies the attributes
-// of the node it operates on. If an Attribute with the same name
-// as the key doesn't exist it creates it.
-func ModifyAttrib(key string, val string) TransformFunc {
-	return func(n *Node) {
-		found := false
-		for i, attr := range n.Attr {
-			if attr.Name == key {
-				n.Attr[i].Value = val
-				found = true
-			}
-		}
-		if !found {
-			newAttr := make([]*Attribute, len(n.Attr)+1)
-			newAttr[len(n.Attr)] = &Attribute{Name: key, Value: val}
-			n.Attr = newAttr
-		}
-	}
-}
-
-// TransformAttrib returns a TransformFunc that transforms an attribute on
-// the node it operates on.
-func TransformAttrib(key string, f func(string) string) TransformFunc {
-	return func(n *Node) {
-		for i, attr := range n.Attr {
-			if attr.Name == key {
-				n.Attr[i].Value = f(n.Attr[i].Value)
-			}
+			p.RemoveChild(n)
 		}
 	}
 }
@@ -170,72 +195,104 @@ func TransformAttrib(key string, f func(string) string) TransformFunc {
 // DoAll returns a TransformFunc that combines all the TransformFuncs that are
 // passed in. Doing each transform in order.
 func DoAll(fs ...TransformFunc) TransformFunc {
-	return func(n *Node) {
+	return func(n *html.Node) {
 		for _, f := range fs {
 			f(n)
 		}
 	}
 }
 
-// ForEach takes a function and a list of Nodes and performs that
-// function for each node in the list.
-// The function should be of a type either func(...*Node) TransformFunc
-// or func(*Node) TransformFunc. Any other type will panic.
-func ForEach(f interface{}, ns ...*Node) TransformFunc {
-	switch t := f.(type) {
-	case func(...*Node) TransformFunc:
-		return func(n *Node) {
-			for _, n2 := range ns {
-				f1 := f.(func(...*Node) TransformFunc)
-				f2 := f1(n2)
-				f2(n)
-			}
-		}
-	case func(*Node) TransformFunc:
-		return func(n *Node) {
-			for _, n2 := range ns {
-				f1 := f.(func(*Node) TransformFunc)
-				f2 := f1(n2)
-				f2(n)
-			}
-		}
-	default:
-		log.Panicf("Wrong function type passed to ForEach %s", t)
-	}
-	return nil
-}
-
 // CopyAnd will construct a TransformFunc that will
 // make a copy of the node for each passed in TransformFunc
 // and replace the passed in node with the resulting transformed
-// Nodes.
+// html.Nodes.
 func CopyAnd(fns ...TransformFunc) TransformFunc {
-	return func(n *Node) {
-		newNodes := make([]*Node, len(fns))
-		for i, fn := range fns {
-			node := n.Clone()
+	return func(n *html.Node) {
+		for _, fn := range fns {
+			node := h5.CloneNode(n)
+			n.Parent.InsertBefore(node, n)
 			fn(node)
-			newNodes[i] = node
 		}
-		replaceFn := Replace(newNodes...)
-		replaceFn(n)
+		n.Parent.RemoveChild(n)
 	}
 }
 
-// SubTransform constructs a TransformFunc that runs a TransformFunc on any
-// nodes in the tree rooted by the node it matches on if those nodes match
-// the selectors. This is useful for creating self contained Transforms that are
+// SubTransform constructs a TransformFunc that runs a TransformFunc on
+// any nodes in the tree rooted by the node the the TransformFunc is run
+// against.
+// This is useful for creating self contained Transforms that are
 // meant to work on subtrees of the html document.
-func SubTransform(f TransformFunc, sel1 string, sels ...string) TransformFunc {
-	return func(n *Node) {
-		// TODO This is perhaps not the most efficient way to do this.
-		tf := NewTransform(n)
-		q := append([]string{sel1}, sels...)
-		tf.Apply(f, q...)
-		Replace(tf.Doc())(n)
+func Subtransform(f TransformFunc, sel string) (TransformFunc, error) {
+	sq, err := selector.Selector(sel)
+	return SubtransformCollector(f, sq), err
+}
+
+// MustSubtransform constructs a TransformFunc that runs a TransformFunc on
+// any nodes in the tree rooted by the node the the TransformFunc is run
+// against.
+// Panics if the selector string is malformed.
+func MustSubtransform(f TransformFunc, sel string) TransformFunc {
+	t, err := Subtransform(f, sel)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+// SubTransformSelector constructs a TransformFunc that runs a TransformFunc on
+// any nodes collected, using the passed in collector, from the subtree the
+// TransformFunc is run on.
+// This is useful for creating self contained Transforms that are
+// meant to work on subtrees of the html document.
+func SubtransformCollector(f TransformFunc, coll Collector) TransformFunc {
+	return func(n *html.Node) {
+		applyFuncToCollector(f, n, coll)
 	}
 }
 
-// Copyright 2010 Jeremy Wall (jeremy@marzhillstudios.com)
-// Use of this source code is governed by the Artistic License 2.0.
-// That License is included in the LICENSE file.
+// ModifyAttrb creates a TransformFunc that modifies the attributes
+// of the node it operates on. If an Attribute with the same name
+// as the key doesn't exist it creates it.
+func ModifyAttrib(key string, val string) TransformFunc {
+	return func(n *html.Node) {
+		found := false
+		for i, attr := range n.Attr {
+			if attr.Key == key {
+				n.Attr[i].Val = val
+				found = true
+			}
+		}
+		if !found {
+			n.Attr = append(n.Attr, html.Attribute{Key: key, Val: val})
+		}
+	}
+}
+
+// TransformAttrib returns a TransformFunc that transforms an attribute on
+// the node it operates on using the provided func. It only transforms
+// the attribute if it exists.
+func TransformAttrib(key string, f func(string) string) TransformFunc {
+	return func(n *html.Node) {
+		for i, attr := range n.Attr {
+			if attr.Key == key {
+				n.Attr[i].Val = f(n.Attr[i].Val)
+			}
+		}
+	}
+}
+
+// Trace is a debugging wrapper for transform funcs.
+// It prints debugging information before and after the TransformFunc
+// is applied.
+func Trace(f TransformFunc, msg string, args ...interface{}) TransformFunc {
+	return func(n *html.Node) {
+		log.Printf("TRACE: "+msg, args...)
+		p := n.Parent
+		if p == nil {
+			p = n
+		}
+		log.Printf("TRACE: Before: %s", h5.NewTree(p).String())
+		f(n)
+		log.Printf("TRACE: After: %s", h5.NewTree(p).String())
+	}
+}
