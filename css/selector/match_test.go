@@ -137,6 +137,12 @@ var finders = []testSpec{
 		partials("<span>bar</span><span>baz<span>quux</span></span><span>quux</span>"),
 	},
 	testSpec{
+		"div span",
+		partial("<div><div><span>foo</span></div><div><span>bar</span></div></div>"),
+		nil,
+		partials("<span>foo</span><span>bar</span>"),
+	},
+	testSpec{
 		":empty",
 		partial("<div><div></div></div>"),
 		nil,
@@ -174,7 +180,7 @@ func TestSelectorFind(t *testing.T) {
 				chn, h5.RenderNodesToString([]*html.Node{spec.n}))
 		}
 		if h5.RenderNodesToString(ns) != h5.RenderNodesToString(spec.ns) {
-			t.Errorf("%q != %q",
+			t.Errorf("Got: %q Expected: %q",
 				h5.RenderNodesToString(ns), h5.RenderNodesToString(spec.ns))
 		}
 	}
