@@ -144,7 +144,7 @@ func consumeComment(rdr *PositionByteScanner) (cssParseFunc, *Token, error) {
 		c, rdr.Line, rdr.Column)
 }
 
-func consumeCommentBody(rdr *PositionByteScanner) {
+func consumeCommentBody(rdr *PositionByteScanner) (cssParseFunc, *Token, error) {
 	return nil, nil, nil
 }
 
