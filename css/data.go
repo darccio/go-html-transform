@@ -1,47 +1,45 @@
 package css
 
-import (
-	"code.google.com/p/go-html-transform/css/selector"
-)
+import "code.google.com/p/go-html-transform/css/selector"
 
+// Stylesheet is a list of Statements
 type Stylesheet struct {
-	Contents []struct {
-		Comment   Comment
-		Statement *Statement
-	}
+	Statements []Statement
 }
 
+// Statement is either a Ruleset or an AtRule or a comment.
 type Statement struct {
-	Ruleset *Ruleset
-	AtRule  *AtRule
+	*Ruleset
+	*AtRule
+	*Comment
+	*HtmlComment
 }
 
+// AtRule is an AtKeyword an optional param and an optional list of blocks.
 type AtRule struct {
 	AtKeyword string
-	Block
+	param     string
+	Block     []*Block
 }
 
+// Ruleset is a selector followed by a Declaration Block
 type Ruleset struct {
-	Selector *selector.Chain
-	Block    *Block
+	Selector     *selector.Chain
+	Declarations []Declaration
 }
 
+// Block is either a Ruleset or an AtRule or a Block
 type Block struct {
-	Body []Body
+	*Ruleset
+	*AtRule
+	*Block
 }
 
-type Body struct {
-	// Exclusively one of these?
-	Block       *Block
-	AtKeyword   string
-	Declaration *Declaration
-	BadString   string
-	Comment     Comment
-}
-
+// Declaration is a Property and Value pair.
 type Declaration struct {
 	Property string
 	Value    string
 }
 
 type Comment string
+type HtmlComment string
