@@ -7,7 +7,7 @@ package h5
 import (
 	exphtml "code.google.com/p/go.net/html"
 	"code.google.com/p/go.net/html/atom"
-	"html"
+
 	"io"
 	"strings"
 )
@@ -81,7 +81,7 @@ func (t Tree) Clone() Tree {
 // Text constructs a TextNode
 func Text(str string) *exphtml.Node {
 	return &exphtml.Node{
-		Data: html.EscapeString(str),
+		Data: str,
 		Type: exphtml.TextNode,
 	}
 }
