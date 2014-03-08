@@ -1,3 +1,5 @@
+// Package css implements a css level 3 parser as described at
+// http://www.w3.org/TR/css-syntax-3/
 package css
 
 import "code.google.com/p/go-html-transform/css/selector"
@@ -15,25 +17,34 @@ type Statement struct {
 	*HtmlComment
 }
 
-// AtRule is an AtKeyword an optional param and an optional list of blocks.
+// AtRule is an AtKeyword an optional param and an SimpleBlock.
+// http://www.w3.org/TR/css-syntax-3/#consume-an-at-rule0
 type AtRule struct {
-	AtKeyword string
-	param     string
-	Block     []*Block
+	AtKeyword   string
+	Param       []string
+	SimpleBlock *SimpleBlock
 }
 
 // Ruleset is a selector followed by a Declaration Block
 type Ruleset struct {
-	Selector     *selector.Chain
-	Declarations []Declaration
+	Selector *selector.Chain
+	DeclarationList
 }
 
-// Block is either a Ruleset or an AtRule or a Block
-type Block struct {
+// BlockItem contains one and only one of DeclarationList, *Ruleset, or *AtRule
+type BlockItem struct {
+	DeclarationList
 	*Ruleset
 	*AtRule
-	*Block
 }
+
+// SimpleBlock contains a list of BlockItems
+type SimpleBlock struct {
+	Content []BlockItem
+}
+
+// DeclarationList is a list of Declarations forming a block.
+type DeclarationList []Declaration
 
 // Declaration is a Property and Value pair.
 type Declaration struct {

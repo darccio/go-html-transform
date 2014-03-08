@@ -1,14 +1,16 @@
 // package tokenizer tokenizes a css stream.
-// Follows the spec defined at http://www.w3.org/TR/CSS21/syndata.html
+// Follows the spec defined at http://www.w3.org/TR/css-syntax/#tokenization
 package tokenizer
 
 import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
+
 	"strings"
 )
+
+var EUnexpextedEOF = fmt.Errorf("Unexpected EOF.")
 
 type tokenType int
 
@@ -17,7 +19,8 @@ type Position struct {
 	Column int
 }
 
-// TODO(jwall): Move this into some sort of utils?
+// TODO(jwall): We need to sanitize the stream first? \r, \f, or \r\f
+// turn into \n
 type PositionTrackingScanner struct {
 	// Embedded Scanner so our LineTrackingReader can be used just like
 	// a Scanner.
@@ -26,8 +29,53 @@ type PositionTrackingScanner struct {
 	l, col         int
 }
 
+type sanitizingReader struct {
+	*bufio.Reader
+}
+
+var unknownRune = []byte("\uFFFD")
+
+func preprocess(buf []byte, r *bufio.Reader) (int, error) {
+	i := 0
+	for c, n, err := r.ReadRune(); err == nil; c, n, err = r.ReadRune() {
+		if i+n > len(buf) {
+			// We don't have room so unread the rune and return.
+			r.UnreadRune()
+			return i, err
+		}
+		switch c {
+		case '\x00':
+			if len(buf)-1 < i+len(unknownRune) {
+				copy(buf[i:len(unknownRune)], unknownRune)
+			} else {
+				// We don't have room so unread the rune and
+				// return.
+				r.UnreadRune()
+				return i + n, err
+			}
+		case '\r':
+			buf[i] = '\n'
+			nxt, err := r.Peek(1)
+			if err == nil && len(nxt) == 1 && nxt[0] == '\n' {
+				r.ReadByte()
+			}
+		case '\f':
+			buf[i] = '\n'
+		default:
+			copy(buf[i:i+n], []byte(string(c)))
+		}
+		i += n
+	}
+	return i, nil
+}
+
+func (r *sanitizingReader) Read(buf []byte) (int, error) {
+	return preprocess(buf, r.Reader)
+}
+
 func NewTrackingReader(r io.Reader, splitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)) *PositionTrackingScanner {
-	s := bufio.NewScanner(r)
+	s := bufio.NewScanner(&sanitizingReader{bufio.NewReader(r)})
+	//s := bufio.NewScanner(r)
 	rdr := &PositionTrackingScanner{
 		Scanner: s,
 	}
@@ -67,34 +115,39 @@ type Tokenizer struct {
 }
 
 const (
-	Ident        tokenType = iota // 0
-	AtKeyword                     // 1
-	String                        // 2
-	BadString                     // 3
-	BadUri                        // 4
-	BadComment                    // 5
-	Hash                          // 6
-	Number                        // 7
-	Percentage                    // 8
-	Dimension                     // 9
-	Uri                           // 10
-	UnicodeRange                  // 11
-	CDO                           // 12
-	CDC                           // 13
-	Colon                         // 14
-	Semicolon                     // 15
-	LBrace                        // 16
-	RBrace                        // 17
-	LParen                        // 18
-	RParen                        // 19
-	LBracket                      // 20
-	RBracket                      // 21
-	S                             // 22
-	Includes                      // 23
-	Dashmatch                     // 24
-	Comment                       // 25
-	Function                      // 26
-	Delim                         // 27
+	Ident          tokenType = iota // 0
+	AtKeyword                       // 1
+	String                          // 2
+	BadString                       // 3
+	BadUri                          // 4
+	BadComment                      // 5
+	Hash                            // 6
+	Number                          // 7
+	Percentage                      // 8
+	Dimension                       // 9
+	Uri                             // 10
+	UnicodeRange                    // 11
+	CDO                             // 12
+	CDC                             // 13
+	Colon                           // 14
+	Semicolon                       // 15
+	Comma                           // 16
+	LBrace                          // 17
+	RBrace                          // 18
+	LParen                          // 19
+	RParen                          // 20
+	LBracket                        // 21
+	RBracket                        // 22
+	Includes                        // 23
+	Prefixmatch                     // 24
+	Suffixmatch                     // 25
+	Dashmatch                       // 26
+	Comment                         // 27
+	Function                        // 28
+	Delim                           // 29
+	SubstringMatch                  // 30
+	Column                          // 31
+	WS                              // 32
 )
 
 type Token struct {
@@ -125,7 +178,38 @@ func consumeCdoOrDelim(data []byte) (advance int, token []byte, err error) {
 	return 1, data[:1], nil
 }
 
-func consumeEscapedOrUnicode(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func consumeHexDigits(data []byte, atEOF bool) (int, []byte, error) {
+	n := 7
+	if len(data) < n {
+		n = len(data)
+	}
+	tok := data
+LOOP:
+	for i, c := range data[:n] {
+		switch {
+		case '0' <= c && c <= '9':
+			fallthrough
+		case 'A' <= c && c <= 'F':
+			fallthrough
+		case 'a' <= c && c <= 'f':
+			tok = data[:i+1]
+		case c == ' ', c == '\n', c == '\t':
+			if i == 0 {
+				return 0, nil, fmt.Errorf("Invalid Hex digit char %q", c)
+			}
+			tok = data[:i+1]
+			break LOOP
+		default:
+			if i == 0 {
+				return 0, nil, fmt.Errorf("Invalid Hex digit char %q", c)
+			}
+			break LOOP
+		}
+	}
+	return len(tok), tok, nil
+}
+
+func consumeEscaped(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if data[0] != '\\' {
 		return 0, nil, fmt.Errorf("Expected Escaped character got: %q", data)
 	}
@@ -136,30 +220,14 @@ func consumeEscapedOrUnicode(data []byte, atEOF bool) (advance int, token []byte
 	case 'A' <= c && c <= 'F':
 		fallthrough
 	case 'a' <= c && c <= 'f':
-		next, tok, err := consumeUnicode(data, atEOF)
-		if err != nil {
-			return 0, nil, err
-		}
-		return next, tok, err
-	case c == '\n', c == '\r', c == '\f', c == '\t':
+		n, _, err := consumeHexDigits(data[1:], atEOF)
+		return n + 1, data[:n+1], err
+	case c == '\n':
 		return 0, nil, fmt.Errorf("Invalid escape, non escapable char %c", c)
 	default:
+		// consume two codepoints
+		// FIXME(jwall): this should be rune based
 		return 2, data[:2], nil
-	}
-}
-
-func consumeEscapeOrUnicodeAnd(f bufio.SplitFunc) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = consumeEscapedOrUnicode(data, atEOF)
-		if err != nil {
-			return 0, nil, err
-		}
-		log.Printf("Attempting to advance %d in `%s`", advance, data)
-		next, tok, err := f(data[advance:], atEOF)
-		if next == 0 {
-			return 0, nil, nil
-		}
-		return advance + next, append(token, tok...), err
 	}
 }
 
@@ -189,7 +257,7 @@ func consumeIdent(data []byte, atEOF bool) (advance int, token []byte, err error
 		// TODO(jwall): consumeIdentStart
 		switch {
 		case c == '\\':
-			advance, token, err = consumeEscapeOrUnicodeAnd(consumeIdent)(data, atEOF)
+			advance, token, err = consumeEscaped(data, atEOF)
 			if advance > 0 {
 				advance += i
 				token = append(data[:i], token...)
@@ -225,13 +293,15 @@ func consumeCdcOrIdent(data []byte, atEOF bool) (advance int, token []byte, err 
 }
 
 // TODO(jwall): handle partial matches when !atEOF
-func consumePrefix(data []byte, expect string, atEOF bool) (advance int, token []byte, err error) {
-	el := len(expect)
-	if len(data) >= el && string(data[:el]) == expect {
-		return el, data[:el], nil
-	}
+func consumeOnePrefix(data []byte, expected []string, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF {
-		return 0, nil, fmt.Errorf("Invalid Token expecting %q got %q", expect, data[:2])
+		return 0, nil, fmt.Errorf("Invalid Token expecting one of %v got %q", expected, data[:2])
+	}
+	for _, expect := range expected {
+		el := len(expect)
+		if len(data) >= el && string(data[:el]) == expect {
+			return el, data[:el], nil
+		}
 	}
 	return 0, nil, nil
 }
@@ -277,7 +347,7 @@ func consumeQuotedBy(q byte) bufio.SplitFunc {
 			}
 			if c == '\\' {
 				if len(data) > i+1 {
-					next, tok, err := consumeEscapeOrUnicodeAnd(consumeQuotedBy(q))(data[i:], atEOF)
+					next, tok, err := consumeEscaped(data[i:], atEOF)
 					if next > 0 {
 						return next + i, append(data[:i], tok...), nil
 					}
@@ -294,6 +364,7 @@ func consumeQuotedBy(q byte) bufio.SplitFunc {
 }
 
 func splitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	// TODO(jwall): Do preprocessing before we get to this splitfunc.
 	switch data[0] {
 	case ':', ';', '{', '}', '(', ')', '[', ']':
 		return 1, data[:1], nil
@@ -308,9 +379,9 @@ func splitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return consumeNumericOrUnit(data, atEOF)
 	case '|':
-		return consumePrefix(data, "|=", atEOF)
+		return consumeOnePrefix(data, []string{"|=", "||"}, atEOF)
 	case '~':
-		return consumePrefix(data, "~=", atEOF)
+		return consumeOnePrefix(data, []string{"~="}, atEOF)
 	case '#', '@':
 		advance, token, err = consumeIdent(data[1:], atEOF)
 		if advance > 0 {
@@ -353,8 +424,16 @@ func (t *Tokenizer) Next() (*Token, error) {
 			return &Token{Position: t.p.Position(), Type: RBracket}, nil
 		case "~=":
 			return &Token{Position: t.p.Position(), Type: Includes}, nil
+		case "^=":
+			return &Token{Position: t.p.Position(), Type: Prefixmatch}, nil
+		case "$=":
+			return &Token{Position: t.p.Position(), Type: Suffixmatch}, nil
+		case "*=":
+			return &Token{Position: t.p.Position(), Type: SubstringMatch}, nil
 		case "|=":
 			return &Token{Position: t.p.Position(), Type: Dashmatch}, nil
+		case "||":
+			return &Token{Position: t.p.Position(), Type: Column}, nil
 		case "<":
 			return &Token{Position: t.p.Position(), Type: Delim, String: tok}, nil
 		case "<!--":
@@ -368,7 +447,7 @@ func (t *Tokenizer) Next() (*Token, error) {
 			case '#':
 				return &Token{Position: t.p.Position(), Type: Hash, String: tok}, nil
 			case '\n', '\t', '\r', '\f', ' ':
-				return &Token{Position: t.p.Position(), Type: S, String: tok}, nil
+				return &Token{Position: t.p.Position(), Type: WS, String: tok}, nil
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 				return handleNumberPrefixToken(t.p.Position(), tok)
 			case 'u':
