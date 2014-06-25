@@ -57,6 +57,14 @@ func NewFromString(s string) (*Tree, error) {
 	return New(strings.NewReader(s))
 }
 
+func Children(n *html.Node) []*html.Node {
+	var cs []*html.Node
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		cs = append(cs, c)
+	}
+	return cs
+}
+
 // Construct a new h5 parser from a io.Reader
 func New(r io.Reader) (*Tree, error) {
 	n, err := html.Parse(r)

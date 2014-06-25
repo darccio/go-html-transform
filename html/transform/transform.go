@@ -5,8 +5,8 @@
 package transform
 
 import (
+	"fmt"
 	"io"
-	"log"
 
 	"code.google.com/p/go.net/html"
 
@@ -19,6 +19,23 @@ type Collector interface {
 	// Find searches a tree rooted at n and returns a slice of nodes
 	// that match a criteria.
 	Find(n *html.Node) []*html.Node
+}
+
+type CollectorFunc func(n *html.Node) []*html.Node
+
+func (f CollectorFunc) Find(n *html.Node) []*html.Node {
+	return f(n)
+}
+
+func FirstMatch(cs ...Collector) CollectorFunc {
+	return func(n *html.Node) []*html.Node {
+		for _, col := range cs {
+			if ns := col.Find(n); ns != nil {
+				return ns
+			}
+		}
+		return nil
+	}
 }
 
 // The TransformFunc type is the type of a html.Node transformation function.
@@ -77,6 +94,19 @@ func (t *Transformer) Apply(f TransformFunc, sel string) error {
 	sq, err := selector.Selector(sel)
 	t.ApplyWithCollector(f, sq)
 	return err
+}
+
+func (t *Transformer) ApplyToFirstMatch(f TransformFunc, sels ...string) error {
+	cs := make([]Collector, 0, len(sels))
+	for _, sel := range sels {
+		sq, err := selector.Selector(sel)
+		if err != nil {
+			return err
+		}
+		cs = append(cs, sq)
+	}
+	t.ApplyWithCollector(f, FirstMatch(cs...))
+	return nil
 }
 
 // ApplyWithCollector applies a TransformFunc to the tree using a Collector.
@@ -182,7 +212,7 @@ func Replace(ns ...*html.Node) TransformFunc {
 		p := n.Parent
 		switch p {
 		case nil:
-			log.Panicf("Attempt to replace Root node: %s", h5.RenderNodesToString([]*html.Node{n}))
+			panic(fmt.Sprintf("Attempt to replace Root node: %s", h5.RenderNodesToString([]*html.Node{n})))
 		default:
 			for _, nc := range ns {
 				p.InsertBefore(nc, n)
@@ -282,17 +312,17 @@ func TransformAttrib(key string, f func(string) string) TransformFunc {
 }
 
 // Trace is a debugging wrapper for transform funcs.
-// It prints debugging information before and after the TransformFunc
-// is applied.
-func Trace(f TransformFunc, msg string, args ...interface{}) TransformFunc {
+// It calls traceFunc with debugging information before and after the
+// TransformFunc is applied.
+func Trace(f TransformFunc, traceFunc func(msg string, args ...interface{}), msg string, args ...interface{}) TransformFunc {
 	return func(n *html.Node) {
-		log.Printf("TRACE: "+msg, args...)
+		traceFunc(msg, args...)
 		p := n.Parent
 		if p == nil {
 			p = n
 		}
-		log.Printf("TRACE: Before: %s", h5.NewTree(p).String())
+		traceFunc("Before: %s", h5.NewTree(p).String())
 		f(n)
-		log.Printf("TRACE: After: %s", h5.NewTree(p).String())
+		traceFunc("After: %s", h5.NewTree(p).String())
 	}
 }

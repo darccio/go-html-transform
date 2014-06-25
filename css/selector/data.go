@@ -326,11 +326,17 @@ type Chain struct {
 
 // Find all the nodes in a html.Node tree that match this Selector Chain.
 func (chn *Chain) Find(n *html.Node) []*html.Node {
+	set := make(map[*html.Node]struct{})
 	found := chn.Head.Find(n)
 	for _, l := range chn.Tail {
 		var interesting []*html.Node
 		for _, n := range found {
-			interesting = l.Find(n)
+			for _, n1 := range l.Find(n) {
+				if _, ok := set[n1]; !ok {
+					interesting = append(interesting, n1)
+					set[n1] = struct{}{}
+				}
+			}
 		}
 		found = interesting
 	}
