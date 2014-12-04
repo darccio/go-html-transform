@@ -161,7 +161,7 @@ func AppendChildren(cs ...*html.Node) TransformFunc {
 			if c.Parent != nil {
 				c.Parent.RemoveChild(c)
 			}
-			n.AppendChild(c)
+			n.AppendChild(h5.CloneNode(c))
 		}
 	}
 }
@@ -170,7 +170,7 @@ func AppendChildren(cs ...*html.Node) TransformFunc {
 func PrependChildren(cs ...*html.Node) TransformFunc {
 	return func(n *html.Node) {
 		for _, c := range cs {
-			n.InsertBefore(c, n.FirstChild)
+			n.InsertBefore(h5.CloneNode(c), n.FirstChild)
 		}
 	}
 }
@@ -195,7 +195,7 @@ func ReplaceChildren(ns ...*html.Node) TransformFunc {
 	return func(n *html.Node) {
 		removeChildren(n)
 		for _, c := range ns {
-			n.AppendChild(c)
+			n.AppendChild(h5.CloneNode(c))
 		}
 	}
 }
