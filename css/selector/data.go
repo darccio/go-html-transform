@@ -6,9 +6,10 @@ package selector
 import (
 	"code.google.com/p/go-html-transform/h5"
 
-	"code.google.com/p/go.net/html"
 	"fmt"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 type selectorType int
