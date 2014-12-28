@@ -17,11 +17,12 @@ package h5
 
 import (
 	"bytes"
-	"code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
 	"fmt"
 	"io"
 	"strings"
+
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 func Partial(r io.Reader) ([]*html.Node, error) {

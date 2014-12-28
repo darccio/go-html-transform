@@ -5,8 +5,8 @@
 package h5
 
 import (
-	exphtml "code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
+	exphtml "golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 
 	"io"
 	"strings"
