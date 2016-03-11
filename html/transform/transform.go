@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/net/html"
 
-	"code.google.com/p/go-html-transform/css/selector"
-	"code.google.com/p/go-html-transform/h5"
+	"go.marzhillstudios.com/pkg/go-html-transform/css/selector"
+	"go.marzhillstudios.com/pkg/go-html-transform/h5"
 )
 
 // Collector defines an interface for html node collectors.
@@ -215,7 +215,7 @@ func Replace(ns ...*html.Node) TransformFunc {
 			panic(fmt.Sprintf("Attempt to replace Root node: %s", h5.RenderNodesToString([]*html.Node{n})))
 		default:
 			for _, nc := range ns {
-				p.InsertBefore(nc, n)
+				p.InsertBefore(h5.CloneNode(nc), n)
 			}
 			p.RemoveChild(n)
 		}

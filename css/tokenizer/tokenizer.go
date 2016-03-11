@@ -1,11 +1,14 @@
 // package tokenizer tokenizes a css stream.
 // Follows the spec defined at http://www.w3.org/TR/css-syntax/#tokenization
+
+//go:generate stringer -type tokenType
 package tokenizer
 
 import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 
 	"strings"
 )
@@ -209,9 +212,9 @@ LOOP:
 	return len(tok), tok, nil
 }
 
-func consumeEscaped(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func consumeEscaped(data []byte, atEOF bool) (advance int, token []byte, err error, isHex bool) {
 	if data[0] != '\\' {
-		return 0, nil, fmt.Errorf("Expected Escaped character got: %q", data)
+		return 0, nil, fmt.Errorf("Expected Escaped character got: %q", data), false
 	}
 	c := data[1]
 	switch {
@@ -221,35 +224,39 @@ func consumeEscaped(data []byte, atEOF bool) (advance int, token []byte, err err
 		fallthrough
 	case 'a' <= c && c <= 'f':
 		n, _, err := consumeHexDigits(data[1:], atEOF)
-		return n + 1, data[:n+1], err
+		return n + 1, data[:n+1], err, true
 	case c == '\n':
-		return 0, nil, fmt.Errorf("Invalid escape, non escapable char %c", c)
+		return 0, nil, fmt.Errorf("Invalid escape, non escapable char %c", c), false
 	default:
 		// consume two codepoints
-		// FIXME(jwall): this should be rune based
-		return 2, data[:2], nil
+		tok := []byte(string(data)[:2])
+		return len(tok), tok, nil, false
 	}
 }
 
-func consumeUnicode(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if data[0] != '\\' {
-		return 0, nil, fmt.Errorf("Not a unicode token!! %q", data)
+func consumeUnicodeRange(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if !(data[0] == 'u' || data[0] == 'U') {
+		return 0, nil, nil
 	}
-	for i, c := range data[1:] {
-		switch {
-		case '0' <= c && c <= '9':
-			fallthrough
-		case 'A' <= c && c <= 'F':
-			fallthrough
-		case 'a' <= c && c <= 'f':
-			if i == 5 {
-				return 6, data[:6], nil
+	log.Printf("datalen %d", len(data))
+	n, tok, err := consumeHexDigits(data[1:], atEOF)
+	log.Printf("xxx: Consumed %d hex digits %q", n, tok)
+	if tok != nil && n <= 6 {
+		if len(data) > n+1 && data[n+1] == '-' {
+			log.Printf("data[n+1 %q", data[n+1])
+			n2, tok2, err := consumeHexDigits(data[n+2:], atEOF)
+			log.Printf("Consumed %d hex digits %q", n2, tok2)
+			if tok2 != nil && n2 <= 6 {
+				advance = n + n2 + 2
+				return advance, data[:advance], nil
+			} else {
+				return 0, nil, err
 			}
-		default:
-			return i + 1, data[:i+1], nil
+		} else {
+			return n + 1, data[:n+1], err
 		}
 	}
-	return 0, nil, nil
+	return 0, nil, err
 }
 
 func consumeIdent(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -257,11 +264,11 @@ func consumeIdent(data []byte, atEOF bool) (advance int, token []byte, err error
 		// TODO(jwall): consumeIdentStart
 		switch {
 		case c == '\\':
-			advance, token, err = consumeEscaped(data, atEOF)
+			advance, token, err, _ = consumeEscaped(data, atEOF)
 			if advance > 0 {
 				advance += i
 				token = append(data[:i], token...)
-				return
+				continue
 			}
 			if err != nil {
 				return 0, nil, err
@@ -347,12 +354,34 @@ func consumeQuotedBy(q byte) bufio.SplitFunc {
 			}
 			if c == '\\' {
 				if len(data) > i+1 {
-					next, tok, err := consumeEscaped(data[i:], atEOF)
-					if next > 0 {
-						return next + i, append(data[:i], tok...), nil
-					}
+					//log.Printf("consuming escaped %q", data[i:])
+					next, _, err, isHex := consumeEscaped(data[i:], atEOF)
+					//log.Printf("next: %d, tok: %q, err: %v", next, tok, err)
 					if err != nil {
+						if len(data) > next+1 && data[i+1] == '\n' {
+							next, tok, err := consumeQuotedBy(q)(data[i+2:], atEOF)
+							if err != nil {
+								return 0, nil, err
+							}
+							escaped := append(append(data[:i], data[i+1]), tok...)
+							next = next + i + 2
+							return next, escaped, nil
+						}
 						return 0, nil, err
+					}
+					if next > 0 {
+						next, tok, err := consumeQuotedBy(q)(data[i+2:], atEOF)
+						if err != nil {
+							return 0, nil, err
+						}
+						escaped := data[:i]
+						if isHex {
+							escaped = append(escaped, c)
+						}
+						escaped = append(append(escaped, data[i+1]), tok...)
+						next = next + i + 2
+						return next, escaped, nil
+						//return next + i, append(data[:i], tok...), nil
 					}
 				} else {
 					return 0, nil, nil
@@ -365,6 +394,9 @@ func consumeQuotedBy(q byte) bufio.SplitFunc {
 
 func splitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	// TODO(jwall): Do preprocessing before we get to this splitfunc.
+	if len(data) == 0 && atEOF {
+		return 0, nil, nil
+	}
 	switch data[0] {
 	case ':', ';', '{', '}', '(', ')', '[', ']':
 		return 1, data[:1], nil
@@ -388,6 +420,14 @@ func splitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			advance++
 			token = data[:len(token)+1]
 			return
+		}
+	case 'u', 'U':
+		log.Printf("Consuming Unicode %q", data)
+		if n, tok, err := consumeUnicodeRange(data, atEOF); tok != nil {
+			log.Printf("Consumed Unicode Range %q", tok)
+			return n, tok, err
+		} else {
+			// Ident?
 		}
 	case '\\':
 		fallthrough
@@ -451,7 +491,9 @@ func (t *Tokenizer) Next() (*Token, error) {
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 				return handleNumberPrefixToken(t.p.Position(), tok)
 			case 'u':
-				// TODO(jwall): return handleIdentOrUrlPrefixToken(tok)
+				log.Printf("Encountered possible unicode token %q", tok)
+				// TODO(jwall): return handleIdentUnicodeOrUrlPrefixToken(tok)
+				return handleUnicodeToken(t.p.Position(), tok)
 			case '"', '\'':
 				return &Token{Position: t.p.Position(), Type: String, String: tok}, nil
 			default:
@@ -462,16 +504,52 @@ func (t *Tokenizer) Next() (*Token, error) {
 	return nil, t.p.Err()
 }
 
+func handleUnicodeToken(p Position, tok string) (*Token, error) {
+	dashCount := 0
+	nonHexChar := 0
+	for _, r := range tok {
+		switch {
+		case r == '-':
+			dashCount += 1
+		case r == 'u' || r == 'U':
+		case '0' <= r && r <= '9':
+		case 'A' <= r && r <= 'F':
+		case 'a' <= r && r <= 'f':
+		default:
+			nonHexChar += 1
+		}
+	}
+	log.Printf("dashCount = %d", dashCount)
+	log.Printf("nonHexChar = %d", nonHexChar)
+	if dashCount <= 1 && nonHexChar == 0 {
+		log.Printf("Emiting unicode token: %q", tok)
+		return &Token{Position: p, Type: UnicodeRange, String: tok}, nil
+	}
+	return nil, nil
+}
+
 func handleNumberPrefixToken(p Position, tok string) (*Token, error) {
 	if strings.HasSuffix(tok, "%") {
 		return &Token{Position: p, Type: Percentage, String: tok}, nil
 	}
+	eCount := 0
 	for _, r := range tok {
 		switch r {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		case 'e', 'E':
+			// This might be a number using scientific notation.
+			eCount += 1
 		default:
+			switch tok[len(tok)-1] {
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				// It's an Ident token if there is non numerical in the middle.
+				return &Token{Position: p, Type: Ident, String: tok}, nil
+			}
 			return &Token{Position: p, Type: Dimension, String: tok}, nil
 		}
 	}
-	return &Token{Position: p, Type: Number, String: tok}, nil
+	if eCount <= 1 {
+		return &Token{Position: p, Type: Number, String: tok}, nil
+	}
+	return &Token{Position: p, Type: Ident, String: tok}, nil
 }

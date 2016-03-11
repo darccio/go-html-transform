@@ -3,7 +3,7 @@
 // That License is included in the LICENSE file.
 
 /*
-Package h5 implements a wrapper and DSL for code.google.com/p/go/src/code.google.com/p/go.net/html.
+Package h5 implements a wrapper and DSL for golang.org/x/net/html.
 
     tree, err := h5.New(rdr)
 

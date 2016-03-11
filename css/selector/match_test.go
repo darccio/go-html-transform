@@ -1,10 +1,11 @@
 package selector
 
 import (
-	"code.google.com/p/go-html-transform/h5"
+	"go.marzhillstudios.com/pkg/go-html-transform/h5"
 
-	"code.google.com/p/go.net/html"
 	"testing"
+
+	"golang.org/x/net/html"
 )
 
 type testSpec struct {
